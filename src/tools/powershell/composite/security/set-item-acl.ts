@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -13,7 +13,7 @@ export function setItemAclPowerShellTool(server: McpServer, config: Config) {
         "security-set-item-acl",
         {
             description: "Sets an access control entry on a Sitecore item, replacing its existing rules.",
-            inputSchema: {
+            inputSchema: z.object({
                 id: z.string().optional()
                     .describe("The ID of the item to set the ACL entry on. Supply this or path."),
                 path: z.string().optional()
@@ -29,7 +29,7 @@ export function setItemAclPowerShellTool(server: McpServer, config: Config) {
                     .describe("The propagation type for the access right"),
                 securityPermission: z.enum(["AllowAccess", "DenyAccess"]).default("AllowAccess")
                     .describe("Whether to allow or deny the specified access right"),
-            },
+            }),
         },
         async (params) => {
             const invalid = requireOneTarget(params, ["id", "path"]);

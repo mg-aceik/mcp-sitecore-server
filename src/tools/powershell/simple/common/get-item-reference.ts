@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -11,7 +11,7 @@ export function getItemReferencePowerShellTool(server: McpServer, config: Config
         "common-get-item-reference",
         {
             description: "Gets item references for a Sitecore item, showing where it is used throughout the system.",
-            inputSchema: {
+            inputSchema: z.object({
                 ...itemProjectionInputSchema,
                 id: z.string().optional()
                     .describe("The ID of the item to retrieve references for. Supply this or path."),
@@ -23,7 +23,7 @@ export function getItemReferencePowerShellTool(server: McpServer, config: Config
                     .describe("The language of the item to check references for"),
                 version: z.string().optional()
                     .describe("The version of the item to check references for"),
-            },
+            }),
         },
         async (params) => {
             const invalid = requireOneTarget(params, ["id", "path"]);

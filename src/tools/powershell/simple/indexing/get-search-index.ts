@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -9,12 +9,12 @@ export function getSearchIndexPowerShellTool(server: McpServer, config: Config) 
         "indexing-get-search-index",
         {
             description: "Get information about Sitecore search indexes. Can filter by name, database, running status, or corrupted status.",
-            inputSchema: {
+            inputSchema: z.object({
                 name: z.string().optional().describe("The name of the index to retrieve information for. Supports wildcards."),
                 database: z.string().optional().describe("Filter indexes by database name."),
                 running: z.boolean().optional().describe("Filter to show only running indexes."),
                 corrupted: z.boolean().optional().describe("Filter to show only corrupted indexes."),
-            },
+            }),
         },
         async (params) => {
             const command = `Get-SearchIndex`;

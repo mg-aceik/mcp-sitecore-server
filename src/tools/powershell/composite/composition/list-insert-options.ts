@@ -1,8 +1,9 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { safeMcpResponse } from "@/helper.js";
 import { runGenericPowershellCommand } from "../../simple/generic.js";
 import { SITE_SCOPE_FUNCTIONS, itemLookupExpression, itemLookupGuard, itemNotFoundMessage, itemSelectorInputSchema, missingSelectorMessage } from "./site-scope.js";
+import { z } from "zod";
 
 /**
  * What may be created under an item.
@@ -29,9 +30,9 @@ export function listInsertOptionsPowershellTool(server: McpServer, config: Confi
         "list-insert-options",
         {
             description: DESCRIPTION,
-            inputSchema: {
+            inputSchema: z.object({
                 ...itemSelectorInputSchema,
-            },
+            }),
         },
         async (params) => {
             const lookup = itemLookupExpression(params);

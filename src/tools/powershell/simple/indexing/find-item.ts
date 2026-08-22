@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -66,7 +66,7 @@ export async function findItemPowerShellTool(server: McpServer, config: Config) 
         "indexing-find-item",
         {
             description: "Finds items using the Sitecore Content Search API. Date format should be in ISO 8601 format (e.g., '2023-10-01T00:00:00Z').",
-            inputSchema: {
+            inputSchema: z.object({
                 index: z.string().optional()
                     .default("sitecore_master_index").describe("The name of the Sitecore index to search in. e.g., 'sitecore_master_index', 'sitecore_web_index'."),
                 //array of objects
@@ -80,7 +80,7 @@ export async function findItemPowerShellTool(server: McpServer, config: Config) 
                 ),
                 first: z.number().optional().default(200).describe("The maximum number of results to return. Defaults to 200."),
                 skip: z.number().optional().default(0).describe("The number of results to skip. Defaults to 0."),
-            },
+            }),
         },
         async (params) => {
 

@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -41,10 +41,10 @@ export function listSitesPowershellTool(server: McpServer, config: Config) {
         "list-sites",
         {
             description: LIST_DESCRIPTION,
-            inputSchema: {
+            inputSchema: z.object({
                 includeSystemSites: z.boolean().optional()
                     .describe("Include Sitecore's infrastructure sites (shell, login, admin, service, scheduler, ...). Off by default."),
-            },
+            }),
         },
         async (params) => {
             const command = `
@@ -60,9 +60,9 @@ Get-McpSiteRows -IncludeSystemSites $${params.includeSystemSites ? "true" : "fal
         "get-site-information",
         {
             description: INFO_DESCRIPTION,
-            inputSchema: {
+            inputSchema: z.object({
                 ...siteSelectorInputSchema,
-            },
+            }),
         },
         async (params) => {
             if (!params.siteName && !params.path) {

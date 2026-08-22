@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -18,7 +18,7 @@ export function setRenderingPowershellTool(server: McpServer, config: Config) {
         "presentation-set-rendering",
         {
             description: "Updates a rendering placed on an item with new values.",
-            inputSchema: {
+            inputSchema: z.object({
                 ...renderingItemTargetInputSchema,
                 uniqueId: z.string().describe("The unique ID of the rendering."),
                 placeholder: z.string().describe("New rendering placeholder value if specified.").optional(),
@@ -30,7 +30,7 @@ export function setRenderingPowershellTool(server: McpServer, config: Config) {
                 language: z.string().describe("The language version of the item holding the rendering.").optional(),
                 index: z.number().describe("New index of the rendering in the layout.").optional(),
                 parameter: z.record(z.string(), z.string()).describe("New rendering parameters if specified.").optional(),
-            },
+            }),
         },
         async (params) => {
             const invalid = requireOneTarget(params, ["id", "path"]);

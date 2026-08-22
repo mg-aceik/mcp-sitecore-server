@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -12,7 +12,7 @@ export function addPlaceholderSettingPowershellTool(server: McpServer, config: C
         "presentation-add-placeholder-setting",
         {
             description: "Adds a placeholder setting to an item.",
-            inputSchema: {
+            inputSchema: z.object({
                 id: z.string().optional()
                     .describe("The ID of the item to add the placeholder setting to. Supply this or path."),
                 path: z.string().optional()
@@ -30,7 +30,7 @@ export function addPlaceholderSettingPowershellTool(server: McpServer, config: C
                     .describe("Specifies layout to add the rendering placeholder setting to. If 'true', the final layout is used, otherwise - shared layout.")
                     .optional(),
                 language: z.string().describe("The language version of the item to add the placeholder setting to.").optional(),
-            },
+            }),
         },
         async (params) => {
             // Two independent targets here: the item that gets the setting, and the

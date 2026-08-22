@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -11,7 +11,7 @@ export function getRenderingPowershellTool(server: McpServer, config: Config) {
         "presentation-get-rendering",
         {
             description: "Gets rendering definition on an item.",
-            inputSchema: {
+            inputSchema: z.object({
                 id: z.string().optional()
                     .describe("The id of the item to retrieve rendering for. Supply this or path."),
                 path: z.string().optional()
@@ -26,7 +26,7 @@ export function getRenderingPowershellTool(server: McpServer, config: Config) {
                     .describe("Specifies layout holding the rendering definition. If 'true', the final layout is used, otherwise - shared layout.")
                     .optional(),
                 uniqueId: z.string().describe("The rendering definition unique id.").optional(),
-            },
+            }),
         },
         async (params) => {
             const invalid = requireOneTarget(params, ["id", "path"]);

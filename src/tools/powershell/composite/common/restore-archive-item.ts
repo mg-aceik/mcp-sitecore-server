@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -10,7 +10,7 @@ export function restoreArchiveItemPowerShellTool(server: McpServer, config: Conf
         "common-restore-archive-item",
         {
             description: "Restores items to the original database from the specified archive.",
-            inputSchema: {
+            inputSchema: z.object({
                 archive: z.string()
                     .describe("The name of the archive to use when determining which items to restore."),
                 database: z.string()
@@ -19,7 +19,7 @@ export function restoreArchiveItemPowerShellTool(server: McpServer, config: Conf
                     .describe("The ID for the original item that should be processed."),
                 identity: z.string().optional()
                     .describe("The user responsible for moving the item to the archive."),
-            },
+            }),
         },
         async (params) => {
             const commandBuilder = new PowershellCommandBuilder();

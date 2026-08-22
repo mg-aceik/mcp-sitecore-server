@@ -1,7 +1,7 @@
 import express from "express";
 import { generateUUID } from "./utils.js";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js"
+import { isInitializeRequest } from "@modelcontextprotocol/server";
+import { NodeStreamableHTTPServerTransport } from "@modelcontextprotocol/node";
 import { getServer } from "./server.js";
 import { config } from "./config.js";
 import { authorizationHeaderName } from "./const.js";
@@ -11,7 +11,7 @@ export function startStreamableHTTP() {
     app.use(express.json());
 
     // Map to store transports by session ID
-    const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {};
+    const transports: { [sessionId: string]: NodeStreamableHTTPServerTransport } = {};
 
     // Handle POST requests for client-to-server communication
 
@@ -24,14 +24,14 @@ export function startStreamableHTTP() {
         ) {
             // Check for existing session ID
             const sessionId = req.headers['mcp-session-id'] as string | undefined;
-            let transport: StreamableHTTPServerTransport;
+            let transport: NodeStreamableHTTPServerTransport;
 
             if (sessionId && transports[sessionId]) {
                 // Reuse existing transport
                 transport = transports[sessionId];
             } else if (!sessionId && isInitializeRequest(req.body)) {
                 // New initialization request
-                transport = new StreamableHTTPServerTransport({
+                transport = new NodeStreamableHTTPServerTransport({
                     sessionIdGenerator: () => generateUUID(),
                     onsessioninitialized: (sessionId) => {
                         // Store the transport by session ID

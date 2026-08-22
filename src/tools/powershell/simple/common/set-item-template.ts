@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -10,7 +10,7 @@ export function setItemTemplatePowerShellTool(server: McpServer, config: Config)
         "common-set-item-template",
         {
             description: "Sets the item template.",
-            inputSchema: {
+            inputSchema: z.object({
                 id: z.string().optional()
                     .describe("The ID of the item to set the template for. Supply this or path."),
                 path: z.string().optional()
@@ -21,7 +21,7 @@ export function setItemTemplatePowerShellTool(server: McpServer, config: Config)
                     .describe("The key-value pairs map the old template fields to the new template fields. The key represents the old template field, and the value represents the new template field."),
                 database: z.string().optional()
                     .describe("The database containing the item (defaults to the context database).")
-            },
+            }),
         },
         async (params) => {
             const invalid = requireOneTarget(params, ["id", "path"]);

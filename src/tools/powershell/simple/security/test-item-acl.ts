@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -11,7 +11,7 @@ export function testItemAclPowerShellTool(server: McpServer, config: Config) {
         "security-test-item-acl",
         {
             description: "Tests whether a user or role has specific access rights to a Sitecore item.",
-            inputSchema: {
+            inputSchema: z.object({
                 id: z.string().optional()
                     .describe("The ID of the item to test access rights on. Supply this or path."),
                 path: z.string().optional()
@@ -24,7 +24,7 @@ export function testItemAclPowerShellTool(server: McpServer, config: Config) {
                     .describe("The propagation type for the access right"),
                 database: z.string().optional()
                     .describe("The database containing the item (defaults to the context database)")
-            },
+            }),
         },
         async (params) => {
             const invalid = requireOneTarget(params, ["id", "path"]);

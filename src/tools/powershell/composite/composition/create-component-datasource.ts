@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -182,14 +182,14 @@ export function createComponentDatasourcePowershellTool(server: McpServer, confi
         "create-component-datasource",
         {
             description: DESCRIPTION,
-            inputSchema: {
+            inputSchema: z.object({
                 ...pageSelectorInputSchema,
                 ...renderingSelectorInputSchema,
                 placement: z.enum(["page-local", "shared"]).optional().describe(PLACEMENT_DESCRIPTION),
                 name: z.string().optional().describe(NAME_DESCRIPTION),
                 fields: z.record(z.string(), z.string()).optional()
                     .describe("Field values to set on the new item, keyed by Sitecore field name."),
-            },
+            }),
         },
         async (params) => {
             const lookup = itemLookupExpression(params);

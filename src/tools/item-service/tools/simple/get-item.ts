@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { getItemById } from "../../logic/simple/get-item.js";
@@ -11,7 +11,7 @@ export function getItemTool(server: McpServer, config: Config) {
         'item-service-get-item',
         {
             description: "Get a Sitecore item by its ID or path.",
-            inputSchema: {
+            inputSchema: z.object({
                 id: z.string().optional().describe("The ID of the item. Supply this or path."),
                 path: z.string().optional().describe("The path of the item. Supply this or id."),
                 options: z.object({
@@ -22,7 +22,7 @@ export function getItemTool(server: McpServer, config: Config) {
                     includeMetadata: z.boolean().optional(),
                     fields: z.array(z.string()).optional(),
                 }).optional(),
-            },
+            }),
         },
         async (params) => {
             const invalid = requireOneTarget(params, ["id", "path"]);

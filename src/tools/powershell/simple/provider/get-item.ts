@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -20,7 +20,7 @@ export function getItemPowerShellTool(server: McpServer, config: Config) {
         "provider-get-item",
         {
             description: "Gets a Sitecore item by path, ID, Sitecore query or URI.",
-            inputSchema: {
+            inputSchema: z.object({
                 ...itemProjectionInputSchema,
                 path: z.string().optional()
                     .describe("The path of the item to retrieve (e.g. /sitecore/content/Home). Supply exactly one of path, id, query or uri."),
@@ -36,7 +36,7 @@ export function getItemPowerShellTool(server: McpServer, config: Config) {
                     .describe("The language of the item to retrieve"),
                 version: z.string().optional()
                     .describe("The version of the item to retrieve"),
-            },
+            }),
         },
         async (params) => {
             const invalid = requireOneTarget(params, ["path", "id", "query", "uri"]);

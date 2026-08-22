@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { runStoredQuery } from "../../logic/simple/run-stored-query.js";
@@ -9,7 +9,7 @@ export function runStoredQueryTool(server: McpServer, config: Config) {
         'item-service-run-stored-query',
         {
             description: "Run a stored Sitecore query by its definition item ID.",
-            inputSchema: {
+            inputSchema: z.object({
                 id: z.string(),
                 options: z.object({
                     database: z.string().optional(),
@@ -19,7 +19,7 @@ export function runStoredQueryTool(server: McpServer, config: Config) {
                     fields: z.array(z.string()).optional(),
                     includeStandardTemplateFields: z.boolean().optional(),
                 }).optional(),
-            },
+            }),
         },
         async (params) => {
             return safeMcpResponse(runStoredQuery(config, params.id, params.options || {}));

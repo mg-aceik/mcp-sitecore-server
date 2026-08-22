@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { safeMcpResponse } from "@/helper.js";
 import { runGenericPowershellCommand } from "../../simple/generic.js";
@@ -15,6 +15,7 @@ import {
     PLACEHOLDER_SETTINGS_FUNCTIONS,
     placeholderResolutionInputSchema,
 } from "./placeholder-settings.js";
+import { z } from "zod";
 
 /**
  * Answers "what may I put here?" for one placeholder on one page.
@@ -44,10 +45,10 @@ export function getAllowedComponentsByPlaceholderPowershellTool(server: McpServe
         "get-allowed-components-by-placeholder",
         {
             description: DESCRIPTION,
-            inputSchema: {
+            inputSchema: z.object({
                 ...pageSelectorInputSchema,
                 ...placeholderResolutionInputSchema,
-            },
+            }),
         },
         async (params) => {
             const lookup = itemLookupExpression(params);

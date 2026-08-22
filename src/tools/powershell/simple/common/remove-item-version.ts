@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -11,7 +11,7 @@ export function removeItemVersionPowerShellTool(server: McpServer, config: Confi
         "common-remove-item-version",
         {
             description: "Removes a version of a Sitecore item.",
-            inputSchema: {
+            inputSchema: z.object({
                 id: z.string().optional()
                     .describe("The ID of the item to remove version for. Supply this or path."),
                 path: z.string().optional()
@@ -28,7 +28,7 @@ export function removeItemVersionPowerShellTool(server: McpServer, config: Confi
                     .describe("The database containing the item (defaults to the context database)."),
                 archive: z.boolean().optional()
                     .describe("Moves the items to the archive rather than recycle bin."),
-            },
+            }),
         },
         async (params) => {
             const invalid = requireOneTarget(params, ["id", "path"]);

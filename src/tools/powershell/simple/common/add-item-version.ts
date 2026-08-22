@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -11,7 +11,7 @@ export function addItemVersionPowerShellTool(server: McpServer, config: Config) 
         "common-add-item-version",
         {
             description: "Creates a version of the item in a new language based on an existing language version.",
-            inputSchema: {
+            inputSchema: z.object({
                 id: z.string().optional()
                     .describe("The id of the item to add version for. Supply this or path."),
                 path: z.string().optional()
@@ -30,7 +30,7 @@ export function addItemVersionPowerShellTool(server: McpServer, config: Config) 
                     .describe("List of fields that should not be copied over from original item."),
                 database: z.string().optional()
                     .describe("The database containing the item (defaults to the context database)."),
-            },
+            }),
         },
         async (params) => {
             const invalid = requireOneTarget(params, ["id", "path"]);

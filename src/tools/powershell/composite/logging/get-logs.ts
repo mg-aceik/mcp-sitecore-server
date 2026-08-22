@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -37,7 +37,7 @@ export function getLogsPowerShellTool(server: McpServer, config: Config) {
         `logging-get-logs`,
         {
             description: `Retrieves Sitecore logs from the log directory.`,
-            inputSchema: {
+            inputSchema: z.object({
                 name: z.string()
                     // Restrict to a safe filename charset: this value is interpolated into a
                     // PowerShell path glob (alongside the $SitecoreDataFolder variable), so it
@@ -57,7 +57,7 @@ export function getLogsPowerShellTool(server: McpServer, config: Config) {
                     .optional()
                     .default(500)
                     .describe("The number of lines to retrieve from the end of the log file. Defaults to 500."),
-            },
+            }),
         },
         async (params) => {
             const stringDate = formatDate(params.date);

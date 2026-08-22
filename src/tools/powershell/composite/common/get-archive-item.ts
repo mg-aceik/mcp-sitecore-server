@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -26,7 +26,7 @@ export function getArchiveItemPowerShellTool(server: McpServer, config: Config) 
         "common-get-archive-item",
         {
             description: "Gets a page of the items found in the specified archive, with the archive's total entry count. Returns the 100 most recently archived entries unless first/skip say otherwise.",
-            inputSchema: {
+            inputSchema: z.object({
                 ...fullOnlyInputSchema,
                 archive: z.string()
                     .describe("The name of the archive to use when determining which items to process."),
@@ -38,7 +38,7 @@ export function getArchiveItemPowerShellTool(server: McpServer, config: Config) 
                     .describe("The user responsible for moving the item to the archive."),
                 first: z.number().int().positive().optional().default(100).describe(FIRST_DESCRIPTION),
                 skip: z.number().int().nonnegative().optional().default(0).describe(SKIP_DESCRIPTION),
-            },
+            }),
         },
         async (params) => {
             const commandBuilder = new PowershellCommandBuilder();

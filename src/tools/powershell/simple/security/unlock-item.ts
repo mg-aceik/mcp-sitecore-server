@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -10,7 +10,7 @@ export function unlockItemPowerShellTool(server: McpServer, config: Config) {
         "security-unlock-item",
         {
             description: "Unlocks a Sitecore item.",
-            inputSchema: {
+            inputSchema: z.object({
                 id: z.string().optional()
                     .describe("The ID of the item to unlock. Supply this or path."),
                 path: z.string().optional()
@@ -18,7 +18,7 @@ export function unlockItemPowerShellTool(server: McpServer, config: Config) {
                 force: z.boolean().optional().describe("When specified the item is unlocked regardless of the owner"),
                 passThru: z.boolean().optional().describe("When specified returns the item to the pipeline"),
                 database: z.string().optional().describe("The database containing the item"),
-            },
+            }),
         },
         async (params) => {
             const invalid = requireOneTarget(params, ["id", "path"]);

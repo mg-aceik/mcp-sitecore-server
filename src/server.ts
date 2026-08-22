@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import { envSchema, type Config, type EnvConfig } from "./config.js";
 import fs from 'fs';
 import path from 'path';
@@ -26,18 +26,14 @@ export async function getServer(config: Config): Promise<McpServer> {
 
     // Parse the environment variables and set default values
 
-    server.resource(
-        "config",
-        "config://main",
-        async (uri) => {
-            return {
-                contents: [{
-                    uri: uri.href,
-                    text: JSON.stringify(config, null, 2),
-                }]
-            }
-        }
-    );
+    server.registerResource("config", "config://main", {}, async (uri) => {
+                    return {
+                        contents: [{
+                            uri: uri.href,
+                            text: JSON.stringify(config, null, 2),
+                        }]
+                    }
+                });
 
     server.registerTool(
         "config",

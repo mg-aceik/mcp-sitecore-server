@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -11,7 +11,7 @@ export function removeRenderingPowershellTool(server: McpServer, config: Config)
         "presentation-remove-rendering",
         {
             description: "Removes renderings from an item.",
-            inputSchema: {
+            inputSchema: z.object({
                 id: z.string().optional()
                     .describe("The ID of the item to remove rendering from. Supply this or path."),
                 path: z.string().optional()
@@ -26,7 +26,7 @@ export function removeRenderingPowershellTool(server: McpServer, config: Config)
                 finalLayout: z.boolean()
                     .describe("Specifies layout holding the rendering definition. If 'true', the final layout is used, otherwise - shared layout.")
                     .optional(),
-            },
+            }),
         },
         async (params) => {
             const invalid = requireOneTarget(params, ["id", "path"]);

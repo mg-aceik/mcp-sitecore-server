@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { safeMcpResponse } from "@/helper.js";
 import { runGenericPowershellCommand } from "../../simple/generic.js";
@@ -10,6 +10,7 @@ import {
     siteResolutionScript,
     siteSelectorInputSchema,
 } from "./site-reads.js";
+import { z } from "zod";
 
 /**
  * The renderings a site offers, grouped as the site groups them.
@@ -34,9 +35,9 @@ export function listSiteComponentsPowershellTool(server: McpServer, config: Conf
         "list-site-components",
         {
             description: DESCRIPTION,
-            inputSchema: {
+            inputSchema: z.object({
                 ...siteSelectorInputSchema,
-            },
+            }),
         },
         async (params) => {
             if (!params.siteName && !params.path) {

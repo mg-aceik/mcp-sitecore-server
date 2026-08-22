@@ -1,4 +1,4 @@
-import { type CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import type { CallToolResult } from "@modelcontextprotocol/server";
 import { type Config } from "@/config.js";
 import { get } from "http";
 import RestfulItemServiceClient from "../../client.js";

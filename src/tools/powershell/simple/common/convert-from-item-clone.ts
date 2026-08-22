@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -11,7 +11,7 @@ export function convertFromItemClonePowerShellTool(server: McpServer, config: Co
         "common-convert-from-item-clone",
         {
             description: "Converts an item from a clone to a fully independent item.",
-            inputSchema: {
+            inputSchema: z.object({
                 id: z.string().optional()
                     .describe("The ID of the item to be analysed for clones presence. Supply this or path."),
                 path: z.string().optional()
@@ -22,7 +22,7 @@ export function convertFromItemClonePowerShellTool(server: McpServer, config: Co
                     .describe("Returns the item that was converted from a clone."),
                 database: z.string().optional()
                     .describe("The database containing the item (defaults to the context database).")
-            },
+            }),
         },
         async (params) => {
             const invalid = requireOneTarget(params, ["id", "path"]);

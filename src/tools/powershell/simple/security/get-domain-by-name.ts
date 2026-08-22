@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -9,9 +9,9 @@ export function getDomainByNamePowerShellTool(server: McpServer, config: Config)
         "security-get-domain-by-name",
         {
             description: "Get a Sitecore domain by its name.",
-            inputSchema: {
+            inputSchema: z.object({
                 name: z.string(),
-            },
+            }),
         },
         async (params) => {
             const command = `Get-Domain`;

@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -9,9 +9,9 @@ export function getRoleByIdentityPowerShellTool(server: McpServer, config: Confi
         "security-get-role-by-identity",
         {
             description: "Get a Sitecore role by its identity.",
-            inputSchema: {
+            inputSchema: z.object({
                 identity: z.string().describe("The identity of the role to retrieve (e.g. 'sitecore\\Author')"),
-            },
+            }),
         },
         async (params) => {
             const command = `Get-Role`;

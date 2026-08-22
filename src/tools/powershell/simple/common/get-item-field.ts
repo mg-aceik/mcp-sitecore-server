@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -11,7 +11,7 @@ export function getItemFieldPowerShellTool(server: McpServer, config: Config) {
         "common-get-item-field",
         {
             description: "Gets item fields as either names or fields or template fields.",
-            inputSchema: {
+            inputSchema: z.object({
                 id: z.string().optional()
                     .describe("The ID of the item to retrieve field information for. Supply this or path."),
                 path: z.string().optional()
@@ -26,7 +26,7 @@ export function getItemFieldPowerShellTool(server: McpServer, config: Config) {
                     .describe("The language that will be analysed."),
                 database: z.string().optional()
                     .describe("The database containing the item (defaults to the context database).")
-            },
+            }),
         },
         async (params) => {
             const invalid = requireOneTarget(params, ["id", "path"]);

@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "../../config.js";
 import { safeMcpResponse } from "../../helper.js";
 import { introspection } from "./generic/introspection.js";
@@ -23,10 +23,10 @@ function registerQueryTool(server: McpServer, config: Config, schema: string) {
         `query-graphql-${schema}`,
         {
             description: `Query a Sitecore GraphQL ${schema} endpoint with the given query and variables.`,
-            inputSchema: {
+            inputSchema: z.object({
                 query: z.string(),
                 variables: z.string().optional(),
-            },
+            }),
         },
         (params) => {
             return safeMcpResponse(query(config, schema, params.query, params.variables))

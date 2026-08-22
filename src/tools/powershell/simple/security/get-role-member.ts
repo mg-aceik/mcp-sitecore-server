@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -9,7 +9,7 @@ export function getRoleMemberPowerShellTool(server: McpServer, config: Config) {
         "security-get-role-member",
         {
             description: "Get members of a Sitecore role.",
-            inputSchema: {
+            inputSchema: z.object({
                 identity: z.string()
                     .describe("The identity of the role to get members from (e.g. 'sitecore\\Author')"),
                 recurse: z.boolean().optional()
@@ -18,7 +18,7 @@ export function getRoleMemberPowerShellTool(server: McpServer, config: Config) {
                     .describe("If set to true, only gets user members (excluding roles)"),
                 roleOnly: z.boolean().optional()
                     .describe("If set to true, only gets role members (excluding users)"),
-            },
+            }),
         },
         async (params) => {
             const command = `Get-RoleMember`;

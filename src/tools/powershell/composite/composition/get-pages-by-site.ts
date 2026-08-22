@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -76,11 +76,11 @@ export function getPagesBySitePowershellTool(server: McpServer, config: Config) 
         "get-pages-by-site",
         {
             description: `Lists the pages of a site. ${ROW_DESCRIPTION}`,
-            inputSchema: {
+            inputSchema: z.object({
                 ...siteSelectorInputSchema,
                 rootPath: z.string().optional().describe(ROOT_PATH_DESCRIPTION),
                 limit: z.number().optional().describe(LIMIT_DESCRIPTION),
-            },
+            }),
         },
         async (params) => {
             if (!params.siteName && !params.path) {
@@ -102,12 +102,12 @@ ${pageRowsScript(params)}`;
             description:
                 "Searches a site's pages by name or title, case-insensitively, on a substring "
                 + `match against Name, display name, Title and NavigationTitle. ${ROW_DESCRIPTION}`,
-            inputSchema: {
+            inputSchema: z.object({
                 ...siteSelectorInputSchema,
                 query: z.string().describe("The text to look for in the page's name, display name, Title or NavigationTitle."),
                 rootPath: z.string().optional().describe(ROOT_PATH_DESCRIPTION),
                 limit: z.number().optional().describe(LIMIT_DESCRIPTION),
-            },
+            }),
         },
         async (params) => {
             if (!params.siteName && !params.path) {

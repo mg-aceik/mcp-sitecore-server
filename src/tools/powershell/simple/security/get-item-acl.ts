@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -10,7 +10,7 @@ export function getItemAclPowerShellTool(server: McpServer, config: Config) {
         "security-get-item-acl",
         {
             description: "Gets the access control list (ACL) of a Sitecore item.",
-            inputSchema: {
+            inputSchema: z.object({
                 id: z.string().optional()
                     .describe("The ID of the item to get ACL for. Supply this or path."),
                 path: z.string().optional()
@@ -21,7 +21,7 @@ export function getItemAclPowerShellTool(server: McpServer, config: Config) {
                     .describe("If set to true, includes system ACL entries"),
                 database: z.string().optional()
                     .describe("The database containing the item (defaults to the context database)")
-            },
+            }),
         },
         async (params) => {
             const invalid = requireOneTarget(params, ["id", "path"]);

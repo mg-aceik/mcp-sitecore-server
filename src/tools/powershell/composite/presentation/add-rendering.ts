@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -12,7 +12,7 @@ export function addRenderingPowershellTool(server: McpServer, config: Config) {
         "presentation-add-rendering",
         {
             description: "Adds a rendering to presentation of an item. Writes whatever it is told: use get-allowed-components-by-placeholder first, or add-rendering-to-placeholder, if the layout has to stay valid.",
-            inputSchema: {
+            inputSchema: z.object({
                 id: z.string().optional()
                     .describe("The ID of the item to add the rendering to. Supply this or path."),
                 path: z.string().optional()
@@ -32,7 +32,7 @@ export function addRenderingPowershellTool(server: McpServer, config: Config) {
                     .optional(),
                 language: z.string().describe("The language version of the item to add the rendering to.").optional(),
                 index: z.number().describe("The index at which the Rendering should be inserted.").optional(),
-            },
+            }),
         },
         async (params) => {
             // Two independent targets here: the item that gets the rendering, and the

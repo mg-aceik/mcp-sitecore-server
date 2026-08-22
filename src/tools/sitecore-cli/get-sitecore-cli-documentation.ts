@@ -1,7 +1,6 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer, CallToolResult } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { safeMcpResponse } from "@/helper.js";
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";

@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -9,7 +9,7 @@ export function setUserPowerShellTool(server: McpServer, config: Config) {
         "security-set-user",
         {
             description: "Updates properties of a Sitecore user account.",
-            inputSchema: {
+            inputSchema: z.object({
                 identity: z.string()
                     .describe("The identity of the user to update (e.g. 'admin' or full path 'sitecore\\admin')"),
                 isAdministrator: z.boolean().optional()
@@ -32,7 +32,7 @@ export function setUserPowerShellTool(server: McpServer, config: Config) {
                     .describe("Client language for the user"),
                 enabled: z.boolean().optional()
                     .describe("Enable or disable the user"),
-            },
+            }),
         },
         async (params) => {
             const command = `Set-User`;

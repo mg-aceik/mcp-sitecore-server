@@ -1,4 +1,4 @@
-import { type CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import type { CallToolResult } from "@modelcontextprotocol/server";
 import { buildClientSchema, getIntrospectionQuery, printSchema } from "graphql";
 import { type IntrospectionQuery } from "graphql";
 import { type Config } from "@/config.js";

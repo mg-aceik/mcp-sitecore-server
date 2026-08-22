@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -10,10 +10,10 @@ export function getLayoutDevicePowershellTool(server: McpServer, config: Config)
         "presentation-get-layout-device",
         {
             description: "Gets the layout for the device specified.",
-            inputSchema: {
+            inputSchema: z.object({
                 ...itemProjectionInputSchema,
                 name: z.string().describe("Name of the device to return."),
-            },
+            }),
         },
         async (params) => {
             const command = `Get-LayoutDevice`;

@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -11,7 +11,7 @@ export function setLayoutPowershellTool(server: McpServer, config: Config) {
         "presentation-set-layout",
         {
             description: "Sets layout for an item.",
-            inputSchema: {
+            inputSchema: z.object({
                 id: z.string().optional()
                     .describe("The ID of the item to set the layout for. Supply this or path."),
                 path: z.string().optional()
@@ -28,7 +28,7 @@ export function setLayoutPowershellTool(server: McpServer, config: Config) {
                     .boolean()
                     .describe("Specifies layout to be updated. If 'true', the final layout is set, otherwise - shared layout.")
                     .optional(),
-            },
+            }),
         },
         async (params) => {
             // Two independent targets: the item whose layout is set, and the layout item.

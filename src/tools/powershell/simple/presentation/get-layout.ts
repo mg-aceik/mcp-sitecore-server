@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -12,7 +12,7 @@ export function getLayoutPowershellTool(server: McpServer, config: Config) {
         "presentation-get-layout",
         {
             description: "Gets the layout definition item assigned to an item -- the Sitecore layout item itself (e.g. 'Headless Layout'), not the renderings placed on the page. Use presentation-list-renderings to see a page's components.",
-            inputSchema: {
+            inputSchema: z.object({
                 ...itemProjectionInputSchema,
                 id: z.string().optional()
                     .describe("The ID of the item to retrieve layout for. Supply this or path."),
@@ -25,7 +25,7 @@ export function getLayoutPowershellTool(server: McpServer, config: Config) {
                 language: z.string()
                     .optional()
                     .describe("Specifies the item language to retrieve layout."),
-            },
+            }),
         },
         async (params) => {
             const invalid = requireOneTarget(params, ["id", "path"]);

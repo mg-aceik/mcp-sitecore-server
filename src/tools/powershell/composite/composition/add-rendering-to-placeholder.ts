@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -84,7 +84,7 @@ export function addRenderingToPlaceholderPowershellTool(server: McpServer, confi
         "add-rendering-to-placeholder",
         {
             description: DESCRIPTION,
-            inputSchema: {
+            inputSchema: z.object({
                 ...pageSelectorInputSchema,
                 ...renderingSelectorInputSchema,
                 placeholder: z.string().describe(
@@ -99,7 +99,7 @@ export function addRenderingToPlaceholderPowershellTool(server: McpServer, confi
                 finalLayout: z.boolean().optional().describe(FINAL_LAYOUT_DESCRIPTION),
                 force: z.boolean().optional().describe(FORCE_DESCRIPTION),
                 project: z.string().optional().describe(PROJECT_DESCRIPTION),
-            },
+            }),
         },
         async (params) => {
             const lookup = itemLookupExpression(params);

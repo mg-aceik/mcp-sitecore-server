@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -103,7 +103,7 @@ export function listRenderingsPowershellTool(server: McpServer, config: Config) 
                 "Lists the renderings placed on an item — the components that make up the page. "
                 + "This is the tool to use to see a page's composition; presentation-get-layout "
                 + `returns the assigned layout definition item instead. ${ROW_DESCRIPTION}`,
-            inputSchema: {
+            inputSchema: z.object({
                 id: z.string().optional()
                     .describe("The ID of the item whose renderings to list (e.g. {110D559F-DEA5-42EA-9C1C-8A5DF7E70EF9}). Supply this or path."),
                 path: z.string().optional()
@@ -114,7 +114,7 @@ export function listRenderingsPowershellTool(server: McpServer, config: Config) 
                 language: z.string().optional().describe("The item language. Defaults to the context language."),
                 finalLayout: z.boolean().optional().describe(FINAL_LAYOUT_DESCRIPTION),
                 includeParameters: z.boolean().optional().describe(INCLUDE_PARAMETERS_DESCRIPTION),
-            },
+            }),
         },
         async (params) => {
             const invalid = requireOneTarget(params, ["id", "path"]);

@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -10,7 +10,7 @@ export function mergeLayoutPowershellTool(server: McpServer, config: Config) {
         "presentation-merge-layout",
         {
             description: "Merges final and shared layouts of an item.",
-            inputSchema: {
+            inputSchema: z.object({
                 id: z.string().optional()
                     .describe("The ID of the item to merge layout for. Supply this or path."),
                 path: z.string().optional()
@@ -18,7 +18,7 @@ export function mergeLayoutPowershellTool(server: McpServer, config: Config) {
                 database: z.string().optional()
                     .describe("The database to merge layout for. Only sent when addressing by id -- a path carries its own database prefix (e.g. master:/sitecore/content/Home)."),
                 language: z.string().optional().describe("The item language to merge layout for."),
-            },
+            }),
         },
         async (params) => {
             const invalid = requireOneTarget(params, ["id", "path"]);

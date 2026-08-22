@@ -1,5 +1,5 @@
 import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { Client } from "@modelcontextprotocol/client";
 
 export async function getCurrentLayoutId(
     client: Client,

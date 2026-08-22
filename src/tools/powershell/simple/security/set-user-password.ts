@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -9,7 +9,7 @@ export function setUserPasswordPowerShellTool(server: McpServer, config: Config)
         "security-set-user-password",
         {
             description: "Sets a new password for a Sitecore user.",
-            inputSchema: {
+            inputSchema: z.object({
                 identity: z.string()
                     .describe("The identity of the user to update the password for (e.g. 'admin' or full path 'sitecore\\admin')"),
                 newPassword: z.string()
@@ -18,7 +18,7 @@ export function setUserPasswordPowerShellTool(server: McpServer, config: Config)
                     .describe("If true, the user will be required to change password on next login"),
                 oldPassword: z.string().optional()
                     .describe("The old password. If provided, it will be validated before setting the new password"),
-            },
+            }),
         },
         async (params) => {
             const command = `Set-UserPassword`;

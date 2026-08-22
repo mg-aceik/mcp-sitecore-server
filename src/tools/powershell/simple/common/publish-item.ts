@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -11,7 +11,7 @@ export function publishItemPowerShellTool(server: McpServer, config: Config) {
         "common-publish-item",
         {
             description: "Publishes a Sitecore item.",
-            inputSchema: {
+            inputSchema: z.object({
                 id: z.string().optional()
                     .describe("The ID of the item that should be published. Supply this or path."),
                 path: z.string().optional()
@@ -36,7 +36,7 @@ export function publishItemPowerShellTool(server: McpServer, config: Config) {
                     .describe("The language of the item that should be published. Supports globbing/wildcards."),
                 database: z.string().optional()
                     .describe("The database containing the item (defaults to the context database).")
-            },
+            }),
         },
         async (params) => {
             const invalid = requireOneTarget(params, ["id", "path"]);

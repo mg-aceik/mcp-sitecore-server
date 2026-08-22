@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -11,7 +11,7 @@ export function initializeSearchIndexingItemPowerShellTool(server: McpServer, co
         "indexing-initialize-search-index-item",
         {
             description: "Rebuilds the index for a given tree with the specified root item and index name. Supports wildcard filtering for the index name.",
-            inputSchema: {
+            inputSchema: z.object({
                 id: z.string().optional()
                     .describe("The ID of the item to rebuild the index for. Supply this or path."),
                 path: z.string().optional()
@@ -23,7 +23,7 @@ export function initializeSearchIndexingItemPowerShellTool(server: McpServer, co
                     .default("sitecore_*_index")
                     .optional()
                     .describe("The name of the index to rebuild"),
-            },
+            }),
         },
         async (params) => {
             const invalid = requireOneTarget(params, ["id", "path"]);

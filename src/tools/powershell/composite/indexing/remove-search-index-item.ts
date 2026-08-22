@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -11,7 +11,7 @@ export function removeSearchIndexItemPowerShellTool(server: McpServer, config: C
         "indexing-remove-search-index-item",
         {
             description: "Removes an item from the search index. Supports wildcard filtering for the index name.",
-            inputSchema: {
+            inputSchema: z.object({
                 id: z.string().optional()
                     .describe("The ID of the item to remove from the index. Supply this or path."),
                 path: z.string().optional()
@@ -23,7 +23,7 @@ export function removeSearchIndexItemPowerShellTool(server: McpServer, config: C
                     .default("sitecore_*_index")
                     .optional()
                     .describe("The name of the index to remove the item from"),
-            },
+            }),
         },
         async (params) => {
             const invalid = requireOneTarget(params, ["id", "path"]);

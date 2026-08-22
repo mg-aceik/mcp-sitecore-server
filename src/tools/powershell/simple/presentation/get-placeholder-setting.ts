@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -11,7 +11,7 @@ export function getPlaceholderSettingPowershellTool(server: McpServer, config: C
         "presentation-get-placeholder-setting",
         {
             description: "Gets placeholder setting assigned on an item.",
-            inputSchema: {
+            inputSchema: z.object({
                 id: z.string().optional()
                     .describe("The id of the item to get placeholder setting for. Supply this or path."),
                 path: z.string().optional()
@@ -26,7 +26,7 @@ export function getPlaceholderSettingPowershellTool(server: McpServer, config: C
                     .boolean()
                     .describe("Specifies layout holding the placeholder setting. If 'true', the final layout is used, otherwise - shared layout.")
                     .optional(),
-            },
+            }),
         },
         async (params) => {
             const invalid = requireOneTarget(params, ["id", "path"]);

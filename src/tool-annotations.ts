@@ -1,5 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
+import type { McpServer, ToolAnnotations } from "@modelcontextprotocol/server";
 
 // Tokens (matched against the hyphen-delimited segments of a tool name) that mark a
 // tool as performing a destructive change — deleting content, clearing state, or

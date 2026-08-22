@@ -1,4 +1,4 @@
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { Client } from "@modelcontextprotocol/client";
 import { createTransport } from "@modelcontextprotocol/inspector/cli/build/transport.js";
 
 export type TransportOptions = {

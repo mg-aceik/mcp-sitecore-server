@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { runStoredSearch } from "../../logic/simple/run-stored-search.js";
@@ -9,7 +9,7 @@ export function runStoredSearchTool(server: McpServer, config: Config) {
         'item-service-run-stored-search',
         {
             description: "Run a stored Sitecore search by its definition item ID.",
-            inputSchema: {
+            inputSchema: z.object({
                 id: z.string(),
                 term: z.string(),
                 options: z.object({
@@ -22,7 +22,7 @@ export function runStoredSearchTool(server: McpServer, config: Config) {
                     facet: z.string().optional(),
                     sorting: z.string().optional(),
                 }).optional(),
-            },
+            }),
         },
         async (params) => {
             return safeMcpResponse(runStoredSearch(config, params.id, params.term, params.options || {}));

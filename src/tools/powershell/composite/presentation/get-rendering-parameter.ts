@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -18,7 +18,7 @@ export function getRenderingParameterPowershellTool(server: McpServer, config: C
         "presentation-get-rendering-parameter",
         {
             description: "Gets rendering parameter for a rendering placed on an item.",
-            inputSchema: {
+            inputSchema: z.object({
                 ...renderingItemTargetInputSchema,
                 renderingUniqueId: z.string().describe("The unique ID of the rendering holding the rendering parameter."),
                 name: z.string().describe("The name of the rendering parameter to get.").optional(),
@@ -27,7 +27,7 @@ export function getRenderingParameterPowershellTool(server: McpServer, config: C
                     .describe("Specifies layout holding the rendering parameter. If 'true', the final layout is used, otherwise - shared layout.")
                     .optional(),
                 language: z.string().describe("The item language varsion.").optional(),
-            },
+            }),
         },
         async (params) => {
             const invalid = requireOneTarget(params, ["id", "path"]);

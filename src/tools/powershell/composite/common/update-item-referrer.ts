@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -11,7 +11,7 @@ export function updateItemReferrerPowerShellTool(server: McpServer, config: Conf
         "common-update-item-referrer",
         {
             description: "Updates all references to the specified item to point to a new provided in the -NewTarget or removes links to the item.",
-            inputSchema: {
+            inputSchema: z.object({
                 id: z.string().optional()
                     .describe("The ID of the item to be relinked. Supply this or path."),
                 path: z.string().optional()
@@ -24,7 +24,7 @@ export function updateItemReferrerPowerShellTool(server: McpServer, config: Conf
                     .describe("The database containing the item (defaults to the context database)"),
                 language: z.string().optional()
                     .describe("The language of the item."),
-            },
+            }),
         },
         async (params) => {
             const invalid = requireOneTarget(params, ["id", "path"]);

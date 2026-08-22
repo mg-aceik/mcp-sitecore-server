@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -24,7 +24,7 @@ export function switchRenderingPowershellTool(server: McpServer, config: Config)
         "presentation-switch-rendering",
         {
             description: "Switches an existing rendering on an item with an alternate one.",
-            inputSchema: {
+            inputSchema: z.object({
                 id: z.string().optional()
                     .describe("The ID of the item holding the renderings. Supply this or path."),
                 path: z.string().optional()
@@ -47,7 +47,7 @@ export function switchRenderingPowershellTool(server: McpServer, config: Config)
                     .describe("Specifies the layout to update the rendering. If 'true', the final layout is used, otherwise - shared layout.")
                     .optional(),
                 language: z.string().describe("The language version of the item holding the renderings.").optional(),
-            },
+            }),
         },
         async (params) => {
             const invalidItem = requireOneTarget(params, ["id", "path"]);
