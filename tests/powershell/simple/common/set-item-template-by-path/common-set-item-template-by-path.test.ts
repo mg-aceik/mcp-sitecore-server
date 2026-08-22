@@ -5,7 +5,7 @@ import { client, transport } from "../../../../client";
 await client.connect(transport);
 
 describe("powershell", () => {
-    it("common-set-item-template-by-path", async () => {
+    it("common-set-item-template", async () => {
         // Arrange
         const itemPath = "/sitecore/content/Home/Tests/Common/Set-Item-Template-By-Path";
         const oldTemplatePath = "/sitecore/templates/Sample/Sample Item";
@@ -17,14 +17,14 @@ describe("powershell", () => {
         };
 
         // Act
-        await callTool(client, "common-set-item-template-by-path", args);
+        await callTool(client, "common-set-item-template", args);
 
         // Assert
         const getTemplateArgs: Record<string, any> = {
             path: itemPath,
         };
 
-        const result = await callTool(client, "common-get-item-template-by-path", getTemplateArgs);
+        const result = await callTool(client, "common-get-item-template", getTemplateArgs);
         const json = JSON.parse(result.content[0].text);
         
         expect(json).toBeDefined();
@@ -36,6 +36,6 @@ describe("powershell", () => {
             template: oldTemplatePath,
         };
 
-        await callTool(client, "common-set-item-template-by-path", setTemplateArgs);
+        await callTool(client, "common-set-item-template", setTemplateArgs);
     });
 });

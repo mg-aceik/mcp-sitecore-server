@@ -5,7 +5,7 @@ import { client, transport } from "../../../../client";
 await client.connect(transport);
 
 describe("powershell", () => {
-    it("security-add-item-acl-by-id", async () => {
+    it("security-add-item-acl", async () => {
         const itemId = "{4E79D567-5396-4987-B350-57D1DCE6B1DA}";
 
         // Clean up 
@@ -13,7 +13,7 @@ describe("powershell", () => {
             id: itemId,
         };
 
-        await callTool(client, "security-clear-item-acl-by-id", clearupAclArgs);
+        await callTool(client, "security-clear-item-acl", clearupAclArgs);
 
         const getAclArgs: Record<string, any> = {
             id: itemId,
@@ -28,11 +28,11 @@ describe("powershell", () => {
             securityPermission: "DenyAccess"
         };
 
-        const addAclResult = await callTool(client, "security-add-item-acl-by-id", addAclArgs);
+        const addAclResult = await callTool(client, "security-add-item-acl", addAclArgs);
         const addAclJson = JSON.parse(addAclResult.content[0].text);
 
         // Verify the ACL was added by retrieving the item ACL again
-        const getUpdatedAclResult = await callTool(client, "security-get-item-acl-by-id", getAclArgs);
+        const getUpdatedAclResult = await callTool(client, "security-get-item-acl", getAclArgs);
         const updatedAclJson = JSON.parse(getUpdatedAclResult.content[0].text);
 
         // Find the ACL entry we just added
@@ -46,6 +46,6 @@ describe("powershell", () => {
         expect(hasAddedAcl).toBe(true);
 
         // Clean up 
-        await callTool(client, "security-clear-item-acl-by-id", clearupAclArgs);
+        await callTool(client, "security-clear-item-acl", clearupAclArgs);
     });
 });

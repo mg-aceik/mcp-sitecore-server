@@ -17,26 +17,26 @@ const finalLayout = "true";
 
 async function getItemPlaceholderSettings(): Promise<any> {
     const getPlaceholderSettingArgs: Record<string, any> = {
-        itemId,
+        id: itemId,
         database,
         language,
         finalLayout,
     };
 
-    const result = await callTool(client, "presentation-get-placeholder-setting-by-id", getPlaceholderSettingArgs);    
+    const result = await callTool(client, "presentation-get-placeholder-setting", getPlaceholderSettingArgs);    
     const json = JSON.parse(result.content[0].text);
 
     return json.Obj;
 }
 
 describe("powershell", () => {
-    it("presentation-remove-placeholder-setting-by-id-using-uniqueid", async () => {
+    it("presentation-remove-placeholder-setting-using-uniqueid", async () => {
         // Arrange
         // Initialize item initial state before test.        
         await resetLayoutById(client, itemId, database, language, finalLayout);
 
         const removePlaceholderSettingArgs: Record<string, any> = {
-            itemId,
+            id: itemId,
             database,
             uniqueId: placeholderSettingUniqueId,
             finalLayout,
@@ -44,7 +44,7 @@ describe("powershell", () => {
         };
 
         // Act
-        await callTool(client, "presentation-remove-placeholder-setting-by-id", removePlaceholderSettingArgs);
+        await callTool(client, "presentation-remove-placeholder-setting", removePlaceholderSettingArgs);
 
         // Assert
         const placeholderSettings = await getItemPlaceholderSettings();
@@ -52,13 +52,13 @@ describe("powershell", () => {
         expect(placeholderSettings).toBeUndefined();
     });
 
-    it("presentation-remove-placeholder-setting-by-id-using-key", async () => {
+    it("presentation-remove-placeholder-setting-using-key", async () => {
         // Arrange
         // Initialize item initial state before test.        
         await resetLayoutById(client, itemId, database, language, finalLayout);
 
         const removePlaceholderSettingArgs: Record<string, any> = {
-            itemId,
+            id: itemId,
             database,
             key: placeholderSettingKey,
             finalLayout,
@@ -66,7 +66,7 @@ describe("powershell", () => {
         };
 
         // Act
-        await callTool(client, "presentation-remove-placeholder-setting-by-id", removePlaceholderSettingArgs);
+        await callTool(client, "presentation-remove-placeholder-setting", removePlaceholderSettingArgs);
 
         // Assert
         const placeholderSettings = await getItemPlaceholderSettings();

@@ -20,13 +20,13 @@ const language = "ja-jp";
 const finalLayout = "true";
 
 describe("powershell", () => {
-    it("presentation-switch-rendering-by-id", async () => {
+    it("presentation-switch-rendering", async () => {
         // Arrange
         // Initialize item initial state before test.
         await resetLayoutById(client, itemId, database, language, finalLayout);
 
         const switchRenderingArgs: Record<string, any> = {
-            itemId,
+            id: itemId,
             oldRenderingId,
             newRenderingId,            
             database,
@@ -35,7 +35,7 @@ describe("powershell", () => {
         };
         
         // Act
-        await callTool(client, "presentation-switch-rendering-by-id", switchRenderingArgs);
+        await callTool(client, "presentation-switch-rendering", switchRenderingArgs);
 
         // Assert
         const renderings = await getRenderingById(client, itemId, database, undefined, language, finalLayout);

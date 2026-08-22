@@ -17,13 +17,13 @@ const database = "master";
 const finalLayout = "true";
 
 describe("powershell", () => {
-    it("presentation-add-rendering-by-id", async () => {
+    it("presentation-add-rendering", async () => {
         // Arrange
         // Initialize item initial state before test.
         await resetLayoutById(client, itemId, database, language, finalLayout);
 
         const addRenderingArgs: Record<string, any> = {
-            itemId,
+            id: itemId,
             database,
             renderingId,
             placeHolder,
@@ -34,7 +34,7 @@ describe("powershell", () => {
         };
 
         // Act
-        await callTool(client, "presentation-add-rendering-by-id", addRenderingArgs);
+        await callTool(client, "presentation-add-rendering", addRenderingArgs);
 
         // Assert
         const renderings = await getRenderingById(client, itemId, database, undefined, language, finalLayout);

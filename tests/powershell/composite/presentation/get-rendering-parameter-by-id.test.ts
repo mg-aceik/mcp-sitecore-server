@@ -14,11 +14,11 @@ const language = "ja-jp";
 const name = "sample";
 
 describe("powershell", () => {
-    it("presentation-get-rendering-parameter-by-id", async () => {
+    it("presentation-get-rendering-parameter", async () => {
         // Arrange
         const getRenderingParameterArgs: Record<string, any> =
         {
-            itemId,
+            id: itemId,
             renderingUniqueId: uniqueId,
             name,
             database,
@@ -27,7 +27,7 @@ describe("powershell", () => {
         };
 
         // Act
-        const result = await callTool(client, "presentation-get-rendering-parameter-by-id", getRenderingParameterArgs);
+        const result = await callTool(client, "presentation-get-rendering-parameter", getRenderingParameterArgs);
 
         // Assert
         const json = JSON.parse(result.content[0].text);

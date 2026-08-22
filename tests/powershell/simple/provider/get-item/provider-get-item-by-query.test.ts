@@ -5,7 +5,7 @@ import { client, transport } from "../../../../client";
 await client.connect(transport);
 
 describe("powershell", () => {
-    it("provider-get-item-by-query", async () => {
+    it("provider-get-item", async () => {
         // Use a query that should return results in any Sitecore instance
         const query = "/sitecore/content/Home/Tests/Provider//*[@@name='Get-Item-By-Query']";
 
@@ -13,7 +13,7 @@ describe("powershell", () => {
             query: query
         };
 
-        const result = await callTool(client, "provider-get-item-by-query", args);
+        const result = await callTool(client, "provider-get-item", args);
         const json = JSON.parse(result.content[0].text);
 
         // Verify the response has items array

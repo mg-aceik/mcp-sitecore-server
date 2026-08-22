@@ -5,7 +5,7 @@ import { client, transport } from "../../../../client";
 await client.connect(transport);
 
 describe("powershell", () => {
-    it("common-get-item-field-by-path", async () => {
+    it("common-get-item-field", async () => {
         // Arrange
         const itemPath = "/sitecore/content/Home/Tests/Common/Get-Item-Field";
 
@@ -14,7 +14,7 @@ describe("powershell", () => {
         };
 
         // Act
-        const result = await callTool(client, "common-get-item-field-by-path", args);
+        const result = await callTool(client, "common-get-item-field", args);
         
         // Assert
         const json = JSON.parse(result.content[0].text);

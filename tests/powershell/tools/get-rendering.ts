@@ -11,14 +11,14 @@ export async function getRenderingById(
 ) : Promise<any>
 {
     const getRenderingsArgs: Record<string, any> = {
-        itemId,
+        id: itemId,
         uniqueId,
         database,
         language,
         finalLayout,
     };
 
-    const result = await callTool(client, "presentation-get-rendering-by-id", getRenderingsArgs);
+    const result = await callTool(client, "presentation-get-rendering", getRenderingsArgs);
     
     return getRenderingObject(result.content[0].text);
 }
@@ -38,7 +38,7 @@ export async function getRenderingByPath(
         finalLayout,
     };
 
-    const result = await callTool(client, "presentation-get-rendering-by-path", getRenderingsArgs);
+    const result = await callTool(client, "presentation-get-rendering", getRenderingsArgs);
 
     return getRenderingObject(result.content[0].text);
 }

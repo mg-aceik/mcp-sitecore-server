@@ -17,13 +17,13 @@ const language = "ja-jp";
 const finalLayout = "true";
 
 describe("powershell", () => {
-    it("presentation-add-placeholder-setting-by-id", async () => {
+    it("presentation-add-placeholder-setting", async () => {
         // Arrange
         // Initialize item initial state before test.
         await resetLayoutById(client, itemId, database, language, finalLayout);
 
         const addPlaceholderSettingArgs: Record<string, any> = {
-            itemId,
+            id: itemId,
             placeholderSettingId,
             key: placeholderSettingKey,
             database,
@@ -32,17 +32,17 @@ describe("powershell", () => {
         };
 
         // Act
-        await callTool(client, "presentation-add-placeholder-setting-by-id", addPlaceholderSettingArgs);
+        await callTool(client, "presentation-add-placeholder-setting", addPlaceholderSettingArgs);
 
         // Assert
         const getPlaceholderSettingArgs: Record<string, any> = {
-            itemId,
+            id: itemId,
             database,
             language,
             finalLayout,
         };
 
-        const result = await callTool(client, "presentation-get-placeholder-setting-by-id", getPlaceholderSettingArgs);
+        const result = await callTool(client, "presentation-get-placeholder-setting", getPlaceholderSettingArgs);
         
         const json = JSON.parse(result.content[0].text);
         const objectToAssert = json.Obj[0];

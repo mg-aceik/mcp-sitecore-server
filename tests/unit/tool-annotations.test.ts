@@ -3,7 +3,7 @@ import { inferToolAnnotations } from "../../src/tool-annotations";
 
 describe("inferToolAnnotations", () => {
     it("marks get-* tools as read-only", () => {
-        const a = inferToolAnnotations("common-get-item-field-by-id");
+        const a = inferToolAnnotations("common-get-item-field");
         expect(a.readOnlyHint).toBe(true);
         expect(a.destructiveHint).toBeUndefined();
     });
@@ -18,19 +18,19 @@ describe("inferToolAnnotations", () => {
         expect(del.readOnlyHint).toBe(false);
         expect(del.destructiveHint).toBe(true);
 
-        const rem = inferToolAnnotations("common-remove-item-version-by-id");
+        const rem = inferToolAnnotations("common-remove-item-version");
         expect(rem.destructiveHint).toBe(true);
     });
 
     it("marks set/add/new tools as non-destructive writes", () => {
-        const set = inferToolAnnotations("presentation-set-layout-by-id");
+        const set = inferToolAnnotations("presentation-set-layout");
         expect(set.readOnlyHint).toBe(false);
         expect(set.destructiveHint).toBe(false);
     });
 
     it("does not treat unlock/unprotect as destructive (token, not substring, match)", () => {
-        expect(inferToolAnnotations("security-unlock-item-by-id").destructiveHint).toBe(false);
-        expect(inferToolAnnotations("security-unprotect-item-by-id").destructiveHint).toBe(false);
+        expect(inferToolAnnotations("security-unlock-item").destructiveHint).toBe(false);
+        expect(inferToolAnnotations("security-unprotect-item").destructiveHint).toBe(false);
     });
 
     it("marks run-powershell-script as destructive and open-world", () => {

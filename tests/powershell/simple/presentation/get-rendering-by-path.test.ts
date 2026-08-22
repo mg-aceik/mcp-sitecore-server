@@ -13,14 +13,14 @@ const sampleRenderingUniqueId = "{B343725A-3A93-446E-A9C8-3A2CBD3DB489}";
 const sampleRenderingPlaceholder = "/main/centercolumn/content";
 
 describe("powershell", () => {
-    it("presentation-get-rendering-by-path-with-uniqueid", async () => {
+    it("presentation-get-rendering-with-uniqueid", async () => {
         const args: Record<string, any> = {
             path,
             uniqueId: sampleRenderingUniqueId,       
         };
 
         // Act
-        const result = await callTool(client, "presentation-get-rendering-by-path", args);
+        const result = await callTool(client, "presentation-get-rendering", args);
         const json = JSON.parse(result.content[0].text);
 
         // Assert
@@ -30,7 +30,7 @@ describe("powershell", () => {
         expect(testObject.Placeholder).toBe(sampleRenderingPlaceholder);
     });
 
-    it("presentation-get-rendering-by-path-with-filter-parameters", async () => {
+    it("presentation-get-rendering-with-filter-parameters", async () => {
         // Arrange
         const args: Record<string, any> = {
             path,
@@ -40,7 +40,7 @@ describe("powershell", () => {
         };
 
         // Act
-        const result = await callTool(client, "presentation-get-rendering-by-path", args);
+        const result = await callTool(client, "presentation-get-rendering", args);
         const json = JSON.parse(result.content[0].text);
 
         // Assert

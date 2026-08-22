@@ -15,32 +15,32 @@ const finalLayout = "true";
 
 async function getItemPlaceholderSettings(): Promise<any> {
     const getPlaceholderSettingArgs: Record<string, any> = {
-        itemPath,
+        path: itemPath,
         language,
         finalLayout,
     };
 
-    const result = await callTool(client, "presentation-get-placeholder-setting-by-path", getPlaceholderSettingArgs);    
+    const result = await callTool(client, "presentation-get-placeholder-setting", getPlaceholderSettingArgs);    
     const json = JSON.parse(result.content[0].text);
 
     return json.Obj;
 }
 
 describe("powershell", () => {
-    it("presentation-remove-placeholder-setting-by-path-using-uniqueid", async () => {
+    it("presentation-remove-placeholder-setting-using-uniqueid", async () => {
         // Arrange
         // Initialize item initial state before test.        
         await resetLayoutByPath(client, itemPath, language, finalLayout);
 
         const removePlaceholderSettingArgs: Record<string, any> = {
-            itemPath,
+            path: itemPath,
             uniqueId: placeholderSettingUniqueId,
             finalLayout,
             language,
         };
 
         // Act
-        await callTool(client, "presentation-remove-placeholder-setting-by-path", removePlaceholderSettingArgs);
+        await callTool(client, "presentation-remove-placeholder-setting", removePlaceholderSettingArgs);
 
         // Assert
         const placeholderSettings = await getItemPlaceholderSettings();
@@ -48,20 +48,20 @@ describe("powershell", () => {
         expect(placeholderSettings).toBeUndefined();
     });
 
-    it("presentation-remove-placeholder-setting-by-path-using-key", async () => {
+    it("presentation-remove-placeholder-setting-using-key", async () => {
         // Arrange
         // Initialize item initial state before test.        
         await resetLayoutByPath(client, itemPath, language, finalLayout);
 
         const removePlaceholderSettingArgs: Record<string, any> = {
-            itemPath,
+            path: itemPath,
             key: placeholderSettingKey,
             finalLayout,
             language,
         };
 
         // Act
-        await callTool(client, "presentation-remove-placeholder-setting-by-path", removePlaceholderSettingArgs);
+        await callTool(client, "presentation-remove-placeholder-setting", removePlaceholderSettingArgs);
 
         // Assert
         const placeholderSettings = await getItemPlaceholderSettings();

@@ -5,7 +5,7 @@ import { client, transport } from "../../../../client";
 await client.connect(transport);
 
 describe("powershell", () => {
-    it("indexing-initialize-search-index-item-by-path", async () => {
+    it("indexing-initialize-search-index-item", async () => {
         const testItemPath = "/sitecore/content/Home/Tests/Indexing/Initialize-SearchIndexItem-By-Path";
 
         const args: Record<string, any> = {
@@ -13,7 +13,7 @@ describe("powershell", () => {
             indexName: "sitecore_test_index"
         };
 
-        const result = await callTool(client, "indexing-initialize-search-index-item-by-path", args);
+        const result = await callTool(client, "indexing-initialize-search-index-item", args);
         const json = JSON.parse(result.content[0].text);
 
         // Verify that the command executed successfully

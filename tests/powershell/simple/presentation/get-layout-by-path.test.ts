@@ -14,14 +14,14 @@ const finalLayoutDisplayName = "Final";
 const anotherLanguageLayoutDisplayName = "Another Language";
 
 describe("powershell", () => {
-    it("presentation-get-layout-by-path", async () => {
+    it("presentation-get-layout", async () => {
         // Arrange
         const args: Record<string, any> = {
             path: path,        
         };
 
         // Act
-        const result = await callTool(client, "presentation-get-layout-by-path", args);
+        const result = await callTool(client, "presentation-get-layout", args);
         const json = JSON.parse(result.content[0].text);
 
         // Assert
@@ -30,7 +30,7 @@ describe("powershell", () => {
         expect(testObject.DisplayName).toBe(sharedLayoutDisplayName);
     });
 
-    it("presentation-get-layout-by-path-final-layout", async () => {
+    it("presentation-get-layout-final-layout", async () => {
         // Arrange
         const args: Record<string, any> = {
             path: path,
@@ -38,7 +38,7 @@ describe("powershell", () => {
         };
 
         // Act
-        const result = await callTool(client, "presentation-get-layout-by-path", args);
+        const result = await callTool(client, "presentation-get-layout", args);
         const json = JSON.parse(result.content[0].text);
 
         // Assert
@@ -47,7 +47,7 @@ describe("powershell", () => {
         expect(testObject.DisplayName).toBe(finalLayoutDisplayName);
     });
 
-    it("presentation-get-layout-by-path-language", async () => {
+    it("presentation-get-layout-language", async () => {
         // Arrange
         const args: Record<string, any> = {
             path: path,
@@ -56,7 +56,7 @@ describe("powershell", () => {
         };
 
         // Act
-        const result = await callTool(client, "presentation-get-layout-by-path", args);
+        const result = await callTool(client, "presentation-get-layout", args);
         const json = JSON.parse(result.content[0].text);
 
         // Assert

@@ -14,7 +14,7 @@ const language = "ja-jp";
 const finalLayout = "true";
 
 describe("powershell", () => {
-    it("presentation-remove-rendering-by-path", async () => {
+    it("presentation-remove-rendering", async () => {
         // Arrange
         // Initialize item initial state before test.        
         await resetLayoutByPath(client, path, language, finalLayout);
@@ -27,7 +27,7 @@ describe("powershell", () => {
         };
 
         // Act
-        await callTool(client, "presentation-remove-rendering-by-path", removeRenderingArgs);
+        await callTool(client, "presentation-remove-rendering", removeRenderingArgs);
 
         // Assert
         const renderings = await getRenderingByPath(client, path, undefined, language, finalLayout);

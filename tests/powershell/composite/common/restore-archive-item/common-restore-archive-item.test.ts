@@ -33,7 +33,7 @@ describe("powershell", () => {
             id: itemId,
         };
 
-        const getItemResult = await callTool(client, "provider-get-item-by-id", getItemArgs);
+        const getItemResult = await callTool(client, "provider-get-item", getItemArgs);
         const item = JSON.parse(getItemResult.content[0].text).Obj[0];
 
         expect(item).toBeDefined();

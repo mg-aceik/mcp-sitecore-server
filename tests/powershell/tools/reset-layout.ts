@@ -14,7 +14,7 @@ export async function resetLayoutById(
         finalLayout,            
     };
 
-    await callTool(client, "presentation-reset-layout-by-id", resetLayoutArgs);
+    await callTool(client, "presentation-reset-layout", resetLayoutArgs);
 };
 
 export async function resetLayoutByPath(
@@ -28,5 +28,5 @@ export async function resetLayoutByPath(
         finalLayout,            
     };
 
-    await callTool(client, "presentation-reset-layout-by-path", resetLayoutArgs);
+    await callTool(client, "presentation-reset-layout", resetLayoutArgs);
 };

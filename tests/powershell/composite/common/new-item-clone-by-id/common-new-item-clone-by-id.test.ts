@@ -5,7 +5,7 @@ import { client, transport } from "../../../../client";
 await client.connect(transport);
 
 describe("powershell", () => {
-    it("common-new-item-clone-by-id", async () => {
+    it("common-new-item-clone", async () => {
         // Arrange
         // /sitecore/content/Home/Tests/Common/Get-Item-Clone-By-Id
         const itemId = "{B1D6EFC6-8C72-4BA3-A00C-FFDF0F94AFE6}";
@@ -19,7 +19,7 @@ describe("powershell", () => {
         };
 
         // Act
-        const result = await callTool(client, "common-new-item-clone-by-id", args);
+        const result = await callTool(client, "common-new-item-clone", args);
 
         // Assert
         const json = JSON.parse(result.content[0].text);

@@ -5,7 +5,7 @@ import { client, transport } from "../../../../client";
 await client.connect(transport);
 
 describe("powershell", () => {
-    it("security-get-item-acl-by-id", async () => {
+    it("security-get-item-acl", async () => {
         // Use the specific ID mentioned in the task requirements
         const itemId = "{E1CE1D05-0011-405F-9958-82D0C69D6FD3}";
 
@@ -13,7 +13,7 @@ describe("powershell", () => {
             id: itemId
         };
 
-        const result = await callTool(client, "security-get-item-acl-by-id", args);
+        const result = await callTool(client, "security-get-item-acl", args);
         const json = JSON.parse(result.content[0].text);
 
         // Verify the response has access rules

@@ -5,7 +5,7 @@ import { client, transport } from "../../../../client";
 await client.connect(transport);
 
 describe("powershell", () => {
-    it("common-get-item-workflow-event-by-path", async () => {
+    it("common-get-item-workflow-event", async () => {
         // Arrange
         const itemPath = "/sitecore/content/Home/Tests/Common/Get-Item-Workflow-Event";
 
@@ -14,7 +14,7 @@ describe("powershell", () => {
         };
 
         // Act
-        const result = await callTool(client, "common-get-item-workflow-event-by-path", args);
+        const result = await callTool(client, "common-get-item-workflow-event", args);
         
         // Assert
         const json = JSON.parse(result.content[0].text);

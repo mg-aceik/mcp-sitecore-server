@@ -5,7 +5,7 @@ import { client, transport } from "../../../../client";
 await client.connect(transport);
 
 describe("powershell", () => {
-    it("common-get-item-reference-by-path", async () => {
+    it("common-get-item-reference", async () => {
         // Using a known item path for testing
         const itemPath = "/sitecore/content/Home/Tests/Common/Get-Item-Reference-By-Path";
         
@@ -13,7 +13,7 @@ describe("powershell", () => {
             path: itemPath
         };
 
-        const result = await callTool(client, "common-get-item-reference-by-path", args);
+        const result = await callTool(client, "common-get-item-reference", args);
         const json = JSON.parse(result.content[0].text);
         
         // Verify that the command executed successfully and returned reference information

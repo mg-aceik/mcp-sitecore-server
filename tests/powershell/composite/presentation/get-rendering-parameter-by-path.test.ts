@@ -12,11 +12,11 @@ const language = "ja-jp";
 const name = "sample";
 
 describe("powershell", () => {
-    it("presentation-get-rendering-parameter-by-path", async () => {
+    it("presentation-get-rendering-parameter", async () => {
         // Arrange
         const getRenderingParameterArgs: Record<string, any> =
         {
-            itemPath,
+            path: itemPath,
             renderingUniqueId: uniqueId,
             name,
             finalLayout,
@@ -24,12 +24,12 @@ describe("powershell", () => {
         };
 
         // Act
-        const result = await callTool(client, "presentation-get-rendering-parameter-by-path", getRenderingParameterArgs);
+        const result = await callTool(client, "presentation-get-rendering-parameter", getRenderingParameterArgs);
 
         // Assert
         const json = JSON.parse(result.content[0].text);
         const testObject = json.Obj[0];
         expect(testObject.En.Key).toBe(name);
-        expect(testObject.En.Value).toBe("get-rendering-parameter-by-path");
+        expect(testObject.En.Value).toBe("get-rendering-parameter");
     });
 });

@@ -5,7 +5,7 @@ import { client, transport } from "../../../../client";
 await client.connect(transport);
 
 describe("powershell", () => {
-    it("security-unlock-item-by-id", async () => {
+    it("security-unlock-item", async () => {
         const itemId = "{0F4E79E6-1AE6-4C48-8C14-4E8275083EBB}"; 
         
         // First lock the item so we have something to unlock
@@ -15,7 +15,7 @@ describe("powershell", () => {
         };
         
         // Lock the item
-        await callTool(client, "security-lock-item-by-id", lockArgs);
+        await callTool(client, "security-lock-item", lockArgs);
         
         // Now unlock the item
         const unlockArgs: Record<string, any> = {
@@ -23,7 +23,7 @@ describe("powershell", () => {
             passThru: "true"
         };
         
-        const result = await callTool(client, "security-unlock-item-by-id", unlockArgs);
+        const result = await callTool(client, "security-unlock-item", unlockArgs);
         const json = JSON.parse(result.content[0].text);
         
         // Verify the item is unlocked

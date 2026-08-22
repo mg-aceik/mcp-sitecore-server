@@ -16,7 +16,7 @@ describe("powershell", () => {
             path: itemPath,
         };
 
-        const getItemResult = await callTool(client, "provider-get-item-by-path", getItemArgs);
+        const getItemResult = await callTool(client, "provider-get-item", getItemArgs);
         const itemToRemove = JSON.parse(getItemResult.content[0].text).Obj[0];
 
         const itemId = itemToRemove.Obj.ID.ToString;

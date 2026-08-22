@@ -15,13 +15,13 @@ const dataSource = "test_datasource";
 const finalLayout = "true";
 
 describe("powershell", () => {
-    it("presentation-set-rendering-by-path", async () => {
+    it("presentation-set-rendering", async () => {
         // Arrange
         // Initialize item initial state before test.
         await resetLayoutByPath(client, itemPath, language, finalLayout);
 
         const setRenderingArgs: Record<string, any> = {
-            itemPath,
+            path: itemPath,
             uniqueId,
             placeholder,
             dataSource,
@@ -34,7 +34,7 @@ describe("powershell", () => {
         };
 
         // Act
-        await callTool(client, "presentation-set-rendering-by-path", setRenderingArgs);
+        await callTool(client, "presentation-set-rendering", setRenderingArgs);
 
         // Assert
         const renderings = await getRenderingByPath(client, itemPath, undefined, language, finalLayout);

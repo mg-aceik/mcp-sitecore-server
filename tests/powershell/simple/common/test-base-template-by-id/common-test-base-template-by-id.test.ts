@@ -5,7 +5,7 @@ import { client, transport } from "../../../../client";
 await client.connect(transport);
 
 describe("powershell", () => {
-    it("common-test-base-template-by-id", async () => {
+    it("common-test-base-template", async () => {
         // Arrange
         // /sitecore/content/Home/Tests/Common/Test-Base-Template
         const itemId = "{C9E88066-3A0D-4C87-BA12-2B9C8BBCB791}";
@@ -17,7 +17,7 @@ describe("powershell", () => {
         };
 
         // Act
-        const result = await callTool(client, "common-test-base-template-by-id", args);
+        const result = await callTool(client, "common-test-base-template", args);
         
         // Assert
         const json = JSON.parse(result.content[0].text);

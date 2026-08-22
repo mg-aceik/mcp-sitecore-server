@@ -17,17 +17,17 @@ const uniqueId = "{E59BAEAE-9F59-44CB-BD23-61F5C8278BE1}";
 const overridenPlaceholderSettingKey = "test_placeholder_override_key";
 
 describe("powershell", () => {
-    it("presentation-get-placeholder-setting-by-path-using-uniqueid", async () => {
+    it("presentation-get-placeholder-setting-using-uniqueid", async () => {
         // Arrange
         const getPlaceholderSettingArgs: Record<string, any> = {
-            itemPath,
+            path: itemPath,
             uniqueId,
             language,
             finalLayout,
         };
 
         // Act
-        const result = await callTool(client, "presentation-get-placeholder-setting-by-path", getPlaceholderSettingArgs);
+        const result = await callTool(client, "presentation-get-placeholder-setting", getPlaceholderSettingArgs);
         
         // Assert
         const json = JSON.parse(result.content[0].text);
@@ -37,17 +37,17 @@ describe("powershell", () => {
         expect(objectToAssert.MetaDataItemId.toLowerCase()).toBe(placeholderSettingId.toLowerCase());
     });
 
-    it("presentation-get-placeholder-setting-by-path-using-key", async () => {
+    it("presentation-get-placeholder-setting-using-key", async () => {
         // Arrange
         const args: Record<string, any> = {
-            itemPath,
+            path: itemPath,
             key: overridenPlaceholderSettingKey,
             language,
             finalLayout,
         };
 
         // Act
-        const result = await callTool(client, "presentation-get-placeholder-setting-by-path", args);
+        const result = await callTool(client, "presentation-get-placeholder-setting", args);
         
         // Assert
         const json = JSON.parse(result.content[0].text);

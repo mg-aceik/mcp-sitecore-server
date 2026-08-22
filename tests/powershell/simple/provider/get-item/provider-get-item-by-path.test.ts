@@ -5,7 +5,7 @@ import { client, transport } from "../../../../client";
 await client.connect(transport);
 
 describe("powershell", () => {
-    it("provider-get-item-by-path", async () => {
+    it("provider-get-item", async () => {
         // Use a path that should exist in any Sitecore instance
         const itemPath = "/sitecore/content/Home/Tests/Provider/Get-Item/Get-Item-By-Path";
 
@@ -13,7 +13,7 @@ describe("powershell", () => {
             path: itemPath
         };
 
-        const result = await callTool(client, "provider-get-item-by-path", args);
+        const result = await callTool(client, "provider-get-item", args);
         const json = JSON.parse(result.content[0].text);
 
         // Verify the response has the basic item properties

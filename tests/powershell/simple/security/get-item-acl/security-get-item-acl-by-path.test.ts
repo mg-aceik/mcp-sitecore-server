@@ -6,7 +6,7 @@ import e from "express";
 await client.connect(transport);
 
 describe("powershell", () => {
-    it("security-get-item-acl-by-path", async () => {
+    it("security-get-item-acl", async () => {
         // Use the specific path mentioned in the task requirements
         const itemPath = "/sitecore/content/Home/Tests/Security/Get-Item-ACL/Get-Item-ACL-By-Path";
 
@@ -14,7 +14,7 @@ describe("powershell", () => {
             path: itemPath
         };
 
-        const result = await callTool(client, "security-get-item-acl-by-path", args);
+        const result = await callTool(client, "security-get-item-acl", args);
         const json = JSON.parse(result.content[0].text);
 
         // Verify the response has access rules

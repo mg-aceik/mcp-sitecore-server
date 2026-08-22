@@ -35,10 +35,10 @@ describe("renderingNotFoundMessage", () => {
     it("includes the lookup description and points at the listing tool", () => {
         const msg = renderingNotFoundMessage(
             "a rendering with unique ID '{ABC}' on the item with ID '{DEF}' in database 'master'",
-            "presentation-get-rendering-by-id"
+            "presentation-get-rendering"
         );
         expect(msg).toContain("Get-Rendering returned nothing for a rendering with unique ID '{ABC}'");
-        expect(msg).toContain("use presentation-get-rendering-by-id to list");
+        expect(msg).toContain("use presentation-get-rendering to list");
         expect(msg).toContain("shared vs final");
     });
 });

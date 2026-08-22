@@ -5,7 +5,7 @@ import { client, transport } from "../../../../client";
 await client.connect(transport);
 
 describe("powershell", () => {
-    it("security-lock-item-by-id", async () => {
+    it("security-lock-item", async () => {
        const itemId = "{1ADB079D-DD98-487A-BC2E-31E2D9880DBF}"; 
         // Test locking by ID
         const args: Record<string, any> = {
@@ -13,7 +13,7 @@ describe("powershell", () => {
             passThru: "true"
         };
         
-        const result = await callTool(client, "security-lock-item-by-id", args);
+        const result = await callTool(client, "security-lock-item", args);
         const json = JSON.parse(result.content[0].text);
         
         expect(json.Obj[0].__Lock).contains(
@@ -25,6 +25,6 @@ describe("powershell", () => {
             id: itemId,
         };
         
-        await callTool(client, "security-unlock-item-by-id", forceArgs);
+        await callTool(client, "security-unlock-item", forceArgs);
     });
 });

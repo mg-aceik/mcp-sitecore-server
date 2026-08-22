@@ -14,13 +14,13 @@ const finalLayout = "true";
 const language = "ja-jp";
 
 describe("powershell", () => {
-    it("presentation-remove-rendering-parameter-by-path", async () => {
+    it("presentation-remove-rendering-parameter", async () => {
         // Arrange
         // Initialize item initial state before test.
         await resetLayoutByPath(client, itemPath, language, finalLayout);
 
         const removeRenderingParameterArgs: Record<string, any> = {
-            itemPath,
+            path: itemPath,
             renderingUniqueId,
             name,
             language,
@@ -28,7 +28,7 @@ describe("powershell", () => {
         };
 
         // Act
-        await callTool(client, "presentation-remove-rendering-parameter-by-path", removeRenderingParameterArgs);
+        await callTool(client, "presentation-remove-rendering-parameter", removeRenderingParameterArgs);
 
         // Assert
         const renderings = await getRenderingByPath(client, itemPath, renderingUniqueId, language, finalLayout);

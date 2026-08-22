@@ -18,10 +18,10 @@ const finalLayout = "true";
 const language = "ja-jp";
 
 describe("powershell", () => {
-    it("presentation-reset-layout-by-id", async () => {
+    it("presentation-reset-layout", async () => {
         // Arrange
         const initialSetUpArgs: Record<string, any> = {
-            itemId,
+            id: itemId,
             layoutId: initialLayoutId,
             layoutPath: "master:",
             language,
@@ -29,7 +29,7 @@ describe("powershell", () => {
         };
 
         // Initialize item initial state before test.
-        await callTool(client, "presentation-set-layout-by-id", initialSetUpArgs);
+        await callTool(client, "presentation-set-layout", initialSetUpArgs);
 
         // Assert the test item has been initialized correctly before test.
         const currentLayoutId = await getCurrentLayoutId(client, itemId);
@@ -42,7 +42,7 @@ describe("powershell", () => {
         };
     
         // Act
-        await callTool(client, "presentation-reset-layout-by-id", resetLayoutArgs);
+        await callTool(client, "presentation-reset-layout", resetLayoutArgs);
 
         // Assert
         const resultLayoutId = await getCurrentLayoutId(client, itemId);

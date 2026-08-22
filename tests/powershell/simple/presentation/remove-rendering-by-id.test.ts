@@ -16,13 +16,13 @@ const database = "master";
 const finalLayout = "true";
 
 describe("powershell", () => {
-    it("presentation-remove-rendering-by-id", async () => {
+    it("presentation-remove-rendering", async () => {
         // Arrange
         // Initialize item initial state before test.        
         await resetLayoutById(client, itemId, database, language, finalLayout);
 
         const removeRenderingArgs: Record<string, any> = {
-            itemId,
+            id: itemId,
             uniqueId: sampleRenderingUniqueId,
             database,
             language,
@@ -30,7 +30,7 @@ describe("powershell", () => {
         };
 
         // Act
-        await callTool(client, "presentation-remove-rendering-by-id", removeRenderingArgs);
+        await callTool(client, "presentation-remove-rendering", removeRenderingArgs);
 
         // Assert
         const renderings = await getRenderingById(client, itemId, database, undefined, language, finalLayout);

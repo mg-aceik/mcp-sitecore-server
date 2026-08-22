@@ -13,7 +13,7 @@ export async function getCurrentLayoutId(
         language,
     };
 
-    const result = await callTool(client, "presentation-get-layout-by-id", getLayoutArgs);
+    const result = await callTool(client, "presentation-get-layout", getLayoutArgs);
     const json = JSON.parse(result.content[0].text);
 
     return json.Obj[0].ID.ToString;

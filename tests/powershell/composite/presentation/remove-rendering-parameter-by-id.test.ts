@@ -16,13 +16,13 @@ const language = "ja-jp";
 const database = "master";
 
 describe("powershell", () => {
-    it("presentation-remove-rendering-parameter-by-id", async () => {
+    it("presentation-remove-rendering-parameter", async () => {
         // Arrange
         // Initialize item initial state before test.
         await resetLayoutById(client, itemId, database, language, finalLayout);
 
         const removeRenderingParameterArgs: Record<string, any> = {
-            itemId,
+            id: itemId,
             renderingUniqueId,
             name,
             database,
@@ -31,7 +31,7 @@ describe("powershell", () => {
         };
 
         // Act
-        await callTool(client, "presentation-remove-rendering-parameter-by-id", removeRenderingParameterArgs);
+        await callTool(client, "presentation-remove-rendering-parameter", removeRenderingParameterArgs);
 
         // Assert
         const renderings = await getRenderingById(client, itemId, database, renderingUniqueId, language, finalLayout);

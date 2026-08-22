@@ -5,7 +5,7 @@ import { client, transport } from "../../../../client";
 await client.connect(transport);
 
 describe("powershell", () => {
-    it("common-add-base-template-by-id", async () => {
+    it("common-add-base-template", async () => {
         // Arrange
         // /sitecore/templates/Sample/Sample Item
         const itemId = "{76036F5E-CBCE-46D1-AF0A-4143F9B557AA}";
@@ -17,14 +17,14 @@ describe("powershell", () => {
         };
 
         // Act
-        await callTool(client, "common-add-base-template-by-id", args);
+        await callTool(client, "common-add-base-template", args);
 
         // Assert
         const getTemplateArgs: Record<string, any> = {
             id: "{772CCBA4-9FF0-435B-87A2-1A3256023CE2}", // get an item based on the target template
         };
 
-        const result = await callTool(client, "common-get-item-template-by-id", getTemplateArgs);
+        const result = await callTool(client, "common-get-item-template", getTemplateArgs);
         const json = JSON.parse(result.content[0].text);
         const template = json.Obj[0];
 
@@ -37,6 +37,6 @@ describe("powershell", () => {
         };
 
         // Act
-        await callTool(client, "common-remove-base-template-by-id", removeBaseTemplateArgs);
+        await callTool(client, "common-remove-base-template", removeBaseTemplateArgs);
     });
 });

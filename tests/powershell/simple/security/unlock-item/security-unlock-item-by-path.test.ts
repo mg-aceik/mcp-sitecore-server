@@ -5,7 +5,7 @@ import { client, transport } from "../../../../client";
 await client.connect(transport);
 
 describe("powershell", () => {
-    it("security-unlock-item-by-path", async () => {
+    it("security-unlock-item", async () => {
         // Using a common content path that should exist in most Sitecore instances
         const path = "/sitecore/content/Home/Tests/Security/Unlock-Item/Unlock-Item-By-Path";
         
@@ -16,7 +16,7 @@ describe("powershell", () => {
         };
 
         // Lock the item
-        await callTool(client, "security-lock-item-by-path", lockArgs);
+        await callTool(client, "security-lock-item", lockArgs);
         
         // Now unlock the item
         const unlockArgs: Record<string, any> = {
@@ -24,7 +24,7 @@ describe("powershell", () => {
             passThru: "true"
         };
 
-        const result = await callTool(client, "security-unlock-item-by-path", unlockArgs);
+        const result = await callTool(client, "security-unlock-item", unlockArgs);
         const json = JSON.parse(result.content[0].text);
 
         // Verify the item is unlocked
