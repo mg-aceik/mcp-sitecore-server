@@ -1,5 +1,5 @@
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
 import { Client } from "@modelcontextprotocol/client";
+import { callTool } from "../../client";
 
 export async function getRenderingById(
     client: Client,

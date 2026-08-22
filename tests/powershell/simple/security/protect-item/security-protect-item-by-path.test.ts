@@ -1,7 +1,6 @@
 // filepath: c:\source\mcp-sitecore-server\tests\powershell\simple\security\protect-item\security-protect-item.test.ts
 import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { client, transport, callTool } from "../../../../client";
 
 await client.connect(transport);
 
