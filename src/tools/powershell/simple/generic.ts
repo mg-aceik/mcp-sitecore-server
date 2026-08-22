@@ -2,6 +2,12 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { Config } from "@/config.js";
 import { PowershellClient } from "../client.js";
 import { PowershellCommandBuilder } from "../command-builder.js";
+import {
+    findErrorRecord,
+    formatPowershellError,
+    wantsFullErrors,
+    xmlLooksLikeError,
+} from "../error-shaping.js";
 import { PowerShellOutputType } from "../output.js";
 
 /**
@@ -16,8 +22,9 @@ export type PowershellShaping = {
      */
     pipeline?: string;
     /**
-     * When true, return the raw serialized output unshaped. Callers pass the tool's own
-     * `full` parameter through so one flag governs both response and error shaping.
+     * When true, return the raw serialized output unshaped — the full object graph on
+     * success and the full .NET error record on failure. Callers pass the tool's own
+     * `full` parameter through so one flag governs both.
      */
     full?: boolean;
 };
@@ -47,33 +54,25 @@ export async function runGenericPowershellCommand(
         scriptOptions = {};
     }
 
-    let text = ""
-    let isError = false;
-    switch (outputFormat) {
-        case PowerShellOutputType.JSON:
-            text = await client.executeScriptJson(script, scriptOptions);
-            const json1 = JSON.parse(text);
-            isError = json1?.Obj?.[0]?.ErrorCategory_Message !== undefined;
-            break;
-        case PowerShellOutputType.XML:
-            text = await client.executeScript(script, scriptOptions);
-            isError = text.includes("Error");
-            break;
-        default:
-            text = await client.executeScriptJson(script, scriptOptions);
-            const json2 = JSON.parse(text);
-            isError = json2?.Obj?.[0]?.ErrorCategory_Message !== undefined;
-            break;
+    const fullErrors = wantsFullErrors(shaping?.full);
+
+    if (outputFormat === PowerShellOutputType.XML) {
+        // No caller uses raw XML today. There is no parsed object to shape, so the record
+        // is returned as-is; the detection is at least no longer "the text says Error".
+        const text = await client.executeScript(script, scriptOptions);
+        return { content: [{ type: "text", text }], isError: xmlLooksLikeError(text) };
     }
+
+    const text = await client.executeScriptJson(script, scriptOptions);
+    const errorRecord = findErrorRecord(JSON.parse(text));
 
     return {
         content: [
             {
                 type: "text",
-                text: text,
+                text: errorRecord && !fullErrors ? formatPowershellError(errorRecord) : text,
             },
         ],
-        isError: isError,
-    }
-
+        isError: errorRecord !== undefined,
+    };
 }
