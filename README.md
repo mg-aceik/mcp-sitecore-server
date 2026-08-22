@@ -133,6 +133,16 @@ An open-source Model Context Protocol server that gives AI agents (Claude, ChatG
     - [x] `indexing-remove-search-index-item-by-id`: removes the item with the specified ID from the search index
     - [x] `indexing-remove-search-index-item-by-path`: removes the item with the specified path from the search index
     - [ ] ~~`indexing-initialize-item`: initializes items with the PowerShell automatic properties for each field.~~ Skipped, no value for MCP server.
+  - [x] Site composition
+    - [x] `get-allowed-components-by-placeholder`: lists the renderings a placeholder allows on a page, from the site-level and global placeholder settings items
+    - [x] `create-component-datasource`: creates a component's datasource item from the Datasource Template and Datasource Location declared on the rendering, page-local or shared
+    - [x] `add-rendering-to-placeholder`: adds a rendering to a placeholder, refusing one the placeholder settings forbid, assigning a collision-free `DynamicPlaceholderId` and writing the full parameter set
+    - [x] `list-sites`: lists the content sites registered on the CM with their root and start paths
+    - [x] `get-site-information`: one site's definition plus the paths the composition tools need (home, placeholder settings, available renderings, shared data, site definition item)
+    - [x] `get-pages-by-site`: the pages of a site as `{ID, Path, Template, TemplateID}`
+    - [x] `search-site-pages`: the same set filtered by name or title
+    - [x] `list-site-components`: the site's Available Renderings groups -- the component inventory, *not* an allow-list
+    - [x] `list-insert-options`: the templates and branches that may be created under an item
   - [x] Common
     - [x] `common-add-base-template-by-id`: adds a base template to a template item by ID
     - [x] `common-add-base-template-by-path`: adds a base template to a template item by path
@@ -199,13 +209,21 @@ which registers everything, and the denylist always wins on conflict.
 Comma-separated allowlist of tool groups. The groups are the directory layout, not a new
 taxonomy:
 
-`graphql`, `item-service`, `powershell.core`, `powershell.security`, `powershell.common`,
-`powershell.presentation`, `powershell.logging`, `powershell.provider`,
-`powershell.indexing`, `sitecore-cli`
+`graphql`, `item-service`, `powershell.core`, `powershell.composition`,
+`powershell.security`, `powershell.common`, `powershell.presentation`,
+`powershell.logging`, `powershell.provider`, `powershell.indexing`, `sitecore-cli`
 
 `powershell.core` is `get-powershell-documentation` and `run-powershell-script`. Unset
 means every group. Skipping a group also skips its registrars' startup work, not just
 their schemas.
+
+`powershell.composition` is the site-aware composition set, kept separate from
+`powershell.presentation` because the two answer different questions.
+`powershell.presentation` is the thin SPE wrapper set: it writes the layout it is told to,
+including an invalid one. `powershell.composition` is the layer that reads placeholder
+settings, datasource locations and available renderings in order to *refuse* an invalid
+layout, and it is the one to reach for when authoring pages. A client that only inspects a
+page's structure wants the first.
 
 #### `DISABLED_TOOLS`
 
