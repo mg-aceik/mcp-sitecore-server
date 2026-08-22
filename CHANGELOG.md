@@ -5,6 +5,119 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-08-22
+
+### Changed
+
+- **BREAKING: the `-by-id` / `-by-path` tool families are merged into one tool per
+  operation.** 99 tools were variants of 48 operations, differing only in how the caller
+  named the item. Each merged tool now takes optional `id` and `path` and requires exactly
+  one; the variant names are gone and are **not** aliased, because keeping them would
+  double the surface again and defeat the point. The table below is the migration guide.
+
+  Supplying both, or neither, is an input error that names the valid inputs and is rejected
+  in TypeScript before any PowerShell runs. Two inputs used to be resolvable only by
+  Sitecore's own cmdlet precedence, which the caller cannot see — a call that names two
+  different items should not quietly act on one of them.
+
+  Three families take a wider union: `provider-get-item` accepts `id`, `path`, `query` or
+  `uri`; `presentation-switch-rendering` names the rendering to replace with
+  `oldRenderingId`, `oldRenderingPath` or `uniqueId`, keeping the `-UniqueId` route through
+  SPE (and issue #62's guard on the two branches that select with `Where-Object`); and the
+  tools that address two things at once — `presentation-add-rendering`,
+  `presentation-add-placeholder-setting`, `presentation-set-layout` — validate the item and
+  the rendering/setting/layout independently. That last change makes previously
+  unreachable combinations work, such as an item by path with a rendering by ID.
+
+  `tools/list` drops from **162 tools / 150,038 characters** to **111 tools / 106,822
+  characters** — 51 fewer tools and 29% less schema on every turn, measured against the
+  same XM Cloud CM before and after.
+
+  | Tool | Replaces |
+  | --- | --- |
+| `item-service-get-item` | `item-service-get-item-by-path` |
+| `provider-get-item` | `provider-get-item-by-path`, `provider-get-item-by-id`, `provider-get-item-by-query`, `provider-get-item-by-uri` |
+| `common-add-base-template` | `common-add-base-template-by-id`, `common-add-base-template-by-path` |
+| `common-add-item-version` | `common-add-item-version-by-id`, `common-add-item-version-by-path` |
+| `common-convert-from-item-clone` | `common-convert-from-item-clone-by-id`, `common-convert-from-item-clone-by-path` |
+| `common-get-item-clone` | `common-get-item-clone-by-id`, `common-get-item-clone-by-path` |
+| `common-get-item-field` | `common-get-item-field-by-id`, `common-get-item-field-by-path` |
+| `common-get-item-reference` | `common-get-item-reference-by-id`, `common-get-item-reference-by-path` |
+| `common-get-item-referrer` | `common-get-item-referrer-by-id`, `common-get-item-referrer-by-path` |
+| `common-get-item-template` | `common-get-item-template-by-id`, `common-get-item-template-by-path` |
+| `common-get-item-workflow-event` | `common-get-item-workflow-event-by-id`, `common-get-item-workflow-event-by-path` |
+| `common-invoke-workflow` | `common-invoke-workflow-by-id`, `common-invoke-workflow-by-path` |
+| `common-new-item-clone` | `common-new-item-clone-by-id`, `common-new-item-clone-by-path` |
+| `common-new-item-workflow-event` | `common-new-item-workflow-event-by-id`, `common-new-item-workflow-event-by-path` |
+| `common-publish-item` | `common-publish-item-by-id`, `common-publish-item-by-path` |
+| `common-remove-base-template` | `common-remove-base-template-by-id`, `common-remove-base-template-by-path` |
+| `common-remove-item-version` | `common-remove-item-version-by-id`, `common-remove-item-version-by-path` |
+| `common-reset-item-field` | `common-reset-item-field-by-id`, `common-reset-item-field-by-path` |
+| `common-set-item-template` | `common-set-item-template-by-id`, `common-set-item-template-by-path` |
+| `common-test-base-template` | `common-test-base-template-by-id`, `common-test-base-template-by-path` |
+| `common-update-item-referrer` | `common-update-item-referrer-by-id`, `common-update-item-referrer-by-path` |
+| `presentation-add-placeholder-setting` | `presentation-add-placeholder-setting-by-id`, `presentation-add-placeholder-setting-by-path` |
+| `presentation-add-rendering` | `presentation-add-rendering-by-path`, `presentation-add-rendering-by-id` |
+| `presentation-get-layout` | `presentation-get-layout-by-id`, `presentation-get-layout-by-path` |
+| `presentation-get-placeholder-setting` | `presentation-get-placeholder-setting-by-id`, `presentation-get-placeholder-setting-by-path` |
+| `presentation-get-rendering` | `presentation-get-rendering-by-id`, `presentation-get-rendering-by-path` |
+| `presentation-get-rendering-parameter` | `presentation-get-rendering-parameter-by-id`, `presentation-get-rendering-parameter-by-path` |
+| `presentation-list-renderings` | `presentation-list-renderings-by-path`, `presentation-list-renderings-by-id` |
+| `presentation-merge-layout` | `presentation-merge-layout-by-id`, `presentation-merge-layout-by-path` |
+| `presentation-remove-placeholder-setting` | `presentation-remove-placeholder-setting-by-id`, `presentation-remove-placeholder-setting-by-path` |
+| `presentation-remove-rendering` | `presentation-remove-rendering-by-path`, `presentation-remove-rendering-by-id` |
+| `presentation-remove-rendering-parameter` | `presentation-remove-rendering-parameter-by-id`, `presentation-remove-rendering-parameter-by-path` |
+| `presentation-reset-layout` | `presentation-reset-layout-by-id`, `presentation-reset-layout-by-path` |
+| `presentation-set-layout` | `presentation-set-layout-by-id`, `presentation-set-layout-by-path` |
+| `presentation-set-rendering` | `presentation-set-rendering-by-path`, `presentation-set-rendering-by-id` |
+| `presentation-set-rendering-parameter` | `presentation-set-rendering-parameter-by-id`, `presentation-set-rendering-parameter-by-path` |
+| `presentation-switch-rendering` | `presentation-switch-rendering-by-id`, `presentation-switch-rendering-by-path`, `presentation-switch-rendering-by-unique-id` |
+| `security-add-item-acl` | `security-add-item-acl-by-id`, `security-add-item-acl-by-path` |
+| `security-clear-item-acl` | `security-clear-item-acl-by-id`, `security-clear-item-acl-by-path` |
+| `security-get-item-acl` | `security-get-item-acl-by-id`, `security-get-item-acl-by-path` |
+| `security-lock-item` | `security-lock-item-by-id`, `security-lock-item-by-path` |
+| `security-protect-item` | `security-protect-item-by-path`, `security-protect-item-by-id` |
+| `security-set-item-acl` | `security-set-item-acl-by-id`, `security-set-item-acl-by-path` |
+| `security-test-item-acl` | `security-test-item-acl-by-id`, `security-test-item-acl-by-path` |
+| `security-unlock-item` | `security-unlock-item-by-id`, `security-unlock-item-by-path` |
+| `security-unprotect-item` | `security-unprotect-item-by-id`, `security-unprotect-item-by-path` |
+| `indexing-initialize-search-index-item` | `indexing-initialize-search-index-item-by-id`, `indexing-initialize-search-index-item-by-path` |
+| `indexing-remove-search-index-item` | `indexing-remove-search-index-item-by-id`, `indexing-remove-search-index-item-by-path` |
+
+- **Parameter changes that came with the merge.** The presentation tools that took
+  `itemId` or `itemPath` now take `id` or `path`, like everything else. `database` is sent
+  only when addressing by `id` — a path carries its own prefix, as in
+  `master:/sitecore/content/Home` — and where a variant tool used a `path` defaulting to
+  `master:` purely as the drive for `-Id` (`provider-get-item`, `security-set-item-acl`,
+  the two `indexing-*-search-index-item` tools, `presentation-set-layout`), that role moved
+  to `database`, same default. The `.default("master:")` on the `path` input of
+  `presentation-get-layout`, `presentation-reset-layout` and `presentation-set-layout` is
+  gone: a defaulted path is indistinguishable from a supplied one, so it would have made
+  every id-addressed call look like it named two targets. `security-test-item-acl` keeps
+  the `accessRight` enum from its ID variant rather than the path variant's loose string,
+  and `security-add-item-acl` keeps the `passThrough` switch that only its path variant
+  exposed.
+
+### Added
+
+- **`common-get-archive-item` pages, and reports the archive's total.** New `first`
+  (default 100) and `skip` parameters, and the response is now an object carrying
+  `Archive`, `Total`, `Skip`, `First`, `Returned` and `Items` rather than a bare row list.
+  A recycle bin is a tail nobody trims: the CM this was measured against holds 9,769
+  entries, and an unfiltered call returned roughly 3.3M characters even after 1.5.0's
+  projection. The default page is ~32,000 characters, and `Total` means an agent can see
+  it is looking at a page instead of discovering the archive's size by paying for it.
+
+### Also in this release
+
+The tiers that preceded this one, on the same branch lineage: response projection for the
+item-returning PowerShell tools (`fields` / `full`), error shaping down to the message and
+parameter sets, tool gating via `TOOL_GROUPS` / `DISABLED_TOOLS` / `TOOL_PROFILE`, and the
+site-aware composition tools (`get-allowed-components-by-placeholder`,
+`create-component-datasource`, `add-rendering-to-placeholder`, `list-sites`,
+`get-pages-by-site`, `list-site-components`, `list-insert-options`,
+`presentation-list-renderings`).
+
 ## [1.4.2] - 2026-07-30
 
 ### Changed

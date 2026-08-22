@@ -45,8 +45,9 @@ describe("powershell", () => {
 
         const result = await callTool(client, "common-get-archive-item", getArchiveItem);
         const json = JSON.parse(result.content[0].text);
-        
-        expect(json.Obj.map(x => x.ItemId.ToString)).not.toContain(itemId);
+        const page = json.Obj[0];
+
+        expect(page.Items.map((entry: any) => entry.ItemId)).not.toContain(itemId);
 
         // Cleanup
         const createItemArgs: Record<string, any> = {

@@ -29,10 +29,14 @@ describe("powershell", () => {
         const result = await callTool(client, "common-get-archive-item", args);
 
         // Assert
+        // The response is one paged summary object, not a bare row list: Items holds the
+        // page, Total the size of the whole archive.
         const json = JSON.parse(result.content[0].text);
-        const item = json.Obj[0];
+        const page = json.Obj[0];
 
-        expect(item.ItemId.ToString).toBe(itemId);
+        expect(page.Total).toBeGreaterThan(0);
+        expect(page.Returned).toBe(page.Items.length);
+        expect(page.Items.map((entry: any) => entry.ItemId)).toContain(itemId);
 
         // Cleanup
         const restoreItemArgs: Record<string, any> = {
