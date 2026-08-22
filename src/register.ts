@@ -4,7 +4,6 @@ import type { Config } from "./config.js";
 import { registerGraphQL } from "./tools/graphql/register-graphql.js";
 import { getItemTool } from "./tools/item-service/tools/simple/get-item.js";
 import { getItemChildrenTool } from "./tools/item-service/tools/simple/get-item-children.js";
-import { getItemByPathTool } from "./tools/item-service/tools/simple/get-item-by-path.js";
 import { createItemTool } from "./tools/item-service/tools/simple/create-item.js";
 import { editItemTool } from "./tools/item-service/tools/simple/edit-item.js";
 import { deleteItemTool } from "./tools/item-service/tools/simple/delete-item.js";
@@ -46,12 +45,9 @@ import { findItemPowerShellTool } from "./tools/powershell/simple/indexing/find-
 import { resumeSearchIndexPowerShellTool } from "./tools/powershell/simple/indexing/resume-search-index.js";
 import { suspendSearchIndexPowerShellTool } from "./tools/powershell/simple/indexing/suspend-search-index.js";
 import { stopSearchIndexPowerShellTool } from "./tools/powershell/simple/indexing/stop-search-index.js";
-import { setItemAclByIdPowerShellTool } from "./tools/powershell/composite/security/set-item-acl-by-id.js";
-import { setItemAclByPathPowerShellTool } from "./tools/powershell/composite/security/set-item-acl-by-path.js";
-import { initializeSearchIndexingItemByIdPowerShellTool } from "./tools/powershell/composite/indexing/initialialize-search-indexing-item-by-id.js";
-import { initializeSearchIndexingItemByPathPowerShellTool } from "./tools/powershell/composite/indexing/initialialize-search-indexing-item-by-path.js";
-import { removeSearchIndexItemByIdPowerShellTool } from "./tools/powershell/composite/indexing/remove-search-index-item-by-id.js";
-import { removeSearchIndexItemByPathPowerShellTool } from "./tools/powershell/composite/indexing/remove-search-index-item-by-path.js";
+import { setItemAclPowerShellTool } from "./tools/powershell/composite/security/set-item-acl.js";
+import { initializeSearchIndexingItemPowerShellTool } from "./tools/powershell/composite/indexing/initialialize-search-indexing-item.js";
+import { removeSearchIndexItemPowerShellTool } from "./tools/powershell/composite/indexing/remove-search-index-item.js";
 import { lockItemPowerShellTool } from "./tools/powershell/simple/security/lock-item.js";
 import { unprotectItemPowerShellTool } from "./tools/powershell/simple/security/unprotect-item.js";
 import { getDomainByNamePowerShellTool } from "./tools/powershell/simple/security/get-domain-by-name.js";
@@ -146,7 +142,6 @@ export const TOOL_GROUP_REGISTRARS: Record<ToolGroup, ToolRegistrar[]> = {
         //Simple Item Service Tools
         getItemTool,
         getItemChildrenTool,
-        getItemByPathTool,
         createItemTool,
         editItemTool,
         deleteItemTool,
@@ -208,8 +203,7 @@ export const TOOL_GROUP_REGISTRARS: Record<ToolGroup, ToolRegistrar[]> = {
         clearItemAclPowerShellTool,
 
         //Composite Security PowerShell Tools
-        setItemAclByIdPowerShellTool,
-        setItemAclByPathPowerShellTool,
+        setItemAclPowerShellTool,
     ],
 
     "powershell.common": [
@@ -287,10 +281,8 @@ export const TOOL_GROUP_REGISTRARS: Record<ToolGroup, ToolRegistrar[]> = {
         stopSearchIndexPowerShellTool,
 
         //Composite Indexing PowerShell Tools
-        initializeSearchIndexingItemByIdPowerShellTool,
-        initializeSearchIndexingItemByPathPowerShellTool,
-        removeSearchIndexItemByIdPowerShellTool,
-        removeSearchIndexItemByPathPowerShellTool,
+        initializeSearchIndexingItemPowerShellTool,
+        removeSearchIndexItemPowerShellTool,
     ],
 
     "sitecore-cli": [
