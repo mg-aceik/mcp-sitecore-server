@@ -3,6 +3,7 @@ import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
 import { runGenericPowershellCommand } from "../generic.js";
+import { itemProjectionInputSchema, itemProjectionPipeline } from "../../projection.js";
 import { getSwitchParameterValue } from "../../utils.js";
 
 export function getLayoutByIdPowershellTool(server: McpServer, config: Config) {
@@ -11,6 +12,7 @@ export function getLayoutByIdPowershellTool(server: McpServer, config: Config) {
         {
             description: "Gets item layout by Id.",
             inputSchema: {
+                ...itemProjectionInputSchema,
                 id: z.string().describe("The ID of the item to retrieve layout for."),
                 finalLayout: z
                     .boolean()
@@ -29,7 +31,10 @@ export function getLayoutByIdPowershellTool(server: McpServer, config: Config) {
             options["FinalLayout"] = getSwitchParameterValue(params.finalLayout);
             options["Language"] = params.language;
 
-            return safeMcpResponse(runGenericPowershellCommand(config, command, options));
+            return safeMcpResponse(runGenericPowershellCommand(config, command, options, undefined, {
+                full: params.full,
+                pipeline: itemProjectionPipeline(params),
+            }));
         }
     );
 };

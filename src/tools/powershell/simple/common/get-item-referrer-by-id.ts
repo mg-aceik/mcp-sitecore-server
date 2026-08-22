@@ -3,6 +3,7 @@ import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
 import { runGenericPowershellCommand } from "../generic.js";
+import { itemProjectionInputSchema, itemProjectionPipeline } from "../../projection.js";
 
 export function getItemReferrerByIdPowerShellTool(server: McpServer, config: Config) {
     server.registerTool(
@@ -10,6 +11,7 @@ export function getItemReferrerByIdPowerShellTool(server: McpServer, config: Con
         {
             description: "Gets items referring to a Sitecore item by its ID, showing which items reference it.",
             inputSchema: {
+                ...itemProjectionInputSchema,
                 id: z.string()
                     .describe("The ID of the item to retrieve referrers for"),
                 database: z.string().optional()
@@ -38,7 +40,10 @@ export function getItemReferrerByIdPowerShellTool(server: McpServer, config: Con
                 options["Version"] = params.version;
             }
 
-            return safeMcpResponse(runGenericPowershellCommand(config, command, options));
+            return safeMcpResponse(runGenericPowershellCommand(config, command, options, undefined, {
+                full: params.full,
+                pipeline: itemProjectionPipeline(params),
+            }));
         }
     );
 }

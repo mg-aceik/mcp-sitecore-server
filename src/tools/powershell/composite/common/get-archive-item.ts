@@ -4,6 +4,7 @@ import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
 import { runGenericPowershellCommand } from "../../simple/generic.js";
 import { PowershellCommandBuilder, quotePowerShellString } from "../../command-builder.js";
+import { ARCHIVE_ENTRY_PROJECTION, fixedProjectionPipeline, fullOnlyInputSchema } from "../../projection.js";
 
 export function getArchiveItemPowerShellTool(server: McpServer, config: Config) {
     server.registerTool(
@@ -11,6 +12,7 @@ export function getArchiveItemPowerShellTool(server: McpServer, config: Config) 
         {
             description: "Gets a list of items found in the specified archive.",
             inputSchema: {
+                ...fullOnlyInputSchema,
                 archive: z.string()
                     .describe("The name of the archive to use when determining which items to process."),
                 database: z.string()
@@ -33,13 +35,20 @@ export function getArchiveItemPowerShellTool(server: McpServer, config: Config) 
                 parameters["Identity"] = params.identity;
             }
 
+            // The projection is appended to the final statement rather than passed as a
+            // shaping option, because this command is a multi-statement script and the
+            // pipeline has to attach to the Get-ArchiveItem call, not to the script.
+            const projection = fixedProjectionPipeline(ARCHIVE_ENTRY_PROJECTION, params) ?? "";
+
             const command = `
                 $database = Get-Database -Name ${quotePowerShellString(params.database)};
                 $archive = Get-Archive -Database $database -Name ${quotePowerShellString(params.archive)};
-                Get-ArchiveItem ${commandBuilder.buildParametersString(parameters)} -Archive $archive;
+                Get-ArchiveItem ${commandBuilder.buildParametersString(parameters)} -Archive $archive${projection};
             `;
 
-            return safeMcpResponse(runGenericPowershellCommand(config, command, {}));
+            return safeMcpResponse(runGenericPowershellCommand(config, command, {}, undefined, {
+                full: params.full,
+            }));
         }
     );
 }

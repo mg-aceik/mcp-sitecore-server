@@ -3,6 +3,7 @@ import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
 import { runGenericPowershellCommand } from "../generic.js";
+import { itemProjectionInputSchema, itemProjectionPipeline } from "../../projection.js";
 
 export function getLayoutDevicePowershellTool(server: McpServer, config: Config) {
     server.registerTool(
@@ -10,6 +11,7 @@ export function getLayoutDevicePowershellTool(server: McpServer, config: Config)
         {
             description: "Gets the layout for the device specified.",
             inputSchema: {
+                ...itemProjectionInputSchema,
                 name: z.string().describe("Name of the device to return."),
             },
         },
@@ -19,7 +21,10 @@ export function getLayoutDevicePowershellTool(server: McpServer, config: Config)
 
             options["Name"] = params.name;
 
-            return safeMcpResponse(runGenericPowershellCommand(config, command, options));
+            return safeMcpResponse(runGenericPowershellCommand(config, command, options, undefined, {
+                full: params.full,
+                pipeline: itemProjectionPipeline(params),
+            }));
         }
     );
 }

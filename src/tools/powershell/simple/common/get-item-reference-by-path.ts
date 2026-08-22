@@ -3,6 +3,7 @@ import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
 import { runGenericPowershellCommand } from "../generic.js";
+import { itemProjectionInputSchema, itemProjectionPipeline } from "../../projection.js";
 
 export function getItemReferenceByPathPowerShellTool(server: McpServer, config: Config) {
     server.registerTool(
@@ -10,6 +11,7 @@ export function getItemReferenceByPathPowerShellTool(server: McpServer, config: 
         {
             description: "Gets item references for a Sitecore item by its path, showing where it is used throughout the system.",
             inputSchema: {
+                ...itemProjectionInputSchema,
                 path: z.string()
                     .describe("The path of the item to retrieve references for (e.g. /sitecore/content/Home)"),
                 database: z.string().optional()
@@ -38,7 +40,10 @@ export function getItemReferenceByPathPowerShellTool(server: McpServer, config: 
                 options["Version"] = params.version;
             }
 
-            return safeMcpResponse(runGenericPowershellCommand(config, command, options));
+            return safeMcpResponse(runGenericPowershellCommand(config, command, options, undefined, {
+                full: params.full,
+                pipeline: itemProjectionPipeline(params),
+            }));
         }
     );
 }

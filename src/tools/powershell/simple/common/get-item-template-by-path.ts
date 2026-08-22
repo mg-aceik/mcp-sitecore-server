@@ -3,6 +3,7 @@ import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
 import { runGenericPowershellCommand } from "../generic.js";
+import { itemProjectionInputSchema, itemProjectionPipeline } from "../../projection.js";
 
 export function getItemTemplateByPathPowerShellTool(server: McpServer, config: Config) {
     server.registerTool(
@@ -10,6 +11,7 @@ export function getItemTemplateByPathPowerShellTool(server: McpServer, config: C
         {
             description: "Gets template information for a Sitecore item by its path.",
             inputSchema: {
+                ...itemProjectionInputSchema,
                 path: z.string()
                     .describe("The path of the item to retrieve template information for (e.g. /sitecore/content/Home)."),
                 database: z.string().optional()
@@ -26,7 +28,10 @@ export function getItemTemplateByPathPowerShellTool(server: McpServer, config: C
                 options["Database"] = params.database;
             }
 
-            return safeMcpResponse(runGenericPowershellCommand(config, command, options));
+            return safeMcpResponse(runGenericPowershellCommand(config, command, options, undefined, {
+                full: params.full,
+                pipeline: itemProjectionPipeline(params),
+            }));
         }
     );
 }

@@ -3,6 +3,7 @@ import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
 import { runGenericPowershellCommand } from "../generic.js";
+import { itemProjectionInputSchema, itemProjectionPipeline } from "../../projection.js";
 
 export function getItemCloneByPathPowerShellTool(server: McpServer, config: Config) {
     server.registerTool(
@@ -10,6 +11,7 @@ export function getItemCloneByPathPowerShellTool(server: McpServer, config: Conf
         {
             description: "Returns all the clones for the specified item by its path.",
             inputSchema: {
+                ...itemProjectionInputSchema,
                 path: z.string()
                     .describe("The path of the item to be analysed for clones presence."),
                 database: z.string().optional()
@@ -26,7 +28,10 @@ export function getItemCloneByPathPowerShellTool(server: McpServer, config: Conf
                 options["Database"] = params.database;
             }
 
-            return safeMcpResponse(runGenericPowershellCommand(config, command, options));
+            return safeMcpResponse(runGenericPowershellCommand(config, command, options, undefined, {
+                full: params.full,
+                pipeline: itemProjectionPipeline(params),
+            }));
         }
     );
 }

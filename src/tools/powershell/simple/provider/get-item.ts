@@ -3,6 +3,7 @@ import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
 import { runGenericPowershellCommand } from "../generic.js";
+import { itemProjectionInputSchema, itemProjectionPipeline } from "../../projection.js";
 
 export function getItemPowerShellTool(server: McpServer, config: Config) {
     server.registerTool(
@@ -10,6 +11,7 @@ export function getItemPowerShellTool(server: McpServer, config: Config) {
         {
             description: "Gets a Sitecore item by its path.",
             inputSchema: {
+                ...itemProjectionInputSchema,
                 path: z.string()
                     .describe("The path of the item to retrieve (e.g. /sitecore/content/Home)"),
                 database: z.string().optional()
@@ -38,7 +40,10 @@ export function getItemPowerShellTool(server: McpServer, config: Config) {
                 options["Version"] = params.version;
             }
 
-            return safeMcpResponse(runGenericPowershellCommand(config, command, options));
+            return safeMcpResponse(runGenericPowershellCommand(config, command, options, undefined, {
+                full: params.full,
+                pipeline: itemProjectionPipeline(params),
+            }));
         }
     );
 
@@ -47,6 +52,7 @@ export function getItemPowerShellTool(server: McpServer, config: Config) {
         {
             description: "Gets a Sitecore item by its ID.",
             inputSchema: {
+                ...itemProjectionInputSchema,
                 path: z.string()
                     .default("master:")
                     .describe("The path of the item to retrieve (e.g. master:\\content\\home)"),
@@ -79,7 +85,10 @@ export function getItemPowerShellTool(server: McpServer, config: Config) {
                 options["Version"] = params.version;
             }
 
-            return safeMcpResponse(runGenericPowershellCommand(config, command, options));
+            return safeMcpResponse(runGenericPowershellCommand(config, command, options, undefined, {
+                full: params.full,
+                pipeline: itemProjectionPipeline(params),
+            }));
         }
     );
 
@@ -88,6 +97,7 @@ export function getItemPowerShellTool(server: McpServer, config: Config) {
         {
             description: "Gets a Sitecore item by Sitecore query.",
             inputSchema: {
+                ...itemProjectionInputSchema,
                 path: z.string()
                     .default("master:")
                     .describe("The path of the item to retrieve (e.g. master:\\content\\home)"),
@@ -120,7 +130,10 @@ export function getItemPowerShellTool(server: McpServer, config: Config) {
                 options["Version"] = params.version;
             }
 
-            return safeMcpResponse(runGenericPowershellCommand(config, command, options));
+            return safeMcpResponse(runGenericPowershellCommand(config, command, options, undefined, {
+                full: params.full,
+                pipeline: itemProjectionPipeline(params),
+            }));
         }
     );
 
@@ -129,6 +142,7 @@ export function getItemPowerShellTool(server: McpServer, config: Config) {
         {
             description: "Gets a Sitecore item by its URI.",
             inputSchema: {
+                ...itemProjectionInputSchema,
                 path: z.string()
                     .default("master:")
                     .describe("The path of the item to retrieve (e.g. master:\\content\\home)"),
@@ -161,7 +175,10 @@ export function getItemPowerShellTool(server: McpServer, config: Config) {
                 options["Version"] = params.version;
             }
 
-            return safeMcpResponse(runGenericPowershellCommand(config, command, options));
+            return safeMcpResponse(runGenericPowershellCommand(config, command, options, undefined, {
+                full: params.full,
+                pipeline: itemProjectionPipeline(params),
+            }));
         }
     );
 }
