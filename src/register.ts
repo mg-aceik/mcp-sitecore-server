@@ -145,6 +145,7 @@ import { getLogsPowerShellTool } from "./tools/powershell/composite/logging/get-
 import { getSitecoreCliDocumentation } from "./tools/sitecore-cli/get-sitecore-cli-documentation.js";
 import { listRenderingsPowershellTool } from "./tools/powershell/composite/presentation/list-renderings.js";
 import { getAllowedComponentsByPlaceholderPowershellTool } from "./tools/powershell/composite/composition/get-allowed-components-by-placeholder.js";
+import { createComponentDatasourcePowershellTool } from "./tools/powershell/composite/composition/create-component-datasource.js";
 import {
     isGroupEnabled,
     resolveToolGating,
@@ -198,6 +199,7 @@ export const TOOL_GROUP_REGISTRARS: Record<ToolGroup, ToolRegistrar[]> = {
 
     "powershell.composition": [
         getAllowedComponentsByPlaceholderPowershellTool,
+        createComponentDatasourcePowershellTool,
     ],
 
     "powershell.security": [
