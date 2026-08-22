@@ -39,7 +39,7 @@ describe("powershell", () => {
             id: itemId,
             placeholder: sampleRenderingPlaceholder,
             language: "ja-jp",
-            finalLayout: "true",
+            finalLayout: true,
             database,
         };
 

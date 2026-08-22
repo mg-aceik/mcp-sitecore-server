@@ -42,6 +42,39 @@ client's URL to `http://<host>:3001/mcp` and its transport type to "Streamable H
 | `POWERSHELL_USERNAME`     | —          | The username for PowerShell Remoting API authentication.          |
 | `POWERSHELL_PASSWORD`     | —          | The password for PowerShell Remoting API authentication.          |
 
+## Authoring and Management API
+
+The [Authoring and Management GraphQL API](https://doc.sitecore.com/sai/en/developers/sitecoreai/content-modeling-and-presentation/sitecore-authoring-and-management-graphql-api.html)
+is a separate endpoint from the `GRAPHQL_*` block above, with separate credentials. That
+one talks to the Edge and preview endpoints under `/sitecore/api/graph/` using an
+`sc_apikey`; this one talks to the CM's authoring schema at
+`/sitecore/api/authoring/graphql/v1/` using an OAuth 2.0 bearer token.
+
+| Variable                  | Default                          | Description                                                                                                                                         |
+| ------------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AUTHORING_ENDPOINT`      | `ITEM_SERVICE_SERVER_URL` + `/sitecore/api/authoring/graphql/v1/` | The endpoint URL. Sitecore always serves it from that path, so this only needs setting when the authoring CM is a different host from the Item Service one. |
+| `AUTHORING_CLIENT_ID`     | —                                | Client ID for the client-credentials grant. On SitecoreAI this comes from an XM Cloud Deploy automation client with the `xmcloud.cm:admin` scope.    |
+| `AUTHORING_CLIENT_SECRET` | —                                | The matching client secret.                                                                                                                         |
+| `AUTHORING_TOKEN`         | —                                | A bearer token supplied directly, instead of the pair above. Wins when both are set.                                                                |
+| `AUTHORING_AUTHORITY`     | `https://auth.sitecorecloud.io`  | The token authority. `/oauth/token` is appended.                                                                                                     |
+| `AUTHORING_AUDIENCE`      | `https://api.sitecorecloud.io`   | The audience the token is requested for.                                                                                                            |
+
+Set **either** `AUTHORING_CLIENT_ID` + `AUTHORING_CLIENT_SECRET` **or** `AUTHORING_TOKEN`.
+Prefer the credentials pair: tokens carry an `expires_in`, and only that route can renew
+one mid-session. The server caches each token until shortly before it expires and mints a
+new one on demand, so a long-running session needs no attention.
+
+`AUTHORING_TOKEN` is for the cases where this server cannot mint a token itself — the
+`accessToken` in `.sitecore/user.json` after `dotnet sitecore cloud login`, or a token from
+a controller in front of the Sitecore Identity Server on XM/XP. It will expire.
+
+On XM/XP, point `AUTHORING_AUTHORITY` and `AUTHORING_AUDIENCE` at your own Sitecore
+Identity Server instead of the Sitecore Cloud defaults.
+
+If nothing is configured, the `authoring-*` tools stay registered but every call fails with
+a message naming both options — the server has no way to know at startup whether you
+intended to use this API. Trim them with `TOOL_GROUPS` or `DISABLED_TOOLS` if you do not.
+
 ## Tool surface
 
 All three are unset by default, which registers every tool. See

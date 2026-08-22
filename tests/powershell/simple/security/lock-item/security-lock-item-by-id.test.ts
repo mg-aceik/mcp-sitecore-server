@@ -9,7 +9,7 @@ describe("powershell", () => {
         // Test locking by ID
         const args: Record<string, any> = {
             id: itemId,
-            passThru: "true"
+            passThru: true
         };
         
         const result = await callTool(client, "security-lock-item", args);

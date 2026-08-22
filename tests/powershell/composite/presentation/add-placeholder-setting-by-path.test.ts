@@ -12,7 +12,7 @@ const placeholderSettingPath = "master:/sitecore/layout/Placeholder Settings/Fea
 const placeholderSettingKey = "new_placeholder_setting";
 
 const language = "ja-jp";
-const finalLayout = "true";
+const finalLayout = true;
 
 describe("powershell", () => {
     it("presentation-add-placeholder-setting", async () => {

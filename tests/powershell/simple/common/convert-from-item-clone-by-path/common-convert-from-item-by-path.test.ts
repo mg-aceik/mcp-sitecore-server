@@ -22,7 +22,7 @@ describe("powershell", () => {
 
         const args: Record<string, any> = {
             path: itemClone.ItemPath,
-            passThru: "true",
+            passThru: true,
         };
 
         // Act

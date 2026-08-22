@@ -8,14 +8,14 @@ describe("powershell", () => {
     it("security-new-user", async () => {
 
         const randomHexSuffix = Math.floor(Math.random() * 1000000).toString(16);
-        const args: Record<string, string> = {
+        const args: Record<string, unknown> = {
             identity: `anton-${randomHexSuffix}`,
             password: "anton",
             email: "at@exdst.com",
             fullName: "Anton Tishehnko",
             comment: "Anton Tishehnko",
             portrait: "office/16x16/default_user.png",
-            enabled: "true",
+            enabled: true,
             profileItemId: "{AE4C4969-5B7E-4B4E-9042-B2D8701CE214}",
         };
         const result = await callTool(client, "security-new-user", args);

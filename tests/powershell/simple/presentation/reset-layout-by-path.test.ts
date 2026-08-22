@@ -14,7 +14,7 @@ const sampleLayoutId = "{14030E9F-CE92-49C6-AD87-7D49B50E42EA}";
 // /sitecore/layout/Layouts/Feature/Tests/Reset-Layout/InitialLayout
 const initialLayoutId = "{C088204D-9C63-4A70-8846-D7233D660B0A}";
 
-const finalLayout = "true";
+const finalLayout = true;
 const language = "ja-jp";
 
 describe("powershell", () => {

@@ -10,7 +10,7 @@ describe("powershell", () => {
         // First lock the item so we have something to unlock
         const lockArgs: Record<string, any> = {
             id: itemId,
-            passThru: "true"
+            passThru: true
         };
         
         // Lock the item
@@ -19,7 +19,7 @@ describe("powershell", () => {
         // Now unlock the item
         const unlockArgs: Record<string, any> = {
             id: itemId,
-            passThru: "true"
+            passThru: true
         };
         
         const result = await callTool(client, "security-unlock-item", unlockArgs);

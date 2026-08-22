@@ -62,20 +62,44 @@ type ToolCallResult = {
  * Calls a tool and returns its result.
  *
  * This replaces the `callTool` the suite used to import from the MCP inspector's CLI
- * internals. That helper existed to coerce CLI string arguments against the tool's
- * schema, which cost a `tools/list` round trip on every single call; the tests pass
- * already-typed arguments, so there is nothing to coerce.
+ * internals. That helper coerced CLI string arguments against the tool's schema, at the
+ * cost of a `tools/list` round trip per call. The arguments here are typed in the tests
+ * instead, which is what a real MCP client sends — so nothing is coerced, deliberately:
+ * a test that passes `"true"` where the schema says `z.boolean()` is testing something no
+ * client would ever do, and coercing would hide that.
+ *
+ * What is *not* deliberate is how such a mismatch used to surface. The server answers an
+ * invalid call with a normal result whose text is "Input validation failed: ...", so the
+ * test's own `JSON.parse(result.content[0].text)` threw
+ * `Unexpected token 'I', "Input vali"... is not valid JSON` — a message that says nothing
+ * about the schema and points at the test's parse line. Fifty-one tests failed that way
+ * and read as though Sitecore were unreachable. Catching it here names the real problem.
  */
 async function callTool(
     mcpClient: Client,
     name: string,
     args: Record<string, unknown>
 ): Promise<ToolCallResult> {
+    let result: ToolCallResult;
     try {
-        return await mcpClient.callTool({ name, arguments: args }) as ToolCallResult;
+        result = await mcpClient.callTool({ name, arguments: args }) as ToolCallResult;
     } catch (error) {
         throw new Error(`Failed to call tool ${name}: ${error instanceof Error ? error.message : String(error)}`);
     }
+
+    const text = result.content?.map((block) => block.text ?? "").join("\n") ?? "";
+    // The SDK has worded this both ways ("Input validation error: Invalid arguments for
+    // tool ..." on the v2 server), so match the stem rather than a full phrase.
+    if (/^Input validation/.test(text)) {
+        throw new Error(
+            `Tool ${name} rejected its arguments before reaching Sitecore. This is a schema `
+            + `mismatch in the test, not an endpoint failure — most often a string where the `
+            + `schema declares z.boolean() or z.number(). Arguments: `
+            + `${JSON.stringify(args)}\nServer said: ${text}`
+        );
+    }
+
+    return result;
 }
 
 export { client, transport, callTool };

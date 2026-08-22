@@ -2,14 +2,17 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "./config.js";
 
 import { registerGraphQL } from "./tools/graphql/register-graphql.js";
+import {
+    AUTHORING_CONTENT_REGISTRARS,
+    AUTHORING_CORE_REGISTRARS,
+    AUTHORING_MANAGEMENT_REGISTRARS,
+} from "./tools/authoring/register-authoring.js";
 import { getItemTool } from "./tools/item-service/tools/simple/get-item.js";
 import { getItemChildrenTool } from "./tools/item-service/tools/simple/get-item-children.js";
 import { createItemTool } from "./tools/item-service/tools/simple/create-item.js";
 import { editItemTool } from "./tools/item-service/tools/simple/edit-item.js";
 import { deleteItemTool } from "./tools/item-service/tools/simple/delete-item.js";
 import { searchItemsTool } from "./tools/item-service/tools/simple/search-items.js";
-import { runStoredQueryTool } from "./tools/item-service/tools/simple/run-stored-query.js";
-import { runStoredSearchTool } from "./tools/item-service/tools/simple/run-stored-search.js";
 import { getItemDescendantsTool } from "./tools/item-service/tools/composite/get-item-descendants.js";
 import { getLanguagesTool } from "./tools/item-service/tools/composite/get-languages.js";
 import { getUserByIdentityPowerShellTool } from "./tools/powershell/simple/security/get-user-by-identity.js";
@@ -104,7 +107,6 @@ import { getRenderingParameterPowershellTool } from "./tools/powershell/composit
 import { removeRenderingParameterPowershellTool } from "./tools/powershell/composite/presentation/remove-rendering-parameter.js";
 import { setRenderingParameterPowershellTool } from "./tools/powershell/composite/presentation/set-rendering-parameter.js";
 import { getLogsPowerShellTool } from "./tools/powershell/composite/logging/get-logs.js";
-import { getSitecoreCliDocumentation } from "./tools/sitecore-cli/get-sitecore-cli-documentation.js";
 import { mediaUploadTool } from "./tools/powershell/media/media-upload.js";
 import { mediaDownloadTool } from "./tools/powershell/media/media-download.js";
 import { listRenderingsPowershellTool } from "./tools/powershell/composite/presentation/list-renderings.js";
@@ -145,6 +147,12 @@ export const TOOL_GROUP_REGISTRARS: Record<ToolGroup, ToolRegistrar[]> = {
         registerGraphQL,
     ],
 
+    "authoring.core": AUTHORING_CORE_REGISTRARS,
+
+    "authoring.content": AUTHORING_CONTENT_REGISTRARS,
+
+    "authoring.management": AUTHORING_MANAGEMENT_REGISTRARS,
+
     "item-service": [
         //Simple Item Service Tools
         getItemTool,
@@ -153,8 +161,6 @@ export const TOOL_GROUP_REGISTRARS: Record<ToolGroup, ToolRegistrar[]> = {
         editItemTool,
         deleteItemTool,
         searchItemsTool,
-        runStoredQueryTool,
-        runStoredSearchTool,
 
         //Composite Item Service Tools
         getItemDescendantsTool,
@@ -301,9 +307,6 @@ export const TOOL_GROUP_REGISTRARS: Record<ToolGroup, ToolRegistrar[]> = {
         mediaDownloadTool,
     ],
 
-    "sitecore-cli": [
-        getSitecoreCliDocumentation,
-    ],
 };
 
 export async function registerAll(server: McpServer, config: Config, gating?: ToolGating) {

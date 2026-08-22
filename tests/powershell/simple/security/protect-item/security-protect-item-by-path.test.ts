@@ -11,7 +11,7 @@ describe("powershell", () => {
         // Test protecting item by path
         const args: Record<string, any> = {
             path: itemPath,
-            passThru: "true"
+            passThru: true
         };
         
         const result = await callTool(client, "security-protect-item", args);

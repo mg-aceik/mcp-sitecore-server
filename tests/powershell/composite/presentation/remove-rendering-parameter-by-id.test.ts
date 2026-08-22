@@ -10,7 +10,7 @@ const itemId = "{F2F97094-DEAD-4101-A888-17074C6A4B43}";
 
 const renderingUniqueId = "{B343725A-3A93-446E-A9C8-3A2CBD3DB489}";
 const name = "sample";
-const finalLayout = "true";
+const finalLayout = true;
 const language = "ja-jp";
 const database = "master";
 

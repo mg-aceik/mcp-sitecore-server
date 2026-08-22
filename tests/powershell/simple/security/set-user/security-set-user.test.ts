@@ -17,7 +17,7 @@ describe("powershell", () => {
             fullName: "Test User",
             comment: "Original comment",
             portrait: "office/16x16/default_user.png",
-            enabled: "true",
+            enabled: true,
         };
         
         // Create the user

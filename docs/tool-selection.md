@@ -12,18 +12,75 @@ default, which registers everything, and the denylist always wins on conflict.
 A comma-separated allowlist of tool groups. The groups are the directory layout, not a new
 taxonomy:
 
-`graphql`, `item-service`, `powershell.core`, `powershell.composition`,
-`powershell.security`, `powershell.common`, `powershell.presentation`,
-`powershell.logging`, `powershell.provider`, `powershell.indexing`, `powershell.media`,
-`sitecore-cli`
+`graphql`, `authoring.core`, `authoring.content`, `authoring.management`, `item-service`,
+`powershell.core`, `powershell.composition`, `powershell.security`, `powershell.common`,
+`powershell.presentation`, `powershell.logging`, `powershell.provider`,
+`powershell.indexing`, `powershell.media`
 
 `powershell.core` is `get-powershell-documentation` and `run-powershell-script`. Unset
 means every group. Skipping a group also skips its registrars' startup work, not just
 their schemas.
 
-`powershell.media` (`media-upload` / `media-download`) is the only group with an extra
-CM-side requirement: the SPE `mediaUpload` / `mediaDownload` services must be enabled —
-see [Preparing your Sitecore instance](./sitecore-setup.md).
+`powershell.media` (`media-upload` / `media-download`) needs the SPE `mediaUpload` /
+`mediaDownload` services enabled on the CM — see
+[Preparing your Sitecore instance](./sitecore-setup.md). The three `authoring.*` groups
+need the Authoring and Management API's own credentials; see
+[Configuration](./configuration.md#authoring-and-management-api).
+
+### The three authoring groups
+
+They split the Authoring and Management schema the way Sitecore's own documentation does.
+
+- `authoring.core` — `authoring-introspect-schema` and `authoring-graphql`. Two tools, and
+  between them they reach the *entire* schema: workflow, archiving, rules, security,
+  languages, databases, site creation. Keep this group even when you trim the others, and
+  it is the whole group to keep if you only want the escape hatch.
+- `authoring.content` — the authoring half: items, templates, media, sites and search.
+  What an agent authoring content wants.
+- `authoring.management` — the management half: publishing, jobs and index rebuilds. What a
+  deployment or operations agent wants.
+
+An agent authoring pages rarely rebuilds indexes, and a release agent rarely edits
+templates, so paying for both when you need one is the cost this split exists to avoid.
+
+### Authoring API vs. Item Service vs. PowerShell
+
+Three groups can read and write an item, and they are not equivalent:
+
+- **`authoring.content`** is the surface Sitecore supports for authoring. It needs no SPE
+  Remoting and no Item Service — just the endpoint and a token — so it keeps working where
+  those are switched off, which on a hardened SitecoreAI environment is the normal case.
+  It also expresses things the others cannot, such as building a template with its
+  sections and fields in one call.
+- **`item-service`** is the REST surface. Simple reads and writes, session-cookie auth.
+- **`powershell.*`** is the deepest and least portable: `run-powershell-script` can do
+  anything the CM can, and the composition tools validate a layout before writing it.
+  Requires SPE Remoting.
+
+If you are trimming for an authoring agent on SitecoreAI, `authoring.core` +
+`authoring.content` + `powershell.composition` is a strong, small surface.
+
+#### Read latency
+
+The three surfaces also differ in speed. Measured against a SitecoreAI dev CM (same item,
+warm connections, auth excluded, five reads each):
+
+| Surface                        | median | spread     |
+| ------------------------------ | ------ | ---------- |
+| Item Service (REST)            | 41 ms  | 39–41 ms   |
+| Edge GraphQL (the CM's schema) | 85 ms  | 82–106 ms  |
+| Authoring GraphQL              | 107 ms | 87–124 ms  |
+
+The Item Service is a thin REST read and roughly halves the latency of either GraphQL
+endpoint, with almost no jitter. That ranking holds for single-item reads only: one
+GraphQL query fetching many items or fields beats N Item Service round-trips, so the
+per-call advantage inverts as soon as a query can batch. Auth also lands differently on
+first use — the Item Service logs in once per session with a cookie, while the authoring
+tools pay an extra round-trip to mint the bearer token.
+
+So for a quick read of one item, prefer `item-service-get-item`; reach for GraphQL when
+one query replaces several calls, or when you need what only that schema can see
+(unpublished content on authoring, published-only content on Edge).
 
 ### Composition vs. presentation
 
@@ -55,7 +112,7 @@ The profile table lives in [`src/tool-profiles.ts`](../src/tool-profiles.ts).
 | Profile         | Hides                                 | Why                                                                                                                                                                                                                                                                                                                   |
 | --------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `xp` (or unset) | nothing                               | Publishing, application restart and CM-side identity management are all real operations on XM/XP.                                                                                                                                                                                                                     |
-| `sai`           | the whole `powershell.security` group | Users, roles and domains are managed in the Sitecore Cloud Portal, not on the CM, so the CM-side identity tools are misleading at best. Note that this also hides the item ACL, lock and protect tools, which _do_ work on a SitecoreAI CM — if you need those, use `TOOL_PROFILE=xp` with `DISABLED_TOOLS` instead. |
+| `sai`           | the `powershell.security` and `powershell.logging` groups | Users, roles and domains are managed in the Sitecore Cloud Portal, not on the CM, so the CM-side identity tools are misleading at best. Note that this also hides the item ACL, lock and protect tools, which _do_ work on a SitecoreAI CM — if you need those, use `TOOL_PROFILE=xp` with `DISABLED_TOOLS` instead. `powershell.logging` holds only `logging-get-logs`, which reads log files from the CM's data folder: on SitecoreAI the platform collects logs instead, and on a local Docker CM they are already on a mounted volume. |
 
 `common-publish-item` and `common-restart-application` stay available under `sai`: on
 SitecoreAI, content publishes to Edge, which lives on Sitecore's cloud servers only (there

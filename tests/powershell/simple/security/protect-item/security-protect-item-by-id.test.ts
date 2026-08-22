@@ -11,7 +11,7 @@ describe("powershell", () => {
         // Test protecting item by ID
         const args: Record<string, any> = {
             id: itemId,
-            passThru: "true"
+            passThru: true
         };
         
         const result = await callTool(client, "security-protect-item", args);

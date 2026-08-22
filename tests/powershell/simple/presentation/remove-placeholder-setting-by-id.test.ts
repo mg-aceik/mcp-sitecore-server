@@ -12,7 +12,7 @@ const placeholderSettingKey = "test_placeholder";
 
 const language = "ja-jp";
 const database = "master";
-const finalLayout = "true";
+const finalLayout = true;
 
 async function getItemPlaceholderSettings(): Promise<any> {
     const getPlaceholderSettingArgs: Record<string, any> = {

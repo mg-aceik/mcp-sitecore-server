@@ -33,7 +33,7 @@ describe("powershell", () => {
         // Arrange
         const args: Record<string, any> = {
             id: itemId,
-            finalLayout: "true",
+            finalLayout: true,
         };
 
         // Act
@@ -50,7 +50,7 @@ describe("powershell", () => {
         // Arrange
         const args: Record<string, any> = {
             id: itemId,
-            finalLayout: "true",
+            finalLayout: true,
             language: "ja-jp",
         };
 

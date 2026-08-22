@@ -9,7 +9,7 @@ const itemPath = "master:/sitecore/content/Home/Tests/Presentation/Remove-Render
 
 const renderingUniqueId = "{B343725A-3A93-446E-A9C8-3A2CBD3DB489}";
 const name = "sample";
-const finalLayout = "true";
+const finalLayout = true;
 const language = "ja-jp";
 
 describe("powershell", () => {

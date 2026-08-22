@@ -31,7 +31,7 @@ describe("powershell", () => {
             path: itemPath,
             layoutPath: expectedLayout.path,
             language: "ja-jp",
-            finalLayout: "true",
+            finalLayout: true,
         };
 
         // Act

@@ -39,12 +39,29 @@ describe("resolveToolGating", () => {
     it("applies the sai profile", () => {
         const gating = resolveToolGating({ TOOL_PROFILE: "sai" });
         expect(isGroupEnabled("powershell.security", gating)).toBe(false);
+        // logging-get-logs reads log files from the CM's data folder, which a deployed
+        // SitecoreAI environment does not serve — the platform collects the logs instead.
+        expect(isGroupEnabled("powershell.logging", gating)).toBe(false);
         // Everything else stays — publishing targets Edge on SitecoreAI, so
         // common-publish-item and common-restart-application remain available.
         expect(isToolEnabled("common-publish-item", gating)).toBe(true);
         expect(isToolEnabled("common-restart-application", gating)).toBe(true);
         expect(isGroupEnabled("powershell.common", gating)).toBe(true);
         expect(isToolEnabled("provider-get-item", gating)).toBe(true);
+        // The authoring surface is the preferred one on SitecoreAI, so none of it is hidden.
+        expect(isGroupEnabled("authoring.core", gating)).toBe(true);
+        expect(isGroupEnabled("authoring.content", gating)).toBe(true);
+        expect(isGroupEnabled("authoring.management", gating)).toBe(true);
+    });
+
+    it("no longer accepts the removed sitecore-cli group", () => {
+        // The group and its one tool were removed: Sitecore's own documentation MCP server
+        // answers the same questions against docs that are actually current.
+        expect(TOOL_GROUPS as readonly string[]).not.toContain("sitecore-cli");
+        const gating = resolveToolGating({ TOOL_GROUPS: "sitecore-cli" });
+        // An allowlist of nothing but unknown names is ignored rather than registering zero
+        // tools, so this behaves as if TOOL_GROUPS were unset.
+        expect(gating.enabledGroups).toBeNull();
     });
 
     it("applies the xp profile as a no-op, matching the unset default", () => {

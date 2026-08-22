@@ -14,24 +14,82 @@ Our versioning strategy is as follows:
 
 ## 2.0.0
 
-_Released 2026-08-22 — a tool surface a third smaller, on the v2 MCP SDK and MCP protocol
-revision 2026-07-28._
+_Released 2026-08 — a fourth API surface, a tool surface a third smaller per operation, on the v2
+MCP SDK and MCP protocol revision 2026-07-28._
 
 ### 🎉 New Features & Improvements
 
-* `[sdk]` **The server runs on the v2 MCP TypeScript SDK and speaks MCP protocol revision
+- `[sdk]` **The server runs on the v2 MCP TypeScript SDK and speaks MCP protocol revision
   2026-07-28.** This is the headline of the release: `@modelcontextprotocol/sdk` is replaced
   by `@modelcontextprotocol/server` and `@modelcontextprotocol/node`, tool schemas are built
   with zod 4's own JSON Schema conversion, and both transports serve the 2026-07-28 revision
-  *and* the 2025 handshake from the same tool registrations — a client on either revision
+  _and_ the 2025 handshake from the same tool registrations — a client on either revision
   sees the same tools, so nothing has to move revision to keep working. The new revision has
   no initialize handshake and no protocol-level session, so Streamable HTTP is served
   statelessly: no per-session transport map, no session IDs, no sniffing the first request.
 
 #### New tools
 
-* `[composition]` **`add-rendering-to-placeholder`** — the tool to compose a page with.
-  Adds a rendering to a placeholder and *refuses* it when the placeholder's settings do not
+- `[authoring]` **Support for the [Sitecore Authoring and Management GraphQL
+  API](https://doc.sitecore.com/sai/en/developers/sitecoreai/content-modeling-and-presentation/sitecore-authoring-and-management-graphql-api.html)
+  — 22 new tools, the largest single addition in this release.** This is the surface Sitecore
+  supports for authoring writes, and the one that matters most on SitecoreAI: it reaches the
+  CM over plain HTTP with an OAuth bearer token, so it needs neither SPE Remoting nor the
+  Item Service, and it keeps working on environments where both are switched off. It also
+  expresses operations the other surfaces cannot — building a data template with its
+  sections and fields in a single call, for one.
+
+  The endpoint and its credentials are separate from the existing `GRAPHQL_*` block, which
+  talks to Edge and preview with an `sc_apikey`. New settings: `AUTHORING_ENDPOINT` (which
+  defaults to `ITEM_SERVICE_SERVER_URL` plus the fixed
+  `/sitecore/api/authoring/graphql/v1/` path, so it rarely needs setting),
+  `AUTHORING_CLIENT_ID` / `AUTHORING_CLIENT_SECRET` for the client-credentials grant,
+  `AUTHORING_TOKEN` for a token you already hold, and `AUTHORING_AUTHORITY` /
+  `AUTHORING_AUDIENCE`, which default to the Sitecore Cloud values. Tokens are minted on
+  demand, cached until shortly before they expire and renewed without attention, and
+  concurrent tool calls share one token request rather than one each.
+
+  The tools, in three new groups:
+  - `authoring.core` — `authoring-introspect-schema`, `authoring-graphql`. Two tools that
+    between them reach the _entire_ schema, including the parts no typed tool wraps:
+    workflow, archiving, rules, security, languages, databases, site creation.
+  - `authoring.content` — `authoring-get-item`, `authoring-create-item`,
+    `authoring-update-item`, `authoring-delete-item`, `authoring-copy-item`,
+    `authoring-move-item`, `authoring-rename-item`, `authoring-search`,
+    `authoring-get-item-template`, `authoring-create-item-template`,
+    `authoring-update-item-template`, `authoring-upload-media`,
+    `authoring-get-media-item`, `authoring-list-sites`, `authoring-get-site`.
+  - `authoring.management` — `authoring-publish-item`, `authoring-publishing-status`,
+    `authoring-rebuild-indexes`, `authoring-get-job`, `authoring-list-jobs`.
+
+  Every input type, field name and selection set was taken from a live endpoint's own SDL
+  rather than from the documentation's examples, and the 28-test live suite in
+  `tests/authoring/authoring-live.test.ts` runs each tool against a real CM.
+
+- `[authoring]` **`authoring-upload-media` does both halves of the upload.** Sitecore's
+  `uploadMedia` mutation returns a pre-signed URL rather than accepting bytes, so a tool
+  that stopped there would hand an agent a URL it has no way to POST to. This one fetches
+  the pre-signed URL and uploads the file behind it, taking the bytes from a `sourceUrl`
+  this server fetches, a `filePath` local to the server, or inline base64 — the same three
+  sources as `media-upload`, and confined by the same `MEDIA_LOCAL_FILE_ROOT` and private-
+  address guards.
+
+- `[authoring]` **`authoring-introspect-schema` ships its own introspection query.**
+  graphql-js's `getIntrospectionQuery()` nests `ofType` nine levels deep and the endpoint
+  enforces a maximum query depth of 13, so the standard query is refused outright with
+  _"The query exceded the maximum allowed execution depth of 13"_ and returns no schema at
+  all. The shipped query is the same document with the type-reference chain shortened to
+  seven levels — still far more wrapping than any real type uses, and verified to return the
+  full 117KB SDL from a live endpoint.
+
+- `[authoring]` **An unauthenticated call is reported as one.** The endpoint answers an
+  unauthorized request with HTTP 200 and an `AUTH_NOT_AUTHENTICATED` entry in `errors`, so a
+  client that checks only the status code reports "no data returned" for what is really a
+  credentials problem. The client inspects the GraphQL errors and says which it is; a 404
+  names `GraphQL.Enabled`, and a token rejection names the audience.
+
+- `[composition]` **`add-rendering-to-placeholder`** — the tool to compose a page with.
+  Adds a rendering to a placeholder and _refuses_ it when the placeholder's settings do not
   allow that component, naming the allow-list in the error; `presentation-add-rendering`
   writes whatever it is told, and an invalid layout still saves and renders. Assigns a
   collision-free `DynamicPlaceholderId` when the rendering's parameters template defines one,
@@ -39,7 +97,7 @@ revision 2026-07-28._
   child rendering should target — so a nested build is one call per level. `force=true`
   skips validation for migration and repair work.
 
-* `[composition]` **`get-allowed-components-by-placeholder`** — lists the renderings a
+- `[composition]` **`get-allowed-components-by-placeholder`** — lists the renderings a
   placeholder actually allows on a given page, resolving site-level settings
   (`<site>/Presentation/Placeholder Settings`) first and falling back to the global tree;
   `settingsItemPath` reports which item answered. Handles dynamic placeholders by matching a
@@ -47,7 +105,7 @@ revision 2026-07-28._
   IDs that resolve to no item are surfaced under `Unresolved` rather than dropped, and
   `Found=false` means no settings item governs the key at all.
 
-* `[composition]` **`create-component-datasource`** — creates a component's datasource item
+- `[composition]` **`create-component-datasource`** — creates a component's datasource item
   from the Datasource Template and Datasource Location declared on the rendering itself.
   `placement='page-local'` (default) creates `<page>/Data/<name>` and returns the
   `local:/Data/<name>` reference form authored pages use; `placement='shared'` walks the
@@ -55,63 +113,63 @@ revision 2026-07-28._
   that exists, failing with every candidate it tried rather than guessing. Field values
   passed in `fields` are set on the new item.
 
-* `[presentation]` **`presentation-list-renderings`** — reads a page's presentation as rows
+- `[presentation]` **`presentation-list-renderings`** — reads a page's presentation as rows
   rather than a layout XML blob: `Index`, `Placeholder`, `RenderingName`, `RenderingID`,
   `Datasource` and `UniqueId`, which are the identifiers the other presentation tools
   address. Defaults to the final layout, the effective presentation for the page.
   `includeParameters` is off by default — on an SXA or Stride site the URL-encoded parameter
   blobs more than doubled the response for a 25-rendering page.
 
-* `[media]` **`media-upload`** — uploads a file into the media library over the SPE
+- `[media]` **`media-upload`** — uploads a file into the media library over the SPE
   `mediaUpload` handler. Takes its bytes from a `sourceUrl` fetched by the server (the
   migration path — nothing large ever passes through the model), a server-local `filePath`,
   or base64 `content`, and returns the created media item with its ID, setting `alt` in the
   same round trip.
 
-* `[media]` **`media-download`** — pulls a media item's bytes back out over the SPE
+- `[media]` **`media-download`** — pulls a media item's bytes back out over the SPE
   `mediaDownload` handler, writing to a server-local file via `saveTo` or returning
   size-capped inline base64. Both media tools need their SPE service enabled on the CM; the
   setup doc's patch now ships `mediaUpload` / `mediaDownload` enabled. Verified live against
   a SitecoreAI development CM: download-to-file, oversized-inline refusal, upload from a
   local file, and upload straight from a live site URL.
 
-* `[composition]` **`list-sites`** — lists the content sites registered on the CM with name,
+- `[composition]` **`list-sites`** — lists the content sites registered on the CM with name,
   root path, start path, database, hostname and the root item's ID and template. Sitecore's
   own infrastructure sites (shell, login, service, …) are filtered out unless
   `includeSystemSites` is passed.
 
-* `[composition]` **`get-site-information`** — returns one site's definition plus the paths
+- `[composition]` **`get-site-information`** — returns one site's definition plus the paths
   the rest of the composition set needs: home item, site-level Placeholder Settings root,
   Available Renderings root, shared Data folder, site definition item, and the project
   (tenant) folder used to resolve global placeholder settings. Address it by site name, or by
   any item path inside the site.
 
-* `[composition]` **`list-site-components`** — the site's component inventory, grouped by its
+- `[composition]` **`list-site-components`** — the site's component inventory, grouped by its
   Available Renderings groups (Page Content, Page Structure, FEaaS, Forms, Global on a Stride
-  site). Explicitly *not* an allow-list — the groups say nothing about where a rendering may
+  site). Explicitly _not_ an allow-list — the groups say nothing about where a rendering may
   be placed, which is what `get-allowed-components-by-placeholder` answers.
 
-* `[composition]` **`get-pages-by-site`** — lists a site's pages, where "page" means the item
+- `[composition]` **`get-pages-by-site`** — lists a site's pages, where "page" means the item
   has presentation (a layout on the item or on its template's standard values) rather than a
   guess from template naming. Returns `Matched`, `Returned` and `Truncated` alongside the
   rows, so a truncated listing is visible as one; `rootPath` scopes the scan to a section.
 
-* `[composition]` **`search-site-pages`** — the same page rows, filtered by a
+- `[composition]` **`search-site-pages`** — the same page rows, filtered by a
   case-insensitive substring match against `Name`, display name, `Title` and
   `NavigationTitle`.
 
-* `[composition]` **`list-insert-options`** — the templates and branches that may be created
+- `[composition]` **`list-insert-options`** — the templates and branches that may be created
   under an item, read from `__Masters` (which inherits from the template's standard values).
   Each row reports `Kind`, since a `Branch` copies a whole subtree and a `Template` creates a
-  single item. Insert *rules* are not evaluated — the `uiGetMasters` pipeline is not available
+  single item. Insert _rules_ are not evaluated — the `uiGetMasters` pipeline is not available
   on a SitecoreAI CM — so a project that uses them may see more options in the Content Editor
   than are listed here.
 
-* `[security]` **`security-export-user`** and **`security-import-user`** — serialize a user
+- `[security]` **`security-export-user`** and **`security-import-user`** — serialize a user
   to disk and read one back, wrapping `Export-User` / `Import-User` with `identity` plus an
   optional `root` or `path`.
 
-* `[security]` **`security-export-role`** and **`security-import-role`** — the same for
+- `[security]` **`security-export-role`** and **`security-import-role`** — the same for
   roles, over `Export-Role` / `Import-Role`.
 
   All four are unblocked by SPE 8.0 and verified against a SitecoreAI development CM running
@@ -130,39 +188,72 @@ revision 2026-07-28._
 
 #### Performance and token cost
 
-* **`tools/list` drops from 162 tools / 150,038 characters to 111 tools / 100,091
+- **`tools/list` drops from 162 tools / 150,038 characters to 111 tools / 100,091
   characters** — 51 fewer tools and a third less schema on every turn, measured against the
   same SitecoreAI CM before and after. The `-by-id` / `-by-path` merge accounts for the tool
   count and most of the reduction; zod 4's tighter JSON Schema takes the remaining
   106,822 → 100,091. 426 of 472 parameters still carry their description — the same 426 as
-  before, the other 46 being parameters that never had one. (The four security serialization
-  tools and the two media tools bring the release's registered total to 117.)
+  before, the other 46 being parameters that never had one.
 
-* **Response projection for the item-returning PowerShell tools.** `fields` names the fields
+  That measurement isolates the merge. Everything else this release adds lands on top of it:
+  the composition set, the two media tools, the four security serialization tools and the 22
+  Authoring and Management tools, less the three removed (`sitecore-cli-documentation`,
+  `item-service-run-stored-query` and `item-service-run-stored-search`). The registered total
+  is **138** — 134 fixed, plus two per entry in `GRAPHQL_SCHEMAS`, so 138 with the default
+  `edge,master`. `TOOL_GROUPS` and `TOOL_PROFILE` are how a deployment gets back below the
+  post-merge figure: `TOOL_PROFILE=sai` alone hides 36 of them.
+
+- **Response projection for the item-returning PowerShell tools.** `fields` names the fields
   to return and `full` opts back into the whole set, so a call that needs three fields no
   longer pays for every field on the item.
 
-* **`common-get-archive-item` pages, and reports the archive's total.** New `first` (default
-  100) and `skip` parameters, and the response is now an object carrying `Archive`, `Total`,
+- **`common-get-archive-item` pages, and reports the archive's total.** New `first` (default 100) and `skip` parameters, and the response is now an object carrying `Archive`, `Total`,
   `Skip`, `First`, `Returned` and `Items` rather than a bare row list. A recycle bin is a tail
   nobody trims: the CM this was measured against holds 9,769 entries, and an unfiltered call
   returned roughly 3.3M characters even after response projection. The default page is
   ~32,000 characters, and `Total` means an agent can see it is looking at a page instead of
   discovering the archive's size by paying for it.
 
-* **Error shaping** reduces a failed SPE call to the message and the parameter sets, rather
+- **Error shaping** reduces a failed SPE call to the message and the parameter sets, rather
   than returning the whole CliXml exception.
 
-* **Tool gating via `TOOL_GROUPS`, `DISABLED_TOOLS` and `TOOL_PROFILE`** lets a deployment
+- **Tool gating via `TOOL_GROUPS`, `DISABLED_TOOLS` and `TOOL_PROFILE`** lets a deployment
   register only the groups it uses, which is the largest single lever on `tools/list` cost.
   The `sai` profile hides the whole `powershell.security` group for SitecoreAI, where
-  identity lives in the Cloud Portal; `common-publish-item` and `common-restart-application`
-  are available under it, since on SitecoreAI content publishes to Edge and a deployed
-  environment does have a publishing target (a local development CM does not).
+  identity lives in the Cloud Portal, and `powershell.logging`, whose only tool
+  (`logging-get-logs`) reads log files off the CM's data folder: a deployed SitecoreAI
+  environment has the platform collect its logs, so the tool has nothing to read, and a local
+  Docker CM already exposes them on a mounted volume, so going through SPE is the long way
+  round. `common-publish-item` and `common-restart-application` _are_ available under `sai`,
+  since on SitecoreAI content publishes to Edge and a deployed environment does have a
+  publishing target (a local development CM does not).
 
 #### Existing tools
 
-* `[presentation]` **`presentation-switch-rendering` returns the switched instance(s).**
+- `[powershell]` **`get-powershell-documentation` reveals the SPE reference progressively
+  instead of returning all of it.** It used to concatenate all 148 command pages — about
+  570KB of markdown — into a single tool result, so an agent that wanted the parameters of one
+  cmdlet paid for the parameter tables of the other 147. It now answers in widening steps,
+  each one telling you how to make the next: no arguments returns every command name with a
+  one-line summary grouped by category (~13KB, about 2% of the corpus); `search` matches
+  names, summaries and page bodies for when you know the task but not the cmdlet; `category`
+  lists one group; and `command` returns the full page for up to five named commands.
+  Case-insensitive, and a miss suggests the nearest names rather than just failing — a typo
+  like `Get-ItemTemplates` is answered with `Get-ItemTemplate` first. There is deliberately no
+  "return everything" mode.
+
+- `[powershell]` **The bundled SPE command reference is re-synced with upstream.** 145 of the
+  149 pages were already byte-identical to `SitecorePowerShell/Book`; four had drifted, and
+  `Find-Item` was the one that mattered — the bundled page documented neither `-Path`,
+  `-Template`, `-Property` nor `-LatestVersion`, all of which a real search script needs.
+  `Invoke-JavaScript`, `Show-ModalDialog` and `Send-SheerMessage` were refreshed too.
+  `packaging/import-item-1.md`, a byte-identical duplicate of `import-item.md`, and
+  `commands-list.md`, whose every link pointed at a path that exists in neither this repo nor
+  upstream, are both dropped — the index is generated from the pages now. One page is
+  corrected rather than copied: `restore-archiveitem.md` is headed `# Remove-ArchiveItem`
+  upstream, though its filename, syntax block and body are all `Restore-ArchiveItem`.
+
+- `[presentation]` **`presentation-switch-rendering` returns the switched instance(s).**
   SPE's `Switch-Rendering` assigns the replacement a NEW uniqueId, so the id the caller
   passed in dies with the old instance — and the tool used to return nothing, leaving every
   follow-up call aimed at an id that no longer existed. The tool now diffs the rendering
@@ -173,7 +264,22 @@ revision 2026-07-28._
 
 ### 🛠 Breaking Changes
 
-* **The `-by-id` / `-by-path` tool families are merged into one tool per operation.** 99
+- `[item-service]` **`item-service-run-stored-query` and `item-service-run-stored-search`
+  are removed.** Both ran a saved query or search _definition item_ by GUID — a Sitecore
+  feature that assumes someone has already authored the definition in the content tree. No
+  caller ever had that GUID to hand, so the tools cost schema on every turn without being
+  reachable in practice. `item-service-search-items`, `authoring-search` and
+  `indexing-find-item` cover searching from a query you actually have.
+
+- `[sitecore-cli]` **`sitecore-cli-documentation` is removed, along with its `sitecore-cli`
+  tool group.** The tool served a bundled snapshot of the Sitecore CLI documentation, which
+  had gone out of date and could only ever go further out of date. Sitecore's own
+  documentation MCP server answers the same questions against the live docs, so carrying a
+  stale copy cost a tool's schema on every turn to give worse answers. `TOOL_GROUPS` no
+  longer accepts `sitecore-cli` — an entry naming it is reported on stderr and ignored, as
+  any unknown group is.
+
+- **The `-by-id` / `-by-path` tool families are merged into one tool per operation.** 99
   tools were variants of 48 operations, differing only in how the caller named the item.
   Each merged tool drops the suffix and takes optional `id` and `path`, requiring exactly
   one; the old names are gone and are **not** aliased, because keeping them would double the
@@ -182,7 +288,6 @@ revision 2026-07-28._
   resolved only by Sitecore's own cmdlet precedence, which the caller cannot see.
 
   Merged operations, all following `<name>-by-id` / `<name>-by-path` → `<name>`:
-
   - `common-` — `add-base-template`, `add-item-version`, `convert-from-item-clone`,
     `get-item-clone`, `get-item-field`, `get-item-reference`, `get-item-referrer`,
     `get-item-template`, `get-item-workflow-event`, `invoke-workflow`, `new-item-clone`,
@@ -208,7 +313,7 @@ revision 2026-07-28._
   the rendering/setting/layout independently, which makes previously unreachable
   combinations work, such as an item by path with a rendering by ID.
 
-* **Parameter changes that came with the merge.** The presentation tools that took `itemId`
+- **Parameter changes that came with the merge.** The presentation tools that took `itemId`
   / `itemPath` now take `id` / `path`, like everything else. `database` is sent only when
   addressing by `id`, since a path carries its own prefix
   (`master:/sitecore/content/Home`); where a variant tool used `path` defaulting to
@@ -221,43 +326,43 @@ revision 2026-07-28._
   variant rather than the path variant's loose string, and `security-add-item-acl` keeps the
   `passThrough` switch only its path variant exposed.
 
-* `[transport]` **The SSE endpoint is gone.** `SSEServerTransport` was removed from the MCP
+- `[transport]` **The SSE endpoint is gone.** `SSEServerTransport` was removed from the MCP
   specification and from the SDK, so `http://<host>:3001/sse` no longer exists and neither
   does the `/messages` endpoint that went with it. **Any client configured against `/sse`
   must be repointed at Streamable HTTP on `/mcp`** — same host, same port 3001, one endpoint
   instead of two. This affects XM/XP and SitecoreAI deployments alike.
 
-  *Migration:* change the client's server URL from `http://<host>:3001/sse` to
+  _Migration:_ change the client's server URL from `http://<host>:3001/sse` to
   `http://<host>:3001/mcp`, and its transport type from "SSE" to "Streamable HTTP".
   `TRANSPORT=sse` still starts a server rather than failing: it serves Streamable HTTP on
   port 3001 and says so on stderr, so a container keeps listening while you repoint its
   clients. The `start:sse` npm script and `src/app.ts` are removed; `npm start` now means
   Streamable HTTP.
 
-* `[deps]` **The SDK packages changed.** `@modelcontextprotocol/sdk` is replaced by
+- `[deps]` **The SDK packages changed.** `@modelcontextprotocol/sdk` is replaced by
   `@modelcontextprotocol/server`, `@modelcontextprotocol/node` and (for tests)
   `@modelcontextprotocol/client` — see the v2 SDK entry under New Features for what that
   buys.
 
-  *Migration:* none required for clients. Anyone embedding this package's modules directly
+  _Migration:_ none required for clients. Anyone embedding this package's modules directly
   should note that `McpServer` and `CallToolResult` now come from
   `@modelcontextprotocol/server`.
 
-* `[deps]` **The supported runtime is the latest Node.js LTS release**, with `engines.node`
+- `[deps]` **The supported runtime is the latest Node.js LTS release**, with `engines.node`
   set to `>=22` as the hard floor. The v2 SDK does not support older runtimes, and Node 20
   reached end of life in April 2026.
 
-  *Migration:* upgrade Node. The published Docker images already run Node 24.
+  _Migration:_ upgrade Node. The published Docker images already run Node 24.
 
-* `[deps]` **zod 4.2 or later is required**, and `zod` is now a direct dependency rather
+- `[deps]` **zod 4.2 or later is required**, and `zod` is now a direct dependency rather
   than something inherited from the SDK. v2 builds tool schemas with zod's own JSON Schema
   conversion; on zod 3 the first `tools/list` fails silently, and on zod 4.0–4.1 every
   parameter description is dropped from the schema.
 
-  *Migration:* none for users of the published package. A checkout needs a fresh
+  _Migration:_ none for users of the published package. A checkout needs a fresh
   `npm install`.
 
-* **The Smithery integration is removed.** `smithery.yaml` and the Smithery-generated root
+- **The Smithery integration is removed.** `smithery.yaml` and the Smithery-generated root
   `Dockerfile` are deleted, along with the README badge. Neither was built by CI — the
   published images come from `docker/linux/Dockerfile` and `docker/windows/Dockerfile` — and
   the config had drifted, exposing none of the tool-gating settings. Install with
@@ -265,13 +370,7 @@ revision 2026-07-28._
 
 ### 🔒 Security
 
-* `[media]` **`media-upload` interpolated `database` into PowerShell unescaped.** Every
-  other value in the read-back script was quoted with `quotePowerShellString`; this one was
-  not, so `database: "master'; <script>; $x='"` executed arbitrary PowerShell as the SPE
-  remoting account. The value is now quoted like its siblings *and* constrained by the
-  schema to a plain database identifier.
-
-* `[media]` **`filePath` and `saveTo` are refused over the HTTP transport by default.**
+- `[media]` **`filePath` and `saveTo` are refused over the HTTP transport by default.**
   Both read and write the filesystem of the machine running this server, which is
   unremarkable on stdio and is arbitrary file read/write for anyone who can reach the port
   under `TRANSPORT=streamable-http`, where `AUTHORIZATION_HEADER` is empty by default. Set
@@ -279,103 +378,70 @@ revision 2026-07-28._
   applies on both transports once set. See
   [Media and the local filesystem](./docs/configuration.md#media-and-the-local-filesystem).
 
-* `[media]` **`sourceUrl` no longer reaches private networks.** The server fetches this URL
-  from wherever it is deployed, so an unrestricted value was a server-side request forgery
+- `[media]` **`sourceUrl` cannot reach private networks.** The server fetches this URL from
+  wherever it is deployed, so an unrestricted value would be a server-side request forgery
   primitive against the cloud metadata endpoint and anything else on the CM's network. Only
   `http`/`https` is accepted, hostnames that resolve into private, loopback or link-local
-  space are refused unless `MEDIA_ALLOW_PRIVATE_SOURCE_URL=true`, and the fetch is now
-  subject to the same timeout as every other outbound request.
+  space are refused unless `MEDIA_ALLOW_PRIVATE_SOURCE_URL=true`, and the fetch is subject to
+  the same timeout as every other outbound request.
 
-* `[server]` **The `config` tool and `config://main` resource redact secrets.** Both
+- `[server]` **The `config` tool and `config://main` resource redact secrets.** Both
   returned the full configuration — the Item Service and PowerShell passwords, the GraphQL
   API key and the server's own `AUTHORIZATION_HEADER` — to any client that could call a
-  tool. The keys remain present so "is one configured?" is still answerable.
+  tool. `AUTHORING_TOKEN` and `AUTHORING_CLIENT_SECRET` are masked on the same footing;
+  `AUTHORING_CLIENT_ID` stays visible, since it identifies which automation client is in use
+  and is not a credential on its own. The keys remain present so "is one configured?" is
+  still answerable.
 
-* `[http]` **The authorization check is constant-time and the `Bearer` strip is anchored.**
+- `[http]` **The authorization check is constant-time and the `Bearer` strip is anchored.**
   `===` on a shared secret leaks, through timing, how many leading characters were right,
   and the unanchored `Bearer` pattern also matched inside a token that happened to contain
   it. Unauthorized responses are now JSON rather than plain text.
 
-* `[security]` **`security-export-*` / `security-import-*` reject `root` and `path`
-  together.** The descriptions always said not to combine them; nothing enforced it, so the
-  cmdlet resolved its parameter sets in an order the caller could not see.
-
 ### 🐛 Bug Fixes
 
-* `[tools]` **A whitespace-only `id` addressed the wrong item, across ~26 merged tools.**
-  Validation trims before deciding what was supplied, but each tool branched on raw
-  truthiness, so `{id: "  ", path: "/sitecore/content/Home"}` passed validation as a path
-  call and then sent `-Id '  '`. Both now use the same `hasTarget` predicate.
-
-* `[composition]` **The composition tools silently preferred `path` when both a path and an
-  ID were supplied.** That is the ambiguity the merged tools reject by design; they now
-  reject it too, in `create-component-datasource`, `add-rendering-to-placeholder`,
-  `get-allowed-components-by-placeholder` and `list-insert-options`, and for the
-  `renderingPath`/`renderingId` pair as well.
-
-* `[composition]` **A colon anywhere in a path was read as a database prefix.**
-  `/sitecore/content/Home/A:B` resolved to database `/sitecore/content/Home/A`. Only a
-  leading identifier followed by a colon counts now.
-
-* `[indexing]` **`indexing-find-item` reported a failed search as an empty one.** It bypassed
+- `[indexing]` **`indexing-find-item` reported a failed search as an empty one.** It bypassed
   the shared error shaping entirely, returning the full serialized .NET `ErrorRecord` with
   `isError` unset. It now shapes errors like every other PowerShell tool. Its `first`/`skip`
   are integers, and `criteria` requires at least one entry rather than sending `-Criteria @()`.
 
-* `[logging]` **`logging-get-logs` discarded the shaped error message.** It parsed the tool
+- `[logging]` **`logging-get-logs` discarded the shaped error message.** It parsed the tool
   result as JSON without checking `isError`, so a PowerShell failure surfaced as
   "Unexpected token" instead of the message the error shaping had just built. An
   unparseable `date` now errors instead of globbing for `NaNNaNNaN`, and the date is
   formatted in UTC rather than the MCP host's local timezone.
 
-* `[powershell]` **A non-JSON response from the CM was reported as a parse bug.** An HTML
+- `[powershell]` **A non-JSON response from the CM was reported as a parse bug.** An HTML
   error page from the CM produced "Unexpected token <" from the very function that owns
   error presentation; it now says what actually happened and shows the start of the response.
 
-* `[powershell]` **`xmlLooksLikeError` matched the `writeErrorStream` property name rather
-  than its value**, so output carrying the flag set to `false` was reported as a failure.
-
-* `[media]` **`media-upload` could not find the item it had just created.** It rebuilt the
-  path in TypeScript by stripping the extension at the *last* dot. The SPE media handler
-  splits at the *first* one — `my.probe.png` is stored as an item called `my` — and Sitecore
-  then rewrites any character it will not accept in a name. The read-back now derives the
-  stem at the first dot and asks Sitecore for the same `ProposeValidItemName` transformation,
-  with the last-dot reading kept as a fallback candidate. Because the item name is not the
-  file name, `media-upload` reports the name the item actually got, and its `destination`
-  description says so.
-
-* `[http]` **The `/mcp` body limit was Express's 100kb default**, which is smaller than a
+- `[http]` **The `/mcp` body limit was Express's 100kb default**, which is smaller than a
   single base64 image, so `media-upload`'s inline `content` failed — as an HTML error, which
   is what the JSON 404 fallback exists to prevent. The limit is now 32mb (`MCP_BODY_LIMIT`)
   and a malformed or oversized body answers in JSON.
 
-* `[config]` **A malformed `GRAPHQL_HEADERS` killed the process during module import**, which
+- `[config]` **A malformed `GRAPHQL_HEADERS` killed the process during module import**, which
   on stdio is a subprocess that dies with no explanation. It is now reported and ignored, the
   same way an unknown `TOOL_PROFILE` is.
 
-* `[config]` **An unrecognised `TRANSPORT` fell through to stdio in silence**, so a typo in a
+- `[config]` **An unrecognised `TRANSPORT` fell through to stdio in silence**, so a typo in a
   container's config left nothing listening and no clue why. It now says so on stderr.
 
-* `[tools]` **A `TOOL_GROUPS` allowlist of nothing but typos registered zero tools.** Unknown
-  names are dropped rather than kept, so the allowlist is ignored instead. `DISABLED_TOOLS`
-  names that match no tool are now reported once registration is done — a denylist typo used
-  to fail open in silence.
+- `[annotations]` **`query-graphql-<schema>` claimed `readOnlyHint` while forwarding any
+  document, mutations included.** The name-based inference in `tool-annotations.ts` reads the
+  leading verb, and "query" reads as a read — but the tool only syntax-checks what it is
+  given, so a mutation goes through as readily as a query. It now declares its own
+  annotations rather than accepting the inferred ones.
 
-* `[annotations]` **Four tools carried annotations the name-based inference got wrong.**
-  `media-download` claimed `readOnlyHint` while `saveTo` writes a local file;
-  `query-graphql-<schema>` claimed it while forwarding any document, mutations included;
-  `security-import-user`/`security-import-role` and `media-upload` overwrite live state and
-  are now `destructiveHint`.
-
-* `[http]` **The listen port was hardcoded.** `PORT` and `HOST` are now read, the server logs
+- `[http]` **The listen port was hardcoded.** `PORT` and `HOST` are now read, the server logs
   where it is listening, and `EADDRINUSE` explains itself instead of surfacing as an
   unhandled error.
 
-* `[build]` **`prepare` did not produce `dist/bundle.js`**, which `main` and `bin` point at,
+- `[build]` **`prepare` did not produce `dist/bundle.js`**, which `main` and `bin` point at,
   so a git install shipped a `bin` target that did not exist. The Docker image tags now come
   from `$npm_package_version` instead of three hardcoded copies of it.
 
-* `[graphql]` **`query-graphql-<schema>` sent `variables` as a string.** The MCP parameter
+- `[graphql]` **`query-graphql-<schema>` sent `variables` as a string.** The MCP parameter
   is a JSON string, but it was forwarded verbatim, so the request body carried
   `"variables": "{...}"` instead of a JSON object and GraphQL endpoints rejected any
   parameterized query. The string is now parsed before sending, with a clear error naming
@@ -384,14 +450,14 @@ revision 2026-07-28._
   tool spells out what each schema can see (`edge` serves published content only) and
   documents the `query` / `variables` parameters.
 
-* `[presentation]` **`presentation-set-rendering` could never find a rendering that lives
+- `[presentation]` **`presentation-set-rendering` could never find a rendering that lives
   only in the final layout**, whatever the caller passed for `finalLayout`: its
   `Get-Rendering` lookup sent neither `-FinalLayout` nor `-Language`, so it always searched
   the shared layout in the context language and reported "No matching rendering was found"
   for uniqueIds that `presentation-list-renderings` had just returned. The lookup now targets
   the same layout and language as the update.
 
-* `[presentation]` **The rendering-instance tools now default `finalLayout` to `true`**,
+- `[presentation]` **The rendering-instance tools now default `finalLayout` to `true`**,
   matching `presentation-list-renderings`: `presentation-get-rendering`, `-set-rendering`,
   `-switch-rendering`, `-remove-rendering`, `-get-rendering-parameter`,
   `-set-rendering-parameter` and `-remove-rendering-parameter`. The final layout is the
@@ -400,21 +466,70 @@ revision 2026-07-28._
   instance that exists only in the final layout. Pass `finalLayout: false` to target the
   shared layout, as before.
 
-* `[common]` `common-publish-item`'s `fromDate` parameter was declared as `z.date()`. zod 4
+- `[common]` `common-publish-item`'s `fromDate` parameter was declared as `z.date()`. zod 4
   refuses to represent a `Date` in JSON Schema, and because the whole tool list is built in
   one pass that single parameter made **`tools/list` fail outright** — the server advertised
   no tools at all. It is now a string carrying the accepted ISO 8601 format in its
   description. Nothing is lost: JSON-RPC parameters are JSON, so a `Date` object could never
   have reached the tool anyway.
 
-* `[deps]` `express` was declared as a devDependency, but rollup keeps it external, so the
+- `[deps]` `express` was declared as a devDependency, but rollup keeps it external, so the
   published `dist/bundle.js` opens with `import express from 'express'` and could not start
   without it — on **stdio too**, because the import is eager. It is now a runtime dependency.
   This affected every published version that bundled this way, not just this one.
 
+- `[powershell]` **`get-powershell-documentation` was broken in the published package.** It
+  resolved the command reference relative to its own module, which is correct for the loose
+  build but not for `dist/bundle.js` — the file `bin` points at, and the one `npx` runs. Every
+  user of the npm package or the Docker images got
+  `ENOENT ... dist\documentation` while it worked in local development against
+  `dist/index.js`. The lookup now tries the layouts both builds produce. Two related causes
+  are fixed with it: rollup's copy step was flattening the category folders, and `npm run
+build` did not copy the markdown at all, so the loose build only worked if some earlier
+  `npm run bundle` had left files behind.
+
+- `[powershell]` **A failed SPE call now says what actually answered.** `executeScript`
+  threw `response.statusText` and discarded the body, so a CM whose login is federated to
+  Sitecore Cloud — which redirects an unauthenticated remoting call to its identity
+  provider, and gets back a 3KB HTML error page and a `400` — reported the two words "Bad
+  Request". That is enough to send someone after a disabled `remoting` service when the
+  real problem is that HTTP Basic credentials cannot satisfy a cloud CM. The error now
+  carries the status, an excerpt of the body with HTML reduced to its visible text, and,
+  when the response came from the identity provider rather than Sitecore, says so outright.
+  A `429` is named as rate limiting and a `404` still points at the remoting service.
+
+- `[item-service]` **`Login failed` now carries the status and the reason.** A `403` from
+  the Item Service means one of two very different things — the account is not valid on this
+  instance, or `Sitecore.Services.SecurityPolicy` is still `ServicesOffPolicy` — and the old
+  message distinguished neither. It now reports the status, names the account it tried, and
+  explains the test that separates the two causes. The other nine call sites in that client
+  threw a bare `HTTP error! status: <n>`; all of them now include the status text and a body
+  excerpt, which is where the Item Service puts the reason.
+
+### 📝 Documentation
+
+- [Configuration](docs/configuration.md) gains an [Authoring and Management
+  API](docs/configuration.md#authoring-and-management-api) section covering both auth routes
+  and when to prefer each.
+- [Preparing your Sitecore instance](docs/sitecore-setup.md) gains step 5 — switching
+  GraphQL on, getting credentials on SitecoreAI and on XM/XP, and the media-upload
+  encryption key — plus seven new troubleshooting rows. It also no longer claims that a
+  `403` from the Item Service proves `ServicesOffPolicy`: it can equally be a refused
+  account, and the page now gives the one-request test that tells the two apart.
+- [Tool selection](docs/tool-selection.md) explains what separates the three authoring
+  groups, and when to reach for the Authoring API over the Item Service or PowerShell.
+- [Tool reference](docs/tools.md) documents three endpoint path rules that are easy to trip
+  over: template paths are relative to `/sitecore/templates` with no leading slash, a
+  media `itemPath` carries no file extension, and template sections and fields are matched
+  by ID rather than by name.
+- [Contributing](CONTRIBUTING.md) states what the integration suite actually requires — it
+  addresses seeded fixture content by hard-coded GUID, so it fails in bulk against any other
+  instance — and maps each failure signature to its cause, so a wall of red is diagnosable
+  at a glance.
+
 ### ✨ Chores
 
-* `[transport]` Removed the per-session transport map in the Streamable HTTP server, along
+- `[transport]` Removed the per-session transport map in the Streamable HTTP server, along
   with the initialize-request sniffing, the session-ID generator and the separate GET/DELETE
   session handlers. The 2026-07-28 revision has no initialize handshake and no
   protocol-level session, so there is nothing to key a map on; requests are served
@@ -422,7 +537,7 @@ revision 2026-07-28._
   endpoint, the RFC 9728 OAuth protected-resource metadata route, the JSON 404 fallback and
   the `AUTHORIZATION_HEADER` check are unchanged.
 
-* `[tests]` Removed the MCP inspector's CLI internals from the test suite. `tests/client.ts`
+- `[tests]` Removed the MCP inspector's CLI internals from the test suite. `tests/client.ts`
   builds its transport with `StdioClientTransport` from `@modelcontextprotocol/client`, and
   `callTool` is a local helper instead of an undeclared import from
   `@modelcontextprotocol/inspector/cli/build/client/tools.js`.
@@ -433,7 +548,7 @@ _Released 2026-07-30._
 
 ### 🎉 New Features & Improvements
 
-* `[powershell]` **Default PowerShell script timeout raised from 60 seconds to 10 minutes.**
+- `[powershell]` **Default PowerShell script timeout raised from 60 seconds to 10 minutes.**
   The 60s default was tuned to the tool-call timeout most AI agents enforce, but in practice
   it fired constantly on larger scripts (index rebuilds, publishing, bulk item updates) and
   aborted work that would have succeeded. The timeout exists to stop a hung Sitecore
@@ -447,7 +562,7 @@ _Released 2026-07-22._
 
 ### 🐛 Bug Fixes
 
-* `[docker]` Docker Hub publish workflows only: the Windows image build now waits for the
+- `[docker]` Docker Hub publish workflows only: the Windows image build now waits for the
   Docker daemon to accept API calls before building, and the published image tags were
   brought up to the current version. No changes to the server itself.
 
@@ -457,7 +572,7 @@ _Released 2026-07-22._
 
 ### 🔒 Security
 
-* `[powershell]` **PowerShell command injection fixed.** All user-supplied values are now
+- `[powershell]` **PowerShell command injection fixed.** All user-supplied values are now
   escaped as single-quoted PowerShell literals via a new `quotePowerShellString` helper in
   `command-builder.ts` (and `prepareArgsString` in `utils.ts`). Previously values were
   interpolated with basic double-quote wrapping — or, in composite tools, not quoted at all
@@ -466,59 +581,59 @@ _Released 2026-07-22._
   item clone, item referrer, layout, and rendering tools) now route those values through the
   escaper.
 
-* `[indexing]` `[logging]` `find-item` now escapes the free-text search `value` and `index`;
+- `[indexing]` `[logging]` `find-item` now escapes the free-text search `value` and `index`;
   `get-logs` restricts the `name` parameter to a safe filename charset (it is interpolated
   into a path glob that cannot be single-quoted).
 
-* `[graphql]` **GraphQL API key moved out of the URL.** The `sc_apikey` is now sent as an
+- `[graphql]` **GraphQL API key moved out of the URL.** The `sc_apikey` is now sent as an
   HTTP header instead of a query-string parameter in `query` and `introspection`, so it is
   no longer captured in access logs, proxies, or browser history.
 
-* **Corrected the TLS-verification environment variable.** `.env.template` now uses the
+- **Corrected the TLS-verification environment variable.** `.env.template` now uses the
   Node-recognized `NODE_TLS_REJECT_UNAUTHORIZED`; the previous `NODE_REJECT_UNAUTHORIZED`
   was not recognized by Node and silently had no effect. It still ships set to `0`, since
   the server primarily targets local development against Sitecore/SitecoreAI instances with
   self-signed certificates, but now carries a prominent warning to set it to `1` (or remove
   it) in production or on untrusted networks.
 
-* `[deps]` Updated dependencies to resolve all known advisories — `npm audit` now reports
+- `[deps]` Updated dependencies to resolve all known advisories — `npm audit` now reports
   **0 vulnerabilities** (previously 18, including 4 critical). Notably bumps
   `@modelcontextprotocol/sdk` to ^1.29.0 and patches transitive `fast-xml-parser`,
   `minimatch`, `brace-expansion`, `body-parser`, and others.
 
 ### 🎉 New Features & Improvements
 
-* **Tool annotations for every tool.** A `server.tool` wrapper (`tool-annotations.ts`) now
+- **Tool annotations for every tool.** A `server.tool` wrapper (`tool-annotations.ts`) now
   infers `readOnlyHint`, `destructiveHint`, and a human-readable `title` from each tool's
   name, so MCP clients can distinguish safe reads from mutations and destructive operations.
   `run-powershell-script` is flagged destructive and open-world.
 
-* **Request timeouts** on all outbound HTTP calls via a shared `fetchWithTimeout` helper
+- **Request timeouts** on all outbound HTTP calls via a shared `fetchWithTimeout` helper
   (Item Service, GraphQL, and PowerShell clients). Defaults: 30s for REST/GraphQL, 60s for
   PowerShell; both configurable via `REQUEST_TIMEOUT_MS` / `POWERSHELL_TIMEOUT_MS`. (60s
   aligns with the tool-call timeout most AI agents enforce, so a longer default would only
   cause the agent to abort before this timeout fires.) The PowerShell default was later
   raised to 10 minutes in 1.4.2.
 
-* `[item-service]` **Traversal guard** in `get-item-descendants`: a visited-set for cycle
+- `[item-service]` **Traversal guard** in `get-item-descendants`: a visited-set for cycle
   protection and a configurable node cap (`DESCENDANTS_MAX_ITEMS`, default 5000) that
   reports truncation instead of exhausting memory on large or circular item trees.
 
-* `[tests]` **Unit test suite** (`tests/unit/`) covering the PowerShell escaper and
+- `[tests]` **Unit test suite** (`tests/unit/`) covering the PowerShell escaper and
   tool-annotation inference, runnable without a live Sitecore instance via
   `npm run test:unit`.
 
-* **CI workflow** (`.github/workflows/ci.yml`) that type-checks, builds, bundles, runs the
+- **CI workflow** (`.github/workflows/ci.yml`) that type-checks, builds, bundles, runs the
   unit tests, and audits dependencies on every pull request and push to `main`, plus an
   `npm run typecheck` script (`tsc --noEmit`).
 
-* `[transport]` A `/health` liveness endpoint on the HTTP transports (`streamable-http` and
+- `[transport]` A `/health` liveness endpoint on the HTTP transports (`streamable-http` and
   `sse`) that returns `200 {"status":"ok"}`, plus Docker `HEALTHCHECK` directives for the
   Linux and Windows images that probe it. (The health check reports that the HTTP server is
   accepting requests — the appropriate signal for a container — rather than probing the
   OAuth discovery endpoint.)
 
-* `[deps]` **Migrated to TypeScript 7.** The SDK's generic `tool()` overloads made the `tsc`
+- `[deps]` **Migrated to TypeScript 7.** The SDK's generic `tool()` overloads made the `tsc`
   5.x type-checker exhaust its heap across the ~140 registration call sites (the build did
   not complete even with an 8 GB heap). The TypeScript 7 native compiler type-checks the
   same code in under a second, so tool-registration functions use the SDK's `McpServer` type
@@ -526,29 +641,29 @@ _Released 2026-07-22._
   `moduleResolution` is now `"bundler"` and the removed `baseUrl` option was dropped (path
   aliases retained as `"@/*": ["./src/*"]`).
 
-* **Migrated all tool registrations from the deprecated `server.tool()` to
+- **Migrated all tool registrations from the deprecated `server.tool()` to
   `server.registerTool()`.** The SDK deprecated `tool()` in favour of `registerTool()`;
   every registration now passes a config object (`{ description, inputSchema }`) and the
   `withInferredAnnotations` wrapper injects annotations into that config rather than as a
   positional argument. (Feasible now that the TypeScript 7 switch removed the
   overload-resolution heap blow-up that affected `tool()` and `registerTool()` alike.)
 
-* `[docker]` Docker images pinned to **Node 24** (Linux previously floated on
+- `[docker]` Docker images pinned to **Node 24** (Linux previously floated on
   `node:lts-alpine`; Windows previously pinned Node 22), matching the CI Node version.
   `@types/node` bumped to ^24 to match the Node 24 runtime. Images that expose an HTTP port
   now default to the `streamable-http` transport.
 
-* Tightened input validation on search/pagination parameters (bounded `page`/`pageSize`,
+- Tightened input validation on search/pagination parameters (bounded `page`/`pageSize`,
   non-empty search terms).
 
 ### 🛠 Breaking Changes
 
-* `AUTORIZATION_HEADER` renamed to the correctly-spelled `AUTHORIZATION_HEADER` across
+- `AUTORIZATION_HEADER` renamed to the correctly-spelled `AUTHORIZATION_HEADER` across
   config and `smithery.yaml`. The old misspelled name is no longer recognized.
 
 ### 🐛 Bug Fixes
 
-* `[presentation]` **Clearer errors when a rendering lookup finds nothing** (issue #62). The
+- `[presentation]` **Clearer errors when a rendering lookup finds nothing** (issue #62). The
   presentation tools that resolve a rendering via `Get-Rendering` before acting on it
   previously failed with the opaque PowerShell error "Cannot bind argument to parameter
   'Instance' because it is null." — or, for the switch tools, silently did nothing — when
@@ -560,10 +675,10 @@ _Released 2026-07-22._
   `set-/get-/remove-rendering-parameter-by-id`/`-by-path`, and
   `switch-rendering-by-id`/`-by-path`.
 
-* Corrected the server description typo "Modle Context Protocol" → "Model Context Protocol".
+- Corrected the server description typo "Modle Context Protocol" → "Model Context Protocol".
 
-* `[deps]` Pinned `@antonytm/clixml-parser` to `^0.1.5` instead of the floating `latest` tag.
+- `[deps]` Pinned `@antonytm/clixml-parser` to `^0.1.5` instead of the floating `latest` tag.
 
 ### ✨ Chores
 
-* Normalized all `McpServer` imports to the `.js` module specifier for consistency.
+- Normalized all `McpServer` imports to the `.js` module specifier for consistency.

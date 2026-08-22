@@ -13,7 +13,7 @@ const placeholderSettingKey = "new_placeholder_setting";
 
 const database = "master";
 const language = "ja-jp";
-const finalLayout = "true";
+const finalLayout = true;
 
 describe("powershell", () => {
     it("presentation-add-placeholder-setting", async () => {

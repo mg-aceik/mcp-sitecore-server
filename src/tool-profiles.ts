@@ -1,10 +1,10 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 
 /**
- * Tool gating: which of the server's 119 tools get registered.
+ * Tool gating: which of the server's 138 tools get registered.
  *
- * (115 tools are fixed; the GraphQL group adds two more — a query tool and an
- * introspection tool — per entry in `GRAPHQL_SCHEMAS`. 119 is the total with the default
+ * (134 tools are fixed; the GraphQL group adds two more — a query tool and an
+ * introspection tool — per entry in `GRAPHQL_SCHEMAS`. 138 is the total with the default
  * `edge,master`. Verified against a live server's tools/list.)
  *
  * Schema cost is paid on every turn whether a tool is ever called or not, so a client
@@ -32,6 +32,16 @@ import type { McpServer } from "@modelcontextprotocol/server";
  * `src/tools/powershell/` rather than in a category folder:
  * `get-powershell-documentation` and `run-powershell-script`.
  *
+ * The three `authoring.*` groups are the Authoring and Management GraphQL API, split the
+ * way Sitecore's own documentation splits that schema. `authoring.core` is the raw
+ * endpoint — introspection and an any-document tool — and is what keeps the rest of the
+ * schema (workflow, archiving, rules, security, language, database) reachable without a
+ * typed tool for each. `authoring.content` is the authoring half: items, templates, media,
+ * sites, search. `authoring.management` is the management half: publishing, jobs and index
+ * rebuilds. They are separate because the content tools are wanted by anything authoring,
+ * while the management tools are wanted by a deployment or operations agent, and an agent
+ * doing one rarely does the other.
+ *
  * `powershell.composition` is the site-aware composition set added in Tier 1
  * (`composite/composition/`). It is its own group rather than part of
  * `powershell.presentation` because the two answer different questions and are wanted at
@@ -44,6 +54,9 @@ import type { McpServer } from "@modelcontextprotocol/server";
  */
 export const TOOL_GROUPS = [
     "graphql",
+    "authoring.core",
+    "authoring.content",
+    "authoring.management",
     "item-service",
     "powershell.core",
     "powershell.composition",
@@ -54,7 +67,6 @@ export const TOOL_GROUPS = [
     "powershell.provider",
     "powershell.indexing",
     "powershell.media",
-    "sitecore-cli",
 ] as const;
 
 export type ToolGroup = (typeof TOOL_GROUPS)[number];
@@ -95,6 +107,12 @@ export const TOOL_PROFILES: Record<string, ToolProfile> = {
                 + "CM, so the CM-side identity tools are misleading at best. This also hides the "
                 + "item ACL, lock and protect tools, which do work on a SitecoreAI CM — use "
                 + "TOOL_PROFILE=xp with DISABLED_TOOLS if you need those.",
+            "powershell.logging":
+                "`logging-get-logs` reads log files off the CM's data folder, which does not work "
+                + "on SitecoreAI: a deployed environment's logs are collected by the platform and "
+                + "read through the Cloud Portal or your log sink, not from a path on disk. On a "
+                + "local Docker CM the files are right there on the mounted volume, so reading "
+                + "them over SPE is the long way round. The group holds only that one tool.",
         },
         disabledTools: {},
     },

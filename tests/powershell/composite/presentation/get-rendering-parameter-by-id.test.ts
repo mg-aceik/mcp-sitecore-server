@@ -8,7 +8,7 @@ const itemId = "{968F73D2-B5AC-4A26-BB96-AF32AEA8C7DE}";
 
 const uniqueId = "{B343725A-3A93-446E-A9C8-3A2CBD3DB489}";
 const database = "master";
-const finalLayout = "true";
+const finalLayout = true;
 const language = "ja-jp";
 const name = "sample";
 

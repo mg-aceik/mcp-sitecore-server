@@ -13,7 +13,7 @@ const uniqueId = "{E59BAEAE-9F59-44CB-BD23-61F5C8278BE1}";
 
 const database = "master";
 const language = "ja-jp";
-const finalLayout = "true";
+const finalLayout = true;
 
 const overridenPlaceholderSettingKey = "test_placeholder_override_key";
 

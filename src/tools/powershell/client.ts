@@ -2,6 +2,73 @@ import { generateUUID, fetchWithTimeout } from "@/utils.js";
 import { convertObject, parseXMLString } from "@antonytm/clixml-parser";
 import { PowershellCommandBuilder } from "./command-builder.js";
 
+/**
+ * Turns a failed SPE response into a message that says what actually answered.
+ *
+ * `response.statusText` alone is actively misleading here. A CM whose login is federated
+ * to Sitecore Cloud does not reject an unauthenticated remoting call with 403: it redirects
+ * to the identity provider, which replies with its own HTML error page and a 400 — so the
+ * only thing the caller ever saw was "Bad Request", and the 3KB body naming the real
+ * problem was thrown away. That one omission is enough to send someone diagnosing this
+ * after a disabled `remoting` service, which is not what is wrong.
+ *
+ * So: keep the status, name the responder when a known one is identifiable from the
+ * headers, and carry an excerpt of the body. HTML is stripped to its visible text, because
+ * an error page's markup is noise and its wording is the entire point.
+ */
+export async function describeFailedSpeResponse(
+    response: Response,
+    url: string
+): Promise<string> {
+    let body = "";
+    try {
+        body = await response.text();
+    } catch {
+        // A body that cannot be read must not mask the status, which is the useful part.
+    }
+
+    const contentType = response.headers.get("content-type") ?? "";
+    const isHtml = contentType.includes("html") || /^\s*<(!doctype|html)/i.test(body);
+    const visible = isHtml
+        ? body
+            .replace(/<(script|style)[\s\S]*?<\/\1>/gi, " ")
+            .replace(/<[^>]*>/g, " ")
+            .replace(/&#39;/g, "'")
+            .replace(/&quot;/g, '"')
+            .replace(/&amp;/g, "&")
+            .split(/\s+/)
+            .join(" ")
+            .trim()
+        : body.split(/\s+/).join(" ").trim();
+
+    // Identity providers in front of a cloud CM announce themselves in the headers, and
+    // "this never reached Sitecore" is the single most useful thing to say when true.
+    const responder = response.headers.get("x-auth0-requestid")
+        ? "The response came from Auth0, not Sitecore: the request was redirected to the "
+        + "identity provider, so it never reached the SPE remoting endpoint. The credentials "
+        + "are not a Sitecore account this CM accepts, or the CM requires a Sitecore Cloud "
+        + "session that HTTP Basic authentication cannot provide."
+        : "";
+
+    const rateLimited = response.status === 429
+        ? " The request was rate limited; on a cloud CM this usually means many "
+        + "unauthenticated calls are being bounced to the identity provider in a burst."
+        : "";
+
+    const hint = response.status === 404
+        ? " A 404 here usually means the SPE remoting service is not enabled, or SPE is not "
+        + "installed on this instance."
+        : "";
+
+    return [
+        `Error executing script: ${response.status} ${response.statusText} from ${url.trim()}.`,
+        responder,
+        rateLimited.trim(),
+        hint.trim(),
+        visible ? `Response: ${visible.slice(0, 600)}` : "",
+    ].filter(Boolean).join(" ");
+}
+
 class PowershellClient {
     private serverUrl: string;
     private username: string;
@@ -46,7 +113,7 @@ class PowershellClient {
         }, timeoutMs);
 
         if (!response.ok) {
-            throw new Error(`Error executing script: ${response.statusText}`);
+            throw new Error(await describeFailedSpeResponse(response, url));
         }
         return response.text();
     }

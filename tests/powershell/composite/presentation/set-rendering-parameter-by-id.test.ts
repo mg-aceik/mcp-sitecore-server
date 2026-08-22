@@ -14,7 +14,7 @@ const parameter = {
 };
 const database = "master";
 const language = "ja-jp";
-const finalLayout = "true";
+const finalLayout = true;
 
 describe("powershell", () => {
     it("presentation-set-rendering-parameter", async () => {

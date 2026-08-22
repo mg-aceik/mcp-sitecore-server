@@ -12,7 +12,7 @@ const parameter = {
     sample: "value_updated_by_path"
 };
 const language = "ja-jp";
-const finalLayout = "true";
+const finalLayout = true;
 
 describe("powershell", () => {
     it("presentation-set-rendering-parameter", async () => {

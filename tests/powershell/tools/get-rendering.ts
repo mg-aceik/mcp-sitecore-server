@@ -7,7 +7,7 @@ export async function getRenderingById(
     database: string,
     uniqueId: string | undefined,    
     language: string | undefined,
-    finalLayout: string | undefined
+    finalLayout: boolean | undefined
 ) : Promise<any>
 {
     const getRenderingsArgs: Record<string, any> = {
@@ -28,7 +28,7 @@ export async function getRenderingByPath(
     path: string,
     uniqueId: string | undefined,    
     language: string | undefined,
-    finalLayout: string | undefined
+    finalLayout: boolean | undefined
 ) : Promise<any>
 {
     const getRenderingsArgs: Record<string, any> = {

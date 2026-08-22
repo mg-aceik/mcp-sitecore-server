@@ -126,6 +126,12 @@ over unencrypted HTTP. Needed only when your CM is `http://`. If your instance i
 the whole Item Service on. This one setting is the difference between the
 `item-service-*` tools working and every one of them failing with a `403`.
 
+A `403` on its own does not prove the policy is the problem, though: the Item Service
+returns the same status when the policy is on and the *credentials* are refused. To tell
+them apart, POST deliberately malformed JSON to `/sitecore/api/ssc/auth/login`. A `400` or
+`500` means the controller is executing — so the endpoint is on and the account is what is
+being rejected. A `403` regardless of what you send means the policy is still off.
+
 **`RequireAuthentication` ignore rule** — stops the `httpRequestBegin` pipeline from
 bouncing unauthenticated requests to the SPE paths before SPE's own authorization runs.
 Without it, remoting requests are redirected to the login page instead of executing.
@@ -188,6 +194,60 @@ Only needed for the `graphql` tool group.
 The server sends the key as an HTTP header rather than the `sc_apikey` query parameter, so
 it doesn't end up in access logs or proxy logs.
 
+## 5. Enable the Authoring and Management API (optional)
+
+Only needed for the `authoring.core`, `authoring.content` and `authoring.management` tool
+groups. Nothing here is about SPE or the Item Service: this API is reached over plain HTTP
+with an OAuth bearer token, which is exactly why it keeps working on instances where the
+other two surfaces are switched off.
+
+**1. Switch GraphQL on.** Add to a patch file:
+
+```xml
+<setting name="GraphQL.Enabled" value="true" />
+```
+
+On SitecoreAI and XM Cloud environments this is normally already on — check by POSTing
+anything to `https://<cm-host>/sitecore/api/authoring/graphql/v1/`. A `404` means the
+setting is off; a `200` carrying an `AUTH_NOT_AUTHENTICATED` error means it is on and just
+wants a token.
+
+The interactive IDE is a separate setting, off by default, and worth leaving off outside
+development:
+
+```xml
+<setting name="GraphQL.ExposePlayground" value="true" />
+```
+
+It then serves at `https://<cm-host>/sitecore/api/authoring/graphql/playground/` and needs
+the caller to be at least in `sitecore\Sitecore Client Users`.
+
+**2. Get credentials.**
+
+- *SitecoreAI / XM Cloud:* create an automation client in XM Cloud Deploy with the
+  `xmcloud.cm:admin` scope, and put its client ID and secret in `AUTHORING_CLIENT_ID` and
+  `AUTHORING_CLIENT_SECRET`. The defaults for `AUTHORING_AUTHORITY`
+  (`https://auth.sitecorecloud.io`) and `AUTHORING_AUDIENCE`
+  (`https://api.sitecorecloud.io`) are correct as they stand.
+  As a quick alternative for local work, run `dotnet sitecore cloud login` and copy the
+  `accessToken` from `.sitecore/user.json` into `AUTHORING_TOKEN` — it expires, so it suits
+  a try-out rather than a running setup.
+- *XM/XP:* register an OAuth client on your Sitecore Identity Server and point
+  `AUTHORING_AUTHORITY` and `AUTHORING_AUDIENCE` at it, or put a token from a controller in
+  front of Identity Server into `AUTHORING_TOKEN`.
+
+**3. Media uploads** additionally need an encryption key, or `authoring-upload-media` fails
+with *"The specified key is not a valid size for this algorithm"*:
+
+```xml
+<setting name="GraphQL.UploadMediaOptions.EncryptionKey" value="<a-32-byte-key>" />
+```
+
+Two more endpoint behaviours are worth knowing up front: paginated responses default to
+Sitecore's `GraphQL.DefaultPageSize`, and the endpoint rejects any document nested deeper
+than 13 levels. The latter is why `authoring-introspect-schema` ships its own introspection
+query — the standard one from `graphql-js` nests deeper than that and is refused outright.
+
 ## Hardening for shared or production instances
 
 The patch above is written for a development CM you control. On anything shared:
@@ -201,6 +261,12 @@ The patch above is written for a development CM you control. On anything shared:
 - **Delete the services you don't use.** This server needs `remoting`, plus
   `mediaUpload` / `mediaDownload` if you register the media tools; `restfulv2` and the
   file handlers can go.
+- **Leave `GraphQL.ExposePlayground` off.** The Authoring and Management API itself is fine
+  to leave enabled — it is authenticated — but the browser IDE has no reason to exist on a
+  shared instance.
+- **Scope the authoring client.** `xmcloud.cm:admin` is administrative access to the CM over
+  HTTP. Treat `AUTHORING_CLIENT_SECRET` as you would the admin password, and use a client
+  per environment so one can be revoked alone.
 - **Drop `AllowToLoginWithHttp`.** Serve the CM over HTTPS and leave the setting at its
   default, so credentials are never sent in the clear.
 - **Set `AUTHORIZATION_HEADER`** on the MCP server itself whenever its HTTP port is
@@ -216,10 +282,17 @@ The patch above is written for a development CM you control. On anything shared:
 | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | SPE calls return HTML (a login page) instead of CliXml               | The `RequireAuthentication` ignore rule is missing, or the config didn't patch after SPE's own config. |
 | SPE calls return `403`                                               | `remoting` is not `enabled="true"`, or the account is in none of the authorized roles.                 |
-| Every `item-service-*` tool returns `403`                            | `Sitecore.Services.SecurityPolicy` is still `ServicesOffPolicy`.                                       |
+| SPE calls return `400` with an HTML page and an `x-auth0-requestid` header | The request never reached Sitecore. A CM whose login is federated to Sitecore Cloud redirects an unauthenticated remoting call to the identity provider, which answers with its own error page — HTTP Basic credentials cannot satisfy it. Use an account this CM actually accepts. A burst of these becomes `429`. |
+| Every `item-service-*` tool returns `403`                            | Either the account is not valid on this instance, **or** `Sitecore.Services.SecurityPolicy` is still `ServicesOffPolicy`. Tell them apart by POSTing malformed JSON to `/sitecore/api/ssc/auth/login`: a `400` or `500` means the endpoint is live and it is the credentials being refused, while `403` for *every* body means the policy is off. |
 | Item Service login succeeds over HTTPS but fails over HTTP           | `Sitecore.Services.AllowToLoginWithHttp` is not `true`.                                                |
 | `self signed certificate` / `unable to verify the first certificate` | A local CM with a self-signed certificate. `.env.template` ships `NODE_TLS_REJECT_UNAUTHORIZED=0` for this; never carry it to production. |
 | SPE Console loops on `ExecuteCommand`                                | The `ValidateSiteNeutralPaths` entries are missing.                                                    |
+| Every `authoring-*` tool reports "needs a bearer token, and none is configured" | Neither `AUTHORING_CLIENT_ID`/`AUTHORING_CLIENT_SECRET` nor `AUTHORING_TOKEN` is set.       |
+| `authoring-*` tools report `AUTH_NOT_AUTHENTICATED` on an HTTP 200   | The endpoint is reachable but the token is missing, expired, or issued for a different audience or environment. |
+| `authoring-*` tools return `404`                                     | `GraphQL.Enabled` is not `true`, or `AUTHORING_ENDPOINT` points somewhere other than the CM.           |
+| The token endpoint returns `access_denied`                            | The automation client lacks the `xmcloud.cm:admin` scope, or `AUTHORING_AUDIENCE` is wrong.            |
+| `authoring-upload-media` reports "The specified key is not a valid size for this algorithm" | `GraphQL.UploadMediaOptions.EncryptionKey` has no value.                       |
+| `authoring-get-item-template` says a template "doesn't exist" for a path that does | The path must be relative to `/sitecore/templates` with no leading slash — `Sample/Sample Item`. |
 
 Check `/sitecore/admin/showconfig.aspx` on the CM to confirm your patch merged the way you
 expect.

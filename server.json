@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
   "name": "io.github.Antonytm/mcp-sitecore-server",
-  "description": "Sitecore Community MCP: read/write access to SitecoreAI and Sitecore XM/XP over the Item Service, GraphQL Edge and Sitecore PowerShell Extensions",
+  "description": "Sitecore Community MCP: read/write access to SitecoreAI and Sitecore XM/XP over the Authoring and Management API, the Item Service, GraphQL Edge and Sitecore PowerShell Extensions",
   "status": "active",
   "repository": {
     "url": "https://github.com/Antonytm/mcp-sitecore-server",
@@ -92,6 +92,40 @@
           "description": "Base URL for the Sitecore PowerShell Remoting API",
           "is_required": false,
           "default": "https://xmcloudcm.localhost/"
+        },
+        {
+          "name": "AUTHORING_ENDPOINT",
+          "description": "Authoring and Management GraphQL endpoint. Defaults to ITEM_SERVICE_SERVER_URL plus /sitecore/api/authoring/graphql/v1/",
+          "is_required": false
+        },
+        {
+          "name": "AUTHORING_CLIENT_ID",
+          "description": "Client ID for the Authoring and Management API client-credentials grant (xmcloud.cm:admin scope on SitecoreAI)",
+          "is_required": false
+        },
+        {
+          "name": "AUTHORING_CLIENT_SECRET",
+          "description": "Client secret for the Authoring and Management API client-credentials grant",
+          "is_required": false,
+          "is_secret": true
+        },
+        {
+          "name": "AUTHORING_TOKEN",
+          "description": "A bearer token for the Authoring and Management API, supplied instead of client credentials. Wins when both are set",
+          "is_required": false,
+          "is_secret": true
+        },
+        {
+          "name": "AUTHORING_AUTHORITY",
+          "description": "Token authority for the Authoring and Management API; /oauth/token is appended",
+          "is_required": false,
+          "default": "https://auth.sitecorecloud.io"
+        },
+        {
+          "name": "AUTHORING_AUDIENCE",
+          "description": "Audience the Authoring and Management API token is requested for",
+          "is_required": false,
+          "default": "https://api.sitecorecloud.io"
         },
         {
           "name": "TOOL_GROUPS",

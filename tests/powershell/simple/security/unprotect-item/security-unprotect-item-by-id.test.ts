@@ -10,7 +10,7 @@ describe("powershell", () => {
 
         const args: Record<string, any> = {
             id: itemId,
-            passThru: "true"
+            passThru: true
         };
 
         // First protect the item to ensure we have something to unprotect

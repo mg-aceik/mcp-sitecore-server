@@ -7,14 +7,14 @@ describe("powershell", () => {
     it("security-enable-user", async () => {
         // Create a test user
         const randomHexSuffix = Math.floor(Math.random() * 1000000).toString(16);
-        const newUserArgs: Record<string, string> = {
+        const newUserArgs: Record<string, unknown> = {
             identity: `anton-${randomHexSuffix}`,
             password: "anton",
             email: "at@exdst.com",
             fullName: "Anton Tishehnko",
             comment: "Anton Tishehnko",
             portrait: "office/16x16/default_user.png",
-            enabled: "true",
+            enabled: true,
             profileItemId: "{AE4C4969-5B7E-4B4E-9042-B2D8701CE214}",
         };
         

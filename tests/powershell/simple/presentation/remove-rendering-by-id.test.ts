@@ -12,7 +12,7 @@ const sampleRenderingUniqueId = "{B343725A-3A93-446E-A9C8-3A2CBD3DB489}";
 
 const language = "ja-jp";
 const database = "master";
-const finalLayout = "true";
+const finalLayout = true;
 
 describe("powershell", () => {
     it("presentation-remove-rendering", async () => {

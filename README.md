@@ -7,8 +7,8 @@ open-source [Model Context Protocol](https://modelcontextprotocol.io) server tha
 agents direct read/write access to Sitecore, so you stop copy-pasting between your agent
 and the Content Editor.
 
-- **119 tools** across search, query, create, read, update, delete, media, PowerShell, logging, security and presentation (115 fixed, plus two per entry in `GRAPHQL_SCHEMAS` — 119 with the default `edge,master`)
-- Covers three Sitecore API surfaces: **Item Service**, **GraphQL Edge** and **Sitecore PowerShell Extensions**
+- **138 tools** across search, query, create, read, update, delete, media, PowerShell, logging, security and presentation (134 fixed, plus two per entry in `GRAPHQL_SCHEMAS` — 138 with the default `edge,master`)
+- Covers four Sitecore API surfaces: the **Authoring and Management GraphQL API**, the **Item Service**, **GraphQL Edge** and **Sitecore PowerShell Extensions**
 - Works with **SitecoreAI** and **Sitecore XM/XP** (all versions), from any MCP-compatible client
 - Implements **MCP protocol revision 2026-07-28**, and answers the 2025 `initialize` handshake from the same tool registrations
 - Reported impact: **5× faster** Figma-to-Sitecore workflows and **~70% less** manual scaffolding ([case study](https://exdst.com/case-studies/sitecore-mcp))
@@ -19,9 +19,11 @@ and the Content Editor.
 To run the Sitecore Community MCP server, you need:
 
 - Node — the latest long-term support (LTS) release.
-- A Sitecore XM, XP or SitecoreAI instance with SPE Remoting and the Item Service enabled.
-  Neither is on by default — [Preparing your Sitecore instance](docs/sitecore-setup.md)
-  has the config patch and the verification steps.
+- A Sitecore XM, XP or SitecoreAI instance. Which parts you enable decides which tools
+  work: the `authoring.*` groups need only the Authoring and Management API (normally
+  already on in the cloud) plus a token, while the Item Service and SPE Remoting are off by
+  default and need a config patch. [Preparing your Sitecore instance](docs/sitecore-setup.md)
+  covers all three and how to verify each.
 
 ### Adding the server to your MCP client
 
@@ -49,6 +51,8 @@ most other clients, `servers` in VS Code — and fill in your own endpoints and 
         "POWERSHELL_USERNAME": "admin",
         "POWERSHELL_PASSWORD": "b",
         "POWERSHELL_SERVER_URL": "https://xmcloudcm.localhost/",
+        "AUTHORING_CLIENT_ID": "",
+        "AUTHORING_CLIENT_SECRET": "",
         "TOOL_PROFILE": "xp"
       }
     }
@@ -79,8 +83,8 @@ ground it is the stronger tool:
 | --------------------- | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
 | **Platforms**         | SitecoreAI **and** XM/XP, all versions — including your local Docker CM                                             | SitecoreAI only                                                                     |
 | **Hosting**           | Self-hosted (npm, Docker, source); credentials never leave your infrastructure                                      | Hosted by Sitecore; OAuth through the cloud                                         |
-| **Surface**           | 119 tools across the full developer surface: items, templates, presentation, media, security, indexing, logs, GraphQL, raw PowerShell | Marketer operations: pages, components, briefs, brand kits, personalization, A/B tests |
-| **Escape hatch**      | `run-powershell-script` and raw GraphQL — if a tool doesn't exist, the capability still does                        | Closed tool set                                                                     |
+| **Surface**           | 138 tools across the full developer surface: items, templates, presentation, media, security, indexing, logs, publishing, GraphQL, raw PowerShell | Marketer operations: pages, components, briefs, brand kits, personalization, A/B tests |
+| **Escape hatch**      | `run-powershell-script`, raw Edge GraphQL and raw Authoring GraphQL — if a tool doesn't exist, the capability still does | Closed tool set                                                              |
 | **Layout safety**     | `add-rendering-to-placeholder` *refuses* components the placeholder settings forbid, naming the allow-list          | Writes are not validated against placeholder settings                               |
 | **Tool gating**       | `TOOL_GROUPS` / `DISABLED_TOOLS` / `TOOL_PROFILE` trim the schema cost per turn                                     | Fixed tool list                                                                     |
 

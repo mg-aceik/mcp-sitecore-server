@@ -20,7 +20,7 @@ describe("powershell", () => {
             id: itemId,
             layoutId: expectedLayoutId,
             language: "ja-jp",
-            finalLayout: "true",
+            finalLayout: true,
             database: "master",
         };
 

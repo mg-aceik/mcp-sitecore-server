@@ -1,8 +1,8 @@
 # Tool reference
 
-119 tools across search, query, create, read, update, delete, PowerShell, logging,
-security and presentation, covering the Item Service, GraphQL Edge and Sitecore
-PowerShell Extensions.
+138 tools across search, query, create, read, update, delete, media, PowerShell, logging,
+security and presentation, covering the Item Service, GraphQL Edge, the Authoring and
+Management GraphQL API and Sitecore PowerShell Extensions.
 
 See [Tool selection](./tool-selection.md) for trimming this surface down to what your
 agent actually needs.
@@ -21,11 +21,64 @@ prefix, as in `master:/sitecore/content/Home`.
 Before 2.0.0 these were separate `-by-id` / `-by-path` tools. See
 [`CHANGELOG.md`](../CHANGELOG.md) for the old-to-new name mapping.
 
+## Paths in the Authoring and Management API
+
+The `authoring-*` tools address items the same way, but three of the endpoint's own path
+rules are worth knowing before you hit them. All three were confirmed against a live CM.
+
+- **Template paths are relative to `/sitecore/templates`, with no leading slash.**
+  `authoring-get-item-template` takes `Sample/Sample Item`, not
+  `/sitecore/templates/Sample/Sample Item` — the absolute form is rejected as a template
+  that "doesn't exist or you don't have access rights to it". This is the same value the
+  API reports as a template's `fullName`.
+- **`authoring-upload-media`'s `itemPath` is relative to the media library and carries no
+  file extension.** `Project/MySite/hero`, not `hero.png` and not
+  `/sitecore/media library/...`. The extension comes from `fileName` (or the source URL or
+  file), and Sitecore reads it to choose the media template: a `.png` becomes an Image item
+  with an `Alt` field, a `.txt` becomes a File item that has none — so `alt` silently has
+  nowhere to go on a non-image upload.
+- **`authoring-create-item` and `authoring-create-item-template` take a parent *ID*, not a
+  parent path.** Resolve the path with `authoring-get-item` first.
+
+Sections and fields inside a template are matched **by ID, never by name**. To add a field
+to a section that already exists, pass that section's ID as `templateSectionId` — read from
+`authoring-get-item-template`, where it is reported as `itemTemplateSectionId`. Naming an
+existing section without its ID is rejected for creating a duplicate.
+
 ## Tools
 
-- [x] GraphQL API
+- [x] GraphQL API (Edge / preview)
   - [x] `introspection-graphql-{schema}`: returns the GraphQL schema
   - [x] `query-graphql-{schema}`: executes a GraphQL query
+- [x] Authoring and Management GraphQL API
+  - [x] `authoring-introspect-schema`: returns the SDL of the authoring/management schema
+  - [x] `authoring-graphql`: executes any query or mutation against the authoring endpoint
+  - [x] Items
+    - [x] `authoring-get-item`: returns an item with its fields, addressed by `id` or `path`
+    - [x] `authoring-create-item`: creates an item from a template under a parent ID
+    - [x] `authoring-update-item`: sets or resets field values on an item
+    - [x] `authoring-delete-item`: deletes an item, to the recycle bin or permanently
+    - [x] `authoring-copy-item`: copies an item, optionally without its subtree
+    - [x] `authoring-move-item`: moves an item to another parent, preserving links
+    - [x] `authoring-rename-item`: renames an item, preserving its ID
+  - [x] Search
+    - [x] `authoring-search`: searches a Sitecore index by field criteria, with sort and paging
+  - [x] Templates
+    - [x] `authoring-get-item-template`: returns a template's sections and field definitions
+    - [x] `authoring-create-item-template`: creates a template with its sections and fields in one call
+    - [x] `authoring-update-item-template`: updates a template's sections, fields and base templates
+  - [x] Media
+    - [x] `authoring-upload-media`: uploads a file to the media library (pre-signed URL plus the POST)
+    - [x] `authoring-get-media-item`: returns a media item's mime type, size, alt text and URL
+  - [x] Sites
+    - [x] `authoring-list-sites`: returns the configured sites with their root paths and IDs
+    - [x] `authoring-get-site`: returns one site's full configuration by name
+  - [x] Management
+    - [x] `authoring-publish-item`: queues a publish and returns its `operationId`
+    - [x] `authoring-publishing-status`: reads the state of a queued publish
+    - [x] `authoring-rebuild-indexes`: starts a search index rebuild and returns its jobs
+    - [x] `authoring-get-job`: returns one background job's state and progress
+    - [x] `authoring-list-jobs`: lists background jobs, with wildcard matching on the name
 - [x] Item Service API
   - [x] `item-service-get-item`: returns an item, addressed by `id` or `path`
   - [x] `item-service-get-item-children`: returns the children of an item by ID
@@ -33,13 +86,11 @@ Before 2.0.0 these were separate `-by-id` / `-by-path` tools. See
   - [x] `item-service-edit-item`: edits an item by ID
   - [x] `item-service-delete-item`: deletes an item by ID
   - [x] `item-service-search-items`: searches for items
-  - [x] `item-service-run-stored-query`: runs a stored query
-  - [x] `item-service-run-stored-search`: runs a stored search
   - [x] Composite Item Service API
     - [x] `item-service-get-languages`: returns Sitecore languages in the instance
     - [x] `item-service-get-item-descendants`: returns the descendants of an item by ID
 - [x] Sitecore PowerShell
-  - [x] `get-powershell-documentation`: returns the documentation describing all Sitecore Powershell commands
+  - [x] `get-powershell-documentation`: the SPE command reference, revealed progressively. No arguments returns an index of all 148 commands with one-line summaries (~13KB); `command` returns the full page for up to 5 named commands; `search` finds a command by what it does; `category` lists one group. It no longer returns the whole ~570KB corpus in one result.
   - [x] `run-powershell-script`: runs a PowerShell script and returns the output
   - [x] Security
     - [x] `security-get-current-user`: returns the current user
@@ -150,10 +201,7 @@ Before 2.0.0 these were separate `-by-id` / `-by-path` tools. See
     - [x] `common-test-base-template`: checks if the item inherits from the specified template
     - [x] `common-update-item-referrer`: updates all references to the specified item to point to a new provided in the -NewTarget or removes links to the item
   - [x] Logging
-    - [x] `logging-get-logs`: retrieves Sitecore logs from the log directory with filtering options
-
-- [x] Sitecore CLI
-  - [x] `sitecore-cli-documentation`: gets sitecore cli documentation to provide more context for LLM
+    - [x] `logging-get-logs`: retrieves Sitecore logs from the log directory with filtering options. Reads files off the CM's data folder, so it is disabled under `TOOL_PROFILE=sai` — a deployed SitecoreAI environment has the platform collect its logs, and a local Docker CM has them on a mounted volume already.
 
 ## Resources
 

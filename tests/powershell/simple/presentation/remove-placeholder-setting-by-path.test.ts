@@ -10,7 +10,7 @@ const placeholderSettingUniqueId = "{77CD012F-A0EC-4B09-9F51-4AD4587B6490}";
 const placeholderSettingKey = "test_placeholder";
 
 const language = "ja-jp";
-const finalLayout = "true";
+const finalLayout = true;
 
 async function getItemPlaceholderSettings(): Promise<any> {
     const getPlaceholderSettingArgs: Record<string, any> = {

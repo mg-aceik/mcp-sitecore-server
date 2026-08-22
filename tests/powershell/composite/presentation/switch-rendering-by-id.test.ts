@@ -16,7 +16,7 @@ const newRenderingId = "{1C8B443B-E78A-4AE7-AB30-CB0166299877}";
 
 const database = "master";
 const language = "ja-jp";
-const finalLayout = "true";
+const finalLayout = true;
 
 describe("powershell", () => {
     it("presentation-switch-rendering", async () => {

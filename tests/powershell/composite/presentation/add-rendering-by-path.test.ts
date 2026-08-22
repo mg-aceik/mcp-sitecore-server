@@ -11,7 +11,7 @@ const sampleRenderingId = "{493B3A83-0FA7-4484-8FC9-4680991CF743}";
 const language = "ja-jp";
 const placeHolder = "/test/placeholder";
 const dataSource = "test_datasource";
-const finalLayout = "true";
+const finalLayout = true;
 
 describe("powershell", () => {
     it("presentation-add-rendering", async () => {

@@ -9,7 +9,7 @@ describe("powershell", () => {
         // Using a common content path that should exist in most Sitecore instances
         const args: Record<string, any> = {
             path: "/sitecore/content/Home/Tests/Security/Lock-Item/Lock-Item-By-Path",
-            passThru: "true"
+            passThru: true
         };
 
         const result = await callTool(client, "security-lock-item", args);

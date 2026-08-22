@@ -6,7 +6,7 @@ await client.connect(transport);
 const itemPath = "master:/sitecore/content/Home/Tests/Presentation/Get-Rendering-Parameter-By-Path";
 
 const uniqueId = "{B343725A-3A93-446E-A9C8-3A2CBD3DB489}";
-const finalLayout = "true";
+const finalLayout = true;
 const language = "ja-jp";
 const name = "sample";
 

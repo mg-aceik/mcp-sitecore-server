@@ -240,6 +240,16 @@ describe("every merged tool", () => {
                 .map((m) => m[1]));
 
         const covered = new Set([...MERGED.map(([name]) => name), "item-service-get-item", "media-upload"]);
-        expect([...new Set(registered)].filter((name) => !covered.has(name))).toEqual([]);
+
+        // The authoring tools validate addressing the same way but reach Sitecore over
+        // HTTP rather than through the PowerShell layer this file mocks, so their sweep
+        // lives in authoring.test.ts ("authoring addressing validation") -- which carries
+        // its own completeness guard over src/tools/authoring, so nothing slips through
+        // by being listed here.
+        const coveredByAuthoringSweep = (name: string) => name.startsWith("authoring-");
+
+        expect([...new Set(registered)]
+            .filter((name) => !covered.has(name) && !coveredByAuthoringSweep(name))
+        ).toEqual([]);
     });
 });

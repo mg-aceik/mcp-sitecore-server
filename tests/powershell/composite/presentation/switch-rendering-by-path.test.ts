@@ -11,7 +11,7 @@ const newRenderingPath = "master:/sitecore/layout/Renderings/Feature/Tests/Switc
 const newRenderingId = "{1C8B443B-E78A-4AE7-AB30-CB0166299877}";
 
 const language = "ja-jp";
-const finalLayout = "true";
+const finalLayout = true;
 
 describe("powershell", () => {
     it("presentation-switch-rendering", async () => {

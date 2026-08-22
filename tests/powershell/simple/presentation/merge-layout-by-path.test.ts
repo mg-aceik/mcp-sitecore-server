@@ -20,9 +20,9 @@ describe("powershell", () => {
         // Arrange
         // Reset layout to ensure we have correct initial state before test.
         // reset shared layout
-        await resetLayoutByPath(client, path, undefined, "false");
+        await resetLayoutByPath(client, path, undefined, false);
         // reset final layout
-        await resetLayoutByPath(client, path, language, "true");
+        await resetLayoutByPath(client, path, language, true);
 
         // Set initial layout before test.
         const setLayoutArgs: Record<string, any> = {
@@ -30,13 +30,13 @@ describe("powershell", () => {
             layoutId: layoutId,
             layoutPath: "master:",
             language,
-            finalLayout: "true",
+            finalLayout: true,
         };
 
         // Initialize item initial state before test.
         await callTool(client, "presentation-set-layout", setLayoutArgs);
 
-        const currentLayoutId = await getCurrentLayoutId(client, itemId, "true", "ja-jp");
+        const currentLayoutId = await getCurrentLayoutId(client, itemId, true, "ja-jp");
         expect(currentLayoutId.toLowerCase()).toBe(layoutId.toLowerCase());
 
         const mergeLayoutArgs: Record<string, any> = {
@@ -48,7 +48,7 @@ describe("powershell", () => {
         await callTool(client, "presentation-merge-layout", mergeLayoutArgs);
 
         // Assert
-        const assertLayoutId = await getCurrentLayoutId(client, itemId, "false");
+        const assertLayoutId = await getCurrentLayoutId(client, itemId, false);
         expect(assertLayoutId.toLowerCase()).toBe(layoutId.toLowerCase());
     });
 });

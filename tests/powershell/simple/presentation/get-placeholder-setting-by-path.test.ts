@@ -9,7 +9,7 @@ const itemPath = "master:/sitecore/content/Home/Tests/Presentation/Get-Placehold
 const placeholderSettingId = "{2B3B1A5E-E231-40DF-BB5F-3EB0061ACC41}";
 
 const language = "ja-jp";
-const finalLayout = "true";
+const finalLayout = true;
 
 const uniqueId = "{E59BAEAE-9F59-44CB-BD23-61F5C8278BE1}";
 

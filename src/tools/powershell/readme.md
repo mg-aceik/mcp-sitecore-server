@@ -16,7 +16,7 @@ This folder contains implementations of MCP tools that interact with Sitecore Po
 
 ## Base Tools
 
-- `get-powershell-documentation`: Return the documentation describing all Sitecore Powershell commands
+- `get-powershell-documentation`: The SPE command reference, revealed progressively — an index first, then the full page for the commands you name. See `documentation-index.ts`.
 - `run-powershell-script`: Run a PowerShell script and returns the output
 
 ## Security Tools

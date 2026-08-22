@@ -9,7 +9,7 @@ describe("powershell", () => {
         const itemPath = "/sitecore/content/Home/Tests/Security/Unprotect-Item/Unprotect-Item-By-Path"; 
         const args: Record<string, any> = {
             path: itemPath,
-            passThru: "true"
+            passThru: true
         };
         // First protect the item to ensure we have something to unprotect
         await callTool(client, "security-protect-item", args);

@@ -201,6 +201,14 @@ describe("redactConfig", () => {
         graphQL: { endpoint: "https://cm/graph", schemas: ["master"], apiKey: "key-123", headers: {} },
         itemService: { domain: "sitecore", username: "admin", password: "hunter2", serverUrl: "https://cm/" },
         powershell: { domain: "sitecore", username: "admin", password: "hunter2", serverUrl: "https://cm/" },
+        authoring: {
+            endpoint: "https://cm/sitecore/api/authoring/graphql/v1/",
+            token: "authoring-jwt",
+            clientId: "client-abc",
+            clientSecret: "client-secret-xyz",
+            authority: "https://auth.sitecorecloud.io",
+            audience: "https://api.sitecorecloud.io",
+        },
         authorizationHeader: "bearer-token",
     };
 
@@ -210,6 +218,8 @@ describe("redactConfig", () => {
         expect(serialized).not.toContain("hunter2");
         expect(serialized).not.toContain("key-123");
         expect(serialized).not.toContain("bearer-token");
+        expect(serialized).not.toContain("authoring-jwt");
+        expect(serialized).not.toContain("client-secret-xyz");
     });
 
     it("keeps the non-secret configuration an agent needs", () => {
@@ -217,11 +227,28 @@ describe("redactConfig", () => {
         expect(redacted.powershell.serverUrl).toBe("https://cm/");
         expect(redacted.powershell.username).toBe("admin");
         expect(redacted.graphQL.schemas).toEqual(["master"]);
+        // The authoring endpoint, authority, audience and client ID are what someone
+        // debugging a rejected token needs; none of them is a credential.
+        expect(redacted.authoring.endpoint).toBe("https://cm/sitecore/api/authoring/graphql/v1/");
+        expect(redacted.authoring.clientId).toBe("client-abc");
+        expect(redacted.authoring.audience).toBe("https://api.sitecorecloud.io");
+    });
+
+    it("survives a config with no authoring block rather than throwing", () => {
+        const { authoring, ...withoutAuthoring } = source;
+        expect(() => redactConfig(withoutAuthoring as any)).not.toThrow();
+        expect(redactConfig(withoutAuthoring as any).authoring).toBeUndefined();
     });
 
     it("leaves an unset secret visibly unset rather than pretending one exists", () => {
-        const redacted = redactConfig({ ...source, authorizationHeader: "" });
+        const redacted = redactConfig({
+            ...source,
+            authorizationHeader: "",
+            authoring: { ...source.authoring, token: "" },
+        });
         expect(redacted.authorizationHeader).toBe("");
+        expect(redacted.authoring.token).toBe("");
+        expect(redacted.authoring.clientSecret).toBe("***redacted***");
     });
 });
 

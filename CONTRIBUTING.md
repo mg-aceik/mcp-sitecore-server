@@ -108,6 +108,26 @@ have doubts that we need so complex a setup for testing.
 5. Run `npm run build` to build the project.
 6. Run `npm test` to run the tests.
 
+### The suite needs that instance, not just any instance
+
+Most of these tests address **seeded fixture content by hard-coded GUID** — a tree under
+`/sitecore/content/Home/Tests/...`, specific languages (`en`, `ja-JP`, `da`), specific
+archived items, and the `sitecore\admin` account. Pointed at any other instance they fail
+in bulk, and the failures look alarming without being real: an SPE tool asked for an item
+that is not there returns PowerShell's own error text, so the test's `JSON.parse` throws
+`Unexpected token 'G', "Get-Item ..." is not valid JSON` rather than saying "no such item".
+
+Before chasing a wall of failures, check which kind you have:
+
+| What you see | What it means |
+| --- | --- |
+| `Unexpected token 'G', "Get-Item …"` (or any cmdlet name) | The fixture content is missing. Not a code failure. |
+| `Tool … rejected its arguments before reaching Sitecore` | A schema mismatch in the test itself — usually a string where the schema says `z.boolean()`. Fix the test. |
+| `Login failed: 403 …` / `came from Auth0, not Sitecore` | Credentials or endpoint configuration. See [Preparing your Sitecore instance](docs/sitecore-setup.md#troubleshooting). |
+| An `AssertionError` comparing real values | Either a genuine defect or an instance whose data differs from the fixtures. Read the values before deciding. |
+
+`npm run test:unit` needs none of this and should always pass.
+
 ## Documentation
 
 The README is deliberately short: it covers installation, a pointer to each doc, and how

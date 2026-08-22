@@ -40,6 +40,33 @@ const ConfigSchema = z.object({
         password: "b",
         serverUrl: "https://xmcloudcm.localhost/",
     }),
+    /**
+     * The Authoring and Management GraphQL API: one endpoint on the CM that serves the
+     * whole authoring schema (items, templates, media, sites, search) plus the management
+     * schema (publishing, jobs, indexing, workflow, security).
+     *
+     * It shares nothing with the `graphQL` block above. That one talks to the Edge/preview
+     * endpoints under `/sitecore/api/graph/`, authenticating with an `sc_apikey` header.
+     * This one lives at `/sitecore/api/authoring/graphql/v1/` and authenticates with an
+     * OAuth 2.0 bearer token — so it needs its own endpoint and its own credentials.
+     *
+     * https://doc.sitecore.com/sai/en/developers/sitecoreai/content-modeling-and-presentation/sitecore-authoring-and-management-graphql-api.html
+     */
+    authoring: z.object({
+        endpoint: z.string(),
+        /**
+         * A bearer token supplied directly, for the cases where this server cannot mint
+         * one itself: `dotnet sitecore cloud login` writes an `accessToken` to
+         * `.sitecore/user.json`, and on XM/XP the token comes from a controller in front
+         * of the Sitecore Identity Server. Short-lived either way, so the client-credentials
+         * fields below are the option that survives a long session.
+         */
+        token: z.string(),
+        clientId: z.string(),
+        clientSecret: z.string(),
+        authority: z.string(),
+        audience: z.string(),
+    }),
     authorizationHeader: z.string().default("")
 });
 
@@ -56,6 +83,12 @@ export const envSchema = z.object({
     POWERSHELL_USERNAME: z.string().optional(),
     POWERSHELL_PASSWORD: z.string().optional(),
     POWERSHELL_SERVER_URL: z.string().url().optional(),
+    AUTHORING_ENDPOINT: z.string().url().optional(),
+    AUTHORING_TOKEN: z.string().optional(),
+    AUTHORING_CLIENT_ID: z.string().optional(),
+    AUTHORING_CLIENT_SECRET: z.string().optional(),
+    AUTHORING_AUTHORITY: z.string().url().optional(),
+    AUTHORING_AUDIENCE: z.string().optional(),
     AUTHORIZATION_HEADER: z.string().optional(),
 });
 
@@ -123,7 +156,31 @@ function parseGraphQLHeaders(raw: string | undefined): Record<string, string> {
     }
 }
 
+/** The path the Authoring and Management API is always served from. */
+export const AUTHORING_GRAPHQL_PATH = "/sitecore/api/authoring/graphql/v1/";
+
+/**
+ * Where the Authoring and Management API lives.
+ *
+ * `AUTHORING_ENDPOINT` wins when set. Otherwise it is derived from the CM host this
+ * server is already pointed at, because the endpoint's path is fixed by Sitecore and
+ * making every user restate their own host would be a config variable that can only ever
+ * hold one value. `ITEM_SERVICE_SERVER_URL` is the CM root — `GRAPHQL_ENDPOINT` is not,
+ * since it already includes `/sitecore/api/graph/` and may point at Edge rather than the
+ * CM at all.
+ */
+export function resolveAuthoringEndpoint(
+    explicit: string | undefined,
+    serverUrl: string
+): string {
+    if (explicit && explicit.trim() !== "") {
+        return explicit.trim();
+    }
+    return `${serverUrl.replace(/\/+$/, "")}${AUTHORING_GRAPHQL_PATH}`;
+}
+
 const ENV: EnvConfig = envSchema.parse(process.env);
+const itemServiceServerUrl = ENV.ITEM_SERVICE_SERVER_URL || "https://xmcloudcm.localhost/";
 const config: Config = {
     name: `${name} ${version}`,
     graphQL: {
@@ -136,13 +193,23 @@ const config: Config = {
         domain: ENV.ITEM_SERVICE_DOMAIN || "sitecore",
         username: ENV.ITEM_SERVICE_USERNAME || "admin",
         password: ENV.ITEM_SERVICE_PASSWORD || "b",
-        serverUrl: ENV.ITEM_SERVICE_SERVER_URL || "https://xmcloudcm.localhost/",
+        serverUrl: itemServiceServerUrl,
     },
     powershell: {
         domain: ENV.POWERSHELL_DOMAIN || "sitecore",
         username: ENV.POWERSHELL_USERNAME || "admin",
         password: ENV.POWERSHELL_PASSWORD || "b",
         serverUrl: ENV.POWERSHELL_SERVER_URL || "https://xmcloudcm.localhost/",
+    },
+    authoring: {
+        endpoint: resolveAuthoringEndpoint(ENV.AUTHORING_ENDPOINT, itemServiceServerUrl),
+        token: ENV.AUTHORING_TOKEN || "",
+        clientId: ENV.AUTHORING_CLIENT_ID || "",
+        clientSecret: ENV.AUTHORING_CLIENT_SECRET || "",
+        // The Sitecore Cloud defaults. An XM/XP instance authorizing against its own
+        // Sitecore Identity Server overrides both.
+        authority: ENV.AUTHORING_AUTHORITY || "https://auth.sitecorecloud.io",
+        audience: ENV.AUTHORING_AUDIENCE || "https://api.sitecorecloud.io",
     },
     authorizationHeader: ENV.AUTHORIZATION_HEADER || "",
 };
@@ -163,6 +230,23 @@ export function redactConfig(source: Config): Config {
         graphQL: { ...source.graphQL, apiKey: mask(source.graphQL.apiKey) },
         itemService: { ...source.itemService, password: mask(source.itemService.password) },
         powershell: { ...source.powershell, password: mask(source.powershell.password) },
+        // clientId stays visible: it identifies which automation client is in use, which
+        // is exactly what someone debugging a 403 needs, and it is not a credential on
+        // its own. The secret and the bearer token are.
+        //
+        // Guarded rather than assumed: this function's whole job is to make a config safe
+        // to hand out, so throwing on an unexpected shape would take down the `config`
+        // tool and the `config://main` resource with it. A block that is not there is
+        // left not there rather than invented.
+        ...(source.authoring
+            ? {
+                authoring: {
+                    ...source.authoring,
+                    token: mask(source.authoring.token),
+                    clientSecret: mask(source.authoring.clientSecret),
+                },
+            }
+            : {}),
         authorizationHeader: mask(source.authorizationHeader),
     };
 }

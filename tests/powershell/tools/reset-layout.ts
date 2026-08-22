@@ -6,7 +6,7 @@ export async function resetLayoutById(
     itemId: string,
     database: string,
     language: string | undefined,
-    finalLayout: string) {
+    finalLayout: boolean) {
     const resetLayoutArgs: Record<string, any> = {
         id: itemId,
         database,
@@ -21,7 +21,7 @@ export async function resetLayoutByPath(
     client: Client,
     itemPath: string,
     language: string | undefined,
-    finalLayout: string) {
+    finalLayout: boolean) {
     const resetLayoutArgs: Record<string, any> = {
         path: itemPath,
         language,

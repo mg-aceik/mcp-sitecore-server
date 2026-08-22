@@ -13,7 +13,7 @@ const language = "ja-jp";
 const placeHolder = "/test/placeholder";
 const dataSource = "test_datasource";
 const database = "master";
-const finalLayout = "true";
+const finalLayout = true;
 
 describe("powershell", () => {
     it("presentation-add-rendering", async () => {

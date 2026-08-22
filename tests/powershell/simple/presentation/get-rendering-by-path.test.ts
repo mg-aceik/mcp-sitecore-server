@@ -35,7 +35,7 @@ describe("powershell", () => {
             path,
             placeholder: sampleRenderingPlaceholder,
             language: "ja-jp",
-            finalLayout: "true",
+            finalLayout: true,
         };
 
         // Act

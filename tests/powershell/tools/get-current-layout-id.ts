@@ -4,7 +4,7 @@ import { callTool } from "../../client";
 export async function getCurrentLayoutId(
     client: Client,
     itemId: string,
-    finalLayout: string = "true",
+    finalLayout: boolean = true,
     language: string = "ja-jp"
 ): Promise<string> {
     const getLayoutArgs: Record<string, any> = {
