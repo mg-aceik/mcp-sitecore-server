@@ -5,6 +5,82 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-08-22
+
+### Changed
+
+- **BREAKING: the SSE endpoint is gone.** `SSEServerTransport` was removed from the MCP
+  specification and from the SDK, so `http://<host>:3001/sse` no longer exists and
+  neither does the `/messages` endpoint that went with it. **Any client configured
+  against `/sse` must be repointed at Streamable HTTP on `/mcp`** — same host, same port
+  3001, one endpoint instead of two. This affects XM/XP and XM Cloud deployments alike.
+
+  *Migration:* change the client's server URL from `http://<host>:3001/sse` to
+  `http://<host>:3001/mcp`, and its transport type from "SSE" to "Streamable HTTP".
+  `TRANSPORT=sse` still starts a server rather than failing: it serves Streamable HTTP
+  on port 3001 and says so on stderr, so a container keeps listening while you repoint
+  its clients. The `start:sse` npm script and `src/app.ts` are removed; `npm start` now
+  means Streamable HTTP.
+
+- **BREAKING: migrated to the v2 TypeScript SDK**, which implements MCP protocol
+  revision **2026-07-28**. `@modelcontextprotocol/sdk` is replaced by
+  `@modelcontextprotocol/server`, `@modelcontextprotocol/node` and (for tests)
+  `@modelcontextprotocol/client`. Both transports serve the new revision *and* the 2025
+  handshake from the same tool registrations, so a client on either revision sees the
+  same 111 tools; nothing has to move revision to keep working.
+
+  *Migration:* none required for clients. Anyone embedding this package's modules
+  directly should note that `McpServer` and `CallToolResult` now come from
+  `@modelcontextprotocol/server`.
+
+- **BREAKING: Node.js 20 or later is required**, declared as `engines.node`. The v2 SDK
+  does not support older runtimes.
+
+  *Migration:* upgrade Node. The published Docker images already run Node 24.
+
+- **BREAKING: zod 4.2 or later is required**, and `zod` is now a direct dependency
+  rather than something inherited from the SDK. v2 builds tool schemas with zod's own
+  JSON Schema conversion; on zod 3 the first `tools/list` fails silently, and on
+  zod 4.0–4.1 every parameter description is dropped from the schema.
+
+  *Migration:* none for users of the published package. A checkout needs a fresh
+  `npm install`.
+
+  Verified against a live XM Cloud CM after the upgrade: 111 tools, and 426 of 472
+  parameters still carry their description — the same 426 as before, the other 46 being
+  parameters that never had one. `tools/list` is 100,091 characters, down from 106,822
+  on zod 3, because zod 4 emits tighter JSON Schema.
+
+### Fixed
+
+- `common-publish-item`'s `fromDate` parameter was declared as `z.date()`. zod 4 refuses
+  to represent a `Date` in JSON Schema, and because the whole tool list is built in one
+  pass that single parameter made **`tools/list` fail outright** — the server advertised
+  no tools at all. It is now a string carrying the accepted ISO 8601 format in its
+  description. Nothing is lost: JSON-RPC parameters are JSON, so a `Date` object could
+  never have reached the tool anyway.
+
+- `express` was declared as a devDependency, but rollup keeps it external, so the
+  published `dist/bundle.js` opens with `import express from 'express'` and could not
+  start without it — on **stdio too**, because the import is eager. It is now a runtime
+  dependency. This affected every published version that bundled this way, not just
+  this one.
+
+### Removed
+
+- The per-session transport map in the Streamable HTTP server, along with the
+  initialize-request sniffing, the session-ID generator and the separate GET/DELETE
+  session handlers. The 2026-07-28 revision has no initialize handshake and no
+  protocol-level session, so there is nothing to key a map on; requests are served
+  statelessly and 2025-era GET/DELETE session operations answer `405`. The `/health`
+  endpoint, the RFC 9728 OAuth protected-resource metadata route, the JSON 404 fallback
+  and the `AUTHORIZATION_HEADER` check are unchanged.
+
+- The MCP inspector's CLI internals from the test suite. `tests/client.ts` builds its
+  transport with `StdioClientTransport` from `@modelcontextprotocol/client`, and
+  `callTool` is a local helper instead of an undeclared import from
+  `@modelcontextprotocol/inspector/cli/build/client/tools.js`.
+
 ## [1.5.0] - 2026-08-22
 
 ### Changed
