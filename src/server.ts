@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { registerAll } from "./register.js";
 import { withInferredAnnotations } from "./tool-annotations.js";
+import { resolveToolGating, withToolGating } from "./tool-profiles.js";
 
 
 
@@ -17,6 +18,11 @@ export async function getServer(config: Config): Promise<McpServer> {
     // Automatically attach inferred read-only/destructive annotations to every tool
     // registered below, so MCP clients can distinguish safe reads from mutations.
     withInferredAnnotations(server);
+
+    // Tool gating (TOOL_GROUPS / DISABLED_TOOLS / TOOL_PROFILE). Applied before the
+    // first registerTool call so DISABLED_TOOLS covers every tool in the server.
+    const gating = resolveToolGating();
+    withToolGating(server, gating);
 
     // Parse the environment variables and set default values
 
@@ -49,7 +55,7 @@ export async function getServer(config: Config): Promise<McpServer> {
             };
         }
     );
-    await registerAll(server, config);
+    await registerAll(server, config, gating);
 
     return server;
 }

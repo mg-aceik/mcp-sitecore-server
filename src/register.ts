@@ -143,6 +143,13 @@ import { setRenderingParameterByIdPowershellTool } from "./tools/powershell/comp
 import { setRenderingParameterByPathPowershellTool } from "./tools/powershell/composite/presentation/set-rendering-parameter-by-path.js";
 import { getLogsPowerShellTool } from "./tools/powershell/composite/logging/get-logs.js";
 import { getSitecoreCliDocumentation } from "./tools/sitecore-cli/get-sitecore-cli-documentation.js";
+import {
+    isGroupEnabled,
+    resolveToolGating,
+    withToolGating,
+    type ToolGating,
+    type ToolGroup,
+} from "./tool-profiles.js";
 
 export async function register(array: Array<(server: McpServer, config: Config) => void>,
     server: McpServer,
@@ -152,10 +159,20 @@ export async function register(array: Array<(server: McpServer, config: Config) 
     }
 }
 
-export async function registerAll(server: McpServer, config: Config) {
-    await register([
-        registerGraphQL,        
-        //Item Service
+type ToolRegistrar = (server: McpServer, config: Config) => void;
+
+/**
+ * The registrars, grouped exactly as the tools are laid out on disk. The grouping is
+ * what `TOOL_GROUPS` and `TOOL_PROFILE` select over, and skipping a group here skips
+ * its registrars' startup cost (schema introspection, index lookups) as well as their
+ * schemas. Registration order matches the flat list this replaced.
+ */
+export const TOOL_GROUP_REGISTRARS: Record<ToolGroup, ToolRegistrar[]> = {
+    "graphql": [
+        registerGraphQL,
+    ],
+
+    "item-service": [
         //Simple Item Service Tools
         getItemTool,
         getItemChildrenTool,
@@ -169,13 +186,15 @@ export async function registerAll(server: McpServer, config: Config) {
 
         //Composite Item Service Tools
         getItemDescendantsTool,
-        getLanguagesTool,     
+        getLanguagesTool,
+    ],
 
-        //PowerShell tools
+    "powershell.core": [
         getPowershellDocumentationTool,
         runPowershellScriptTool,
+    ],
 
-        //Security
+    "powershell.security": [
         //Simple Security PowerShell Tools
         getUserByIdentityPowerShellTool,
         getCurrentUserPowerShellTool,
@@ -183,9 +202,9 @@ export async function registerAll(server: McpServer, config: Config) {
         newUserPowerShellTool,
         removeUserPowerShellTool,
         disableUserPowerShellTool,
-        enableUserPowerShellTool,        
+        enableUserPowerShellTool,
         unlockUserPowerShellTool,
-        setUserPowerShellTool,        
+        setUserPowerShellTool,
         setUserPasswordPowerShellTool,
         getDomainByNamePowerShellTool,
         getAllDomainsPowerShellTool,
@@ -196,7 +215,7 @@ export async function registerAll(server: McpServer, config: Config) {
         removeRoleMemberPowerShellTool,
         lockItemByIdPowerShellTool,
         lockItemByPathPowerShellTool,
-        unlockItemPowerShellTool,        
+        unlockItemPowerShellTool,
         protectItemByPathPowerShellTool,
         protectItemByIdPowerShellTool,
         unprotectItemByIdPowerShellTool,
@@ -210,12 +229,13 @@ export async function registerAll(server: McpServer, config: Config) {
         testItemAclPowerShellTool,
         addItemAclPowerShellTool,
         clearItemAclPowerShellTool,
-        
+
         //Composite Security PowerShell Tools
         setItemAclByIdPowerShellTool,
         setItemAclByPathPowerShellTool,
+    ],
 
-        //Common PowerShell Tools
+    "powershell.common": [
         //Simple Common PowerShell Tools
         addBaseTemplateByIdPowerShellTool,
         addBaseTemplateByPathPowerShellTool,
@@ -233,7 +253,7 @@ export async function registerAll(server: McpServer, config: Config) {
         getItemReferenceByPathPowerShellTool,
         getItemReferrerByIdPowerShellTool,
         getItemReferrerByPathPowerShellTool,
-        getItemTemplateByIdPowerShellTool, 
+        getItemTemplateByIdPowerShellTool,
         getItemTemplateByPathPowerShellTool,
         getItemWorkflowEventByIdPowerShellTool,
         getItemWorkflowEventByPathPowerShellTool,
@@ -256,7 +276,7 @@ export async function registerAll(server: McpServer, config: Config) {
         testBaseTemplateByIdPowerShellTool,
         testBaseTemplateByPathPowerShellTool,
 
-        //Composite Common PowerShell Tools 
+        //Composite Common PowerShell Tools
         getArchivePowerShellTool,
         getArchiveItemPowerShellTool,
         newItemCloneByIdPowerShellTool,
@@ -265,8 +285,9 @@ export async function registerAll(server: McpServer, config: Config) {
         restoreArchiveItemPowerShellTool,
         updateItemReferrerByIdPowerShellTool,
         updateItemReferrerByPathPowerShellTool,
+    ],
 
-        //Presentation
+    "powershell.presentation": [
         //Simple Presentation PowerShell Tools
         getLayoutByIdPowershellTool,
         getLayoutByPathPowershellTool,
@@ -284,7 +305,7 @@ export async function registerAll(server: McpServer, config: Config) {
         getPlaceholderSettingByPathPowershellTool,
         removePlaceholderSettingByIdPowershellTool,
         removePlaceholderSettingByPathPowershellTool,
-        
+
         //Composite Presentation PowerShell Tools
         setLayoutIdPowershellTool,
         setLayoutByPathPowershellTool,
@@ -303,27 +324,51 @@ export async function registerAll(server: McpServer, config: Config) {
         removeRenderingParameterByPathPowershellTool,
         setRenderingParameterByIdPowershellTool,
         setRenderingParameterByPathPowershellTool,
+    ],
 
-        //Logging
+    "powershell.logging": [
         getLogsPowerShellTool,
+    ],
 
-        //Provider
-        getItemPowerShellTool,        
-        //Indexing PowerShell Tools
+    "powershell.provider": [
+        getItemPowerShellTool,
+    ],
+
+    "powershell.indexing": [
+        //Simple Indexing PowerShell Tools
         initializeSearchIndexPowerShellTool,
         getSearchIndexPowerShellTool,
         findItemPowerShellTool,
         resumeSearchIndexPowerShellTool,
         suspendSearchIndexPowerShellTool,
         stopSearchIndexPowerShellTool,
+
         //Composite Indexing PowerShell Tools
         initializeSearchIndexingItemByIdPowerShellTool,
         initializeSearchIndexingItemByPathPowerShellTool,
         removeSearchIndexItemByIdPowerShellTool,
         removeSearchIndexItemByPathPowerShellTool,
+    ],
 
-        //Sitecore CLI
+    "sitecore-cli": [
         getSitecoreCliDocumentation,
+    ],
+};
 
-    ], server, config);
+export async function registerAll(server: McpServer, config: Config, gating?: ToolGating) {
+    // `gating` is supplied by getServer, which applies the tool denylist before it
+    // registers anything of its own. Resolve it here too so registerAll stays usable
+    // on its own.
+    let resolved = gating;
+    if (!resolved) {
+        resolved = resolveToolGating();
+        withToolGating(server, resolved);
+    }
+
+    for (const group of Object.keys(TOOL_GROUP_REGISTRARS) as ToolGroup[]) {
+        if (!isGroupEnabled(group, resolved)) {
+            continue;
+        }
+        await register(TOOL_GROUP_REGISTRARS[group], server, config);
+    }
 }

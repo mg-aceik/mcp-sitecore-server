@@ -188,6 +188,43 @@ An open-source Model Context Protocol server that gives AI agents (Claude, ChatG
 
 AI Agents may have limit on the amount of tools they can use. Please make sure that you have disabled the tools you don't need. It will make your agent faster, cheaper and more efficient.
 
+Schema cost is paid on every turn whether a tool is called or not, so three optional
+environment variables control which tools get registered. All three are unset by default,
+which registers everything, and the denylist always wins on conflict.
+
+#### `TOOL_GROUPS`
+
+Comma-separated allowlist of tool groups. The groups are the directory layout, not a new
+taxonomy:
+
+`graphql`, `item-service`, `powershell.core`, `powershell.security`, `powershell.common`,
+`powershell.presentation`, `powershell.logging`, `powershell.provider`,
+`powershell.indexing`, `sitecore-cli`
+
+`powershell.core` is `get-powershell-documentation` and `run-powershell-script`. Unset
+means every group. Skipping a group also skips its registrars' startup work, not just
+their schemas.
+
+#### `DISABLED_TOOLS`
+
+Comma-separated list of exact tool names to leave unregistered, e.g.
+`DISABLED_TOOLS=indexing-find-item,run-powershell-script`.
+
+#### `TOOL_PROFILE`
+
+A documented preset denylist for a platform. `DISABLED_TOOLS` entries are unioned on top
+of it. This server targets XM Cloud **and** XM/XP, so **no tool is disabled by default**:
+what is dead weight on one platform is core workflow on the other.
+
+The profile table lives in [`src/tool-profiles.ts`](src/tool-profiles.ts).
+
+| Profile | Hides | Why |
+| --- | --- | --- |
+| `xp` (or unset) | nothing | Publishing, application restart and CM-side identity management are all real operations on XM/XP. |
+| `xmcloud` | `common-publish-item-by-id`, `common-publish-item-by-path` | An XM Cloud CM has no `web` database and no local Edge publishing target; publishing is a deployment-environment operation. |
+| `xmcloud` | `common-restart-application` | The CM is a managed container; recycling the application pool is not the caller's to do. |
+| `xmcloud` | the whole `powershell.security` group | Users, roles and domains are managed in the Sitecore Cloud Portal, not on the CM, so the CM-side identity tools are misleading at best. Note that this also hides the item ACL, lock and protect tools, which *do* work on an XM Cloud CM — if you need those, use `TOOL_PROFILE=xp` with `DISABLED_TOOLS` instead. |
+
 ## Installation
 
 Add the following Model Context Protocol server to your Cursor, VS Code, Claude:
@@ -230,6 +267,11 @@ Add the following Model Context Protocol server to your Cursor, VS Code, Claude:
 - `POWERSHELL_USERNAME`: The username for the Sitecore PowerShell Remoting API authentication.
 - `POWERSHELL_PASSWORD`: The password for the Sitecore PowerShell Remoting API authentication.
 - `POWERSHELL_SERVER_URL`: The base URL for the Sitecore PowerShell Remoting API.
+- `TOOL_GROUPS`: Optional. Comma-separated allowlist of tool groups to register. Unset registers every group. See [Tools selection](#tools-selection).
+- `DISABLED_TOOLS`: Optional. Comma-separated list of exact tool names to leave unregistered.
+- `TOOL_PROFILE`: Optional. A documented preset denylist for a platform: `xp` (or unset) disables nothing, `xmcloud` hides the publish/restart/CM-identity set. See [Tools selection](#tools-selection).
+- `POWERSHELL_TIMEOUT_MS`: Optional. Timeout in milliseconds for a single PowerShell Remoting request. Default is `600000` (10 minutes).
+- `POWERSHELL_FULL_ERRORS`: Optional. Set to `true` to return the complete .NET error record instead of the shaped summary when a PowerShell command fails. Individual tools also accept `full: true` per call.
 - `AUTHORIZATION_HEADER`: Optional. If set, it will be used as an authorization header for access to the server. MCP server will expect `authorization` header to be passed with the value of this environment variable. If environment variable is not set, the server will not check for the authorization header.
 
 ## Docker images
