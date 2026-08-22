@@ -336,9 +336,13 @@ revision 2026-07-28._
   than its value**, so output carrying the flag set to `false` was reported as a failure.
 
 * `[media]` **`media-upload` could not find the item it had just created.** It rebuilt the
-  path in TypeScript by stripping the extension, which threw on a name with no extension and
-  missed any name Sitecore's `ProposeValidItemName` rewrites. The read-back now asks Sitecore
-  for the same transformation.
+  path in TypeScript by stripping the extension at the *last* dot. The SPE media handler
+  splits at the *first* one — `my.probe.png` is stored as an item called `my` — and Sitecore
+  then rewrites any character it will not accept in a name. The read-back now derives the
+  stem at the first dot and asks Sitecore for the same `ProposeValidItemName` transformation,
+  with the last-dot reading kept as a fallback candidate. Because the item name is not the
+  file name, `media-upload` reports the name the item actually got, and its `destination`
+  description says so.
 
 * `[http]` **The `/mcp` body limit was Express's 100kb default**, which is smaller than a
   single base64 image, so `media-upload`'s inline `content` failed — as an HTML error, which

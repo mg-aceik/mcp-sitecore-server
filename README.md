@@ -7,7 +7,7 @@ open-source [Model Context Protocol](https://modelcontextprotocol.io) server tha
 agents direct read/write access to Sitecore, so you stop copy-pasting between your agent
 and the Content Editor.
 
-- **117 tools** across search, query, create, read, update, delete, media, PowerShell, logging, security and presentation (with the default two GraphQL schemas; the GraphQL group adds two tools per schema)
+- **119 tools** across search, query, create, read, update, delete, media, PowerShell, logging, security and presentation (115 fixed, plus two per entry in `GRAPHQL_SCHEMAS` — 119 with the default `edge,master`)
 - Covers three Sitecore API surfaces: **Item Service**, **GraphQL Edge** and **Sitecore PowerShell Extensions**
 - Works with **SitecoreAI** and **Sitecore XM/XP** (all versions), from any MCP-compatible client
 - Implements **MCP protocol revision 2026-07-28**, and answers the 2025 `initialize` handshake from the same tool registrations
@@ -79,7 +79,7 @@ ground it is the stronger tool:
 | --------------------- | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
 | **Platforms**         | SitecoreAI **and** XM/XP, all versions — including your local Docker CM                                             | SitecoreAI only                                                                     |
 | **Hosting**           | Self-hosted (npm, Docker, source); credentials never leave your infrastructure                                      | Hosted by Sitecore; OAuth through the cloud                                         |
-| **Surface**           | 117 tools across the full developer surface: items, templates, presentation, media, security, indexing, logs, GraphQL, raw PowerShell | Marketer operations: pages, components, briefs, brand kits, personalization, A/B tests |
+| **Surface**           | 119 tools across the full developer surface: items, templates, presentation, media, security, indexing, logs, GraphQL, raw PowerShell | Marketer operations: pages, components, briefs, brand kits, personalization, A/B tests |
 | **Escape hatch**      | `run-powershell-script` and raw GraphQL — if a tool doesn't exist, the capability still does                        | Closed tool set                                                                     |
 | **Layout safety**     | `add-rendering-to-placeholder` *refuses* components the placeholder settings forbid, naming the allow-list          | Writes are not validated against placeholder settings                               |
 | **Tool gating**       | `TOOL_GROUPS` / `DISABLED_TOOLS` / `TOOL_PROFILE` trim the schema cost per turn                                     | Fixed tool list                                                                     |

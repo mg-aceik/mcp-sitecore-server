@@ -22,20 +22,20 @@ const logFilePrefixes =
  * rather than silently dependent on where the MCP server happens to run; a caller in a
  * different zone to the CM passes an explicit `date`.
  *
- * An unparseable `date` throws instead of yielding "NaNNaNNaN", which used to produce a
- * glob that matched nothing and reported it as "no logs".
+ * An unparseable `date` is rejected instead of yielding "NaNNaNNaN", which used to produce
+ * a glob that matched nothing and reported it as "no logs". It is returned rather than
+ * thrown for the reason `target-input.ts` gives: `safeMcpResponse` would prefix a thrown
+ * error with "Error executing tool:", which reads as a server fault rather than as a call
+ * the agent can correct.
  */
-function formatDate(date?: string): string {
+function formatDate(date: string | undefined): string | undefined {
     if (date === undefined) {
         return new Date().toISOString().slice(0, 10).replace(/-/g, "");
     }
 
     const parsed = new Date(date);
     if (Number.isNaN(parsed.getTime())) {
-        throw new Error(
-            `'date' is not a date this server can read: '${date}'. Use ISO 8601, `
-            + `e.g. '2023-10-01T00:00:00Z'.`
-        );
+        return undefined;
     }
     return parsed.toISOString().slice(0, 10).replace(/-/g, "");
 }
@@ -69,9 +69,21 @@ export function getLogsPowerShellTool(server: McpServer, config: Config) {
         },
         async (params) => {
             const stringDate = formatDate(params.date);
-            const command = `Get-ChildItem -Path $SitecoreDataFolder/logs/${params.name}*${stringDate}*.* | Sort LastWriteTime | Get-Content -Tail ${params.tail} `;
+            if (stringDate === undefined) {
+                return {
+                    isError: true,
+                    content: [{
+                        type: "text" as const,
+                        text:
+                            `'date' is not a date this server can read: '${params.date}'. Use `
+                            + `ISO 8601, e.g. '2023-10-01T00:00:00Z'.`,
+                    }],
+                };
+            }
 
             return safeMcpResponse((async () => {
+                const command = `Get-ChildItem -Path $SitecoreDataFolder/logs/${params.name}*${stringDate}*.* | Sort LastWriteTime | Get-Content -Tail ${params.tail} `;
+
                 const json = await runGenericPowershellCommand(config, command, {});
                 const raw = (json.content[0] as any)?.text as string;
 

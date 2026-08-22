@@ -1,11 +1,11 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 
 /**
- * Tool gating: which of the server's 117 tools get registered.
+ * Tool gating: which of the server's 119 tools get registered.
  *
- * (117 is the count with the default `GRAPHQL_SCHEMAS=edge,master`: the GraphQL group
- * registers a query and an introspection tool per schema, so the total moves with that
- * setting. Everything else is fixed.)
+ * (115 tools are fixed; the GraphQL group adds two more — a query tool and an
+ * introspection tool — per entry in `GRAPHQL_SCHEMAS`. 119 is the total with the default
+ * `edge,master`. Verified against a live server's tools/list.)
  *
  * Schema cost is paid on every turn whether a tool is ever called or not, so a client
  * that only needs part of the surface should be able to say so. Three optional

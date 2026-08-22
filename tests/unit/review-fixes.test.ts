@@ -27,6 +27,7 @@ import {
     withToolGating,
 } from "@/tool-profiles.js";
 import { redactConfig } from "@/config.js";
+import { getLogsPowerShellTool } from "@/tools/powershell/composite/logging/get-logs.js";
 
 afterEach(() => {
     vi.restoreAllMocks();
@@ -221,5 +222,45 @@ describe("redactConfig", () => {
     it("leaves an unset secret visibly unset rather than pretending one exists", () => {
         const redacted = redactConfig({ ...source, authorizationHeader: "" });
         expect(redacted.authorizationHeader).toBe("");
+    });
+});
+
+describe("logging-get-logs date handling", () => {
+    // Found live: formatDate threw *outside* safeMcpResponse, so a bad date escaped the
+    // handler as an exception instead of coming back as a tool result.
+    function register() {
+        let handler: any;
+        const server: any = {
+            registerTool(_name: string, _cfg: any, cb: any) { handler = cb; return {}; },
+        };
+        getLogsPowerShellTool(server, { powershell: {} } as any);
+        return handler;
+    }
+
+    it("returns an error result for an unparseable date rather than throwing", async () => {
+        const handler = register();
+        const result = await handler({ date: "not-a-date", name: "log", tail: 5, level: "DEBUG" }, {});
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain("not a date this server can read");
+        // Not wrapped in "Error executing tool:", which reads as a server fault.
+        expect(result.content[0].text).not.toContain("Error executing tool");
+    });
+});
+
+describe("media-upload read-back candidates", () => {
+    // Found live: the SPE media handler names the item after the file name up to its
+    // FIRST dot, so 'my.probe.png' is stored as an item called 'my'. The read-back used
+    // LastIndexOf and looked for 'my.probe', which does not exist. Verified against a
+    // live CM for 'plain.png', 'my.probe.png', 'v1.2 asset.jpg' and 'noextension'.
+    it("derives the stem at the first dot and asks Sitecore to sanitise it", async () => {
+        const { readFile } = await import("node:fs/promises");
+        const source = await readFile("src/tools/powershell/media/media-upload.ts", "utf8");
+
+        expect(source).toContain("$firstDot = $leaf.IndexOf('.')");
+        expect(source).toContain("ProposeValidItemName");
+        // The last-dot reading is kept as a fallback candidate, not as the only one.
+        expect(source).toContain("$lastDot = $leaf.LastIndexOf('.')");
+        // And the database is quoted rather than interpolated raw.
+        expect(source).not.toContain("$database = '${params.database}'");
     });
 });

@@ -43,7 +43,7 @@ export function mediaUploadTool(server: McpServer, config: Config) {
             },
             inputSchema: z.object({
                 destination: z.string()
-                    .describe("Media library path for the item, including the file name with extension (e.g. 'Project/Stride/Corporate/Migrated/team-photo.jpg' — the '/sitecore/media library/' prefix is optional), or the GUID of an existing media item to overwrite."),
+                    .describe("Media library path for the item, including the file name with extension (e.g. 'Project/Stride/Corporate/Migrated/team-photo.jpg' — the '/sitecore/media library/' prefix is optional), or the GUID of an existing media item to overwrite. The item is named after the file name up to its FIRST dot, with characters Sitecore will not accept in a name removed, so 'v1.2 asset.jpg' becomes an item called 'v1' — avoid dots in the name itself. The response reports the name the item actually got."),
                 sourceUrl: z.string().optional()
                     .describe("http(s) URL to fetch the bytes from (e.g. an image on the site being migrated). Supply this, filePath or content."),
                 filePath: z.string().optional()
@@ -125,26 +125,38 @@ export function mediaUploadTool(server: McpServer, config: Config) {
                             $folder = $Destination.Substring(0, $lastSlash);
                             $leaf = $Destination.Substring($lastSlash + 1);
                         }
-                        # An extension is conventional but not required by the handler.
+
+                        # The handler splits the leaf at its FIRST dot and treats the rest as
+                        # the extension, so 'my.probe.png' is stored as an item named 'my'.
+                        # Verified against a live CM. The last-dot reading is kept as a
+                        # candidate rather than assumed, in case a version differs, and the
+                        # whole leaf covers a destination with no dot at all.
+                        $firstDot = $leaf.IndexOf('.');
                         $lastDot = $leaf.LastIndexOf('.');
-                        $stem = $(if ($lastDot -gt 0) { $leaf.Substring(0, $lastDot) } else { $leaf });
-                        $proposed = [Sitecore.Data.Items.ItemUtil]::ProposeValidItemName($stem);
+                        $stems = New-Object System.Collections.ArrayList;
+                        foreach ($stem in @(
+                            $(if ($firstDot -gt 0) { $leaf.Substring(0, $firstDot) } else { $leaf }),
+                            $(if ($lastDot -gt 0) { $leaf.Substring(0, $lastDot) } else { $leaf }),
+                            $leaf
+                        )) {
+                            if ([string]::IsNullOrWhiteSpace($stem)) { continue }
+                            # Sitecore rewrites characters it will not accept in an item name,
+                            # so ask it for the transformation rather than reimplementing it.
+                            foreach ($candidate in @([Sitecore.Data.Items.ItemUtil]::ProposeValidItemName($stem), $stem)) {
+                                if (-not $stems.Contains($candidate)) { [void]$stems.Add($candidate) }
+                            }
+                        }
 
                         $parentPath = ($Database + ':/sitecore/media library' + $(if ($folder -eq '') { '' } else { '/' + $folder }));
-                        $parent = Get-Item -Path $parentPath -ErrorAction SilentlyContinue;
-                        if ($null -eq $parent) { return $null }
+                        $children = @(Get-ChildItem -Path $parentPath -ErrorAction SilentlyContinue);
+                        if ($children.Count -eq 0) { return $null }
 
-                        foreach ($candidate in @($proposed, $stem)) {
-                            $hit = Get-ChildItem -Path $parentPath -ErrorAction SilentlyContinue |
+                        foreach ($candidate in $stems) {
+                            $hit = $children |
                                 Where-Object { $_.Name -eq $candidate } | Select-Object -First 1;
                             if ($null -ne $hit) { return $hit }
                         }
-
-                        # Last resort: the media item whose own file name matches what was sent.
-                        return Get-ChildItem -Path $parentPath -ErrorAction SilentlyContinue |
-                            Where-Object { $_['File Path'] -like ('*' + $leaf) -or $_.Name -like ($proposed + '*') } |
-                            Sort-Object -Property { $_.Statistics.Updated } -Descending |
-                            Select-Object -First 1;
+                        return $null;
                     }
 
                     $item = ${lookup};
