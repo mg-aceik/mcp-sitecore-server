@@ -147,6 +147,10 @@ import { listRenderingsPowershellTool } from "./tools/powershell/composite/prese
 import { getAllowedComponentsByPlaceholderPowershellTool } from "./tools/powershell/composite/composition/get-allowed-components-by-placeholder.js";
 import { createComponentDatasourcePowershellTool } from "./tools/powershell/composite/composition/create-component-datasource.js";
 import { addRenderingToPlaceholderPowershellTool } from "./tools/powershell/composite/composition/add-rendering-to-placeholder.js";
+import { listSitesPowershellTool } from "./tools/powershell/composite/composition/list-sites.js";
+import { getPagesBySitePowershellTool } from "./tools/powershell/composite/composition/get-pages-by-site.js";
+import { listSiteComponentsPowershellTool } from "./tools/powershell/composite/composition/list-site-components.js";
+import { listInsertOptionsPowershellTool } from "./tools/powershell/composite/composition/list-insert-options.js";
 import {
     isGroupEnabled,
     resolveToolGating,
@@ -202,6 +206,10 @@ export const TOOL_GROUP_REGISTRARS: Record<ToolGroup, ToolRegistrar[]> = {
         getAllowedComponentsByPlaceholderPowershellTool,
         createComponentDatasourcePowershellTool,
         addRenderingToPlaceholderPowershellTool,
+        listSitesPowershellTool,
+        getPagesBySitePowershellTool,
+        listSiteComponentsPowershellTool,
+        listInsertOptionsPowershellTool,
     ],
 
     "powershell.security": [

@@ -48,6 +48,35 @@ export const SYSTEM_SITE_NAMES_POWERSHELL = `@(${SYSTEM_SITE_NAMES.map(quotePowe
  * needs `Get-McpSiteRoot` or `Get-McpProjectName`.
  */
 export const SITE_SCOPE_FUNCTIONS = `
+function Get-McpDelimitedList {
+    param([string]$Value)
+
+    # Sitecore's multi-value fields are pipe-separated in the database and newline-separated
+    # in serialized YAML. Every caller here reads one or the other, so both are accepted.
+    if ([string]::IsNullOrWhiteSpace($Value)) { return @() }
+    return @($Value -split '[|\\r\\n]' | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' });
+}
+
+function Get-McpItemRows {
+    param([string]$Database, [string[]]$Ids)
+
+    # Resolves a list of IDs to {ID, Name} rows and reports the ones that resolve to
+    # nothing, which is the same contract get-allowed-components-by-placeholder uses: a
+    # dangling reference is dropped from the usable list but never hidden.
+    $resolved = @();
+    $unresolved = @();
+    $seen = @{};
+    foreach ($id in $Ids) {
+        if ($seen.ContainsKey($id)) { continue }
+        $seen[$id] = 1;
+        $item = $null;
+        try { $item = Get-Item -Path ($Database + ':') -ID $id -ErrorAction SilentlyContinue } catch { $item = $null }
+        if ($null -ne $item) { $resolved += [PSCustomObject]@{ ID = $item.ID.ToString(); Name = $item.Name } }
+        else { $unresolved += $id }
+    }
+    return [PSCustomObject]@{ Resolved = $resolved; Unresolved = $unresolved };
+}
+
 function Get-McpSiteRoot {
     param([Sitecore.Data.Items.Item]$Item)
 

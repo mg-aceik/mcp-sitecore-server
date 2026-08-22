@@ -39,10 +39,9 @@ export const PLACEHOLDER_SETTINGS_FUNCTIONS = `
 function Get-McpAllowedControlIds {
     param([string]$Value)
 
-    if ([string]::IsNullOrWhiteSpace($Value)) { return @() }
-    # Pipe from the database, newline from serialized YAML. Split on both so the same
-    # resolver works against either source.
-    return @($Value -split '[|\\r\\n]' | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' });
+    # Pipe from the database, newline from serialized YAML. Get-McpDelimitedList splits on
+    # both, so the same resolver works against either source.
+    return @(Get-McpDelimitedList -Value $Value);
 }
 
 function Get-McpPlaceholderKeyPattern {
