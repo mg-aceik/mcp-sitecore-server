@@ -32,6 +32,14 @@ function registerQueryTool(server: McpServer, config: Config, schema: string) {
                 + `endpoint can see: 'edge' serves published content only (unpublished master `
                 + `changes are invisible to it), while 'master' / preview schemas read the `
                 + `authoring database. Use introspection-graphql-${schema} for the schema SDL.`,
+            // The document is only syntax-checked, so a mutation goes through as readily as
+            // a query. Claiming readOnlyHint here would be a promise this tool cannot keep.
+            annotations: {
+                title: `Query GraphQL ${schema}`,
+                readOnlyHint: false,
+                destructiveHint: false,
+                openWorldHint: true,
+            },
             inputSchema: z.object({
                 query: z.string()
                     .describe("The GraphQL query document, e.g. 'query($path: String!) { item(path: $path, language: \"en\") { id name } }'."),

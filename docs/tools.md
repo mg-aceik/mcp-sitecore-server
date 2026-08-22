@@ -1,6 +1,6 @@
 # Tool reference
 
-115 tools across search, query, create, read, update, delete, PowerShell, logging,
+117 tools across search, query, create, read, update, delete, PowerShell, logging,
 security and presentation, covering the Item Service, GraphQL Edge and Sitecore
 PowerShell Extensions.
 

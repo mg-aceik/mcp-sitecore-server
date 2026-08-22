@@ -263,7 +263,113 @@ revision 2026-07-28._
   the config had drifted, exposing none of the tool-gating settings. Install with
   `npx @antonytm/mcp-sitecore-server@latest` or one of the Docker images instead.
 
+### 🔒 Security
+
+* `[media]` **`media-upload` interpolated `database` into PowerShell unescaped.** Every
+  other value in the read-back script was quoted with `quotePowerShellString`; this one was
+  not, so `database: "master'; <script>; $x='"` executed arbitrary PowerShell as the SPE
+  remoting account. The value is now quoted like its siblings *and* constrained by the
+  schema to a plain database identifier.
+
+* `[media]` **`filePath` and `saveTo` are refused over the HTTP transport by default.**
+  Both read and write the filesystem of the machine running this server, which is
+  unremarkable on stdio and is arbitrary file read/write for anyone who can reach the port
+  under `TRANSPORT=streamable-http`, where `AUTHORIZATION_HEADER` is empty by default. Set
+  `MEDIA_LOCAL_FILE_ROOT` to a directory to allow them, confined to it; the confinement
+  applies on both transports once set. See
+  [Media and the local filesystem](./docs/configuration.md#media-and-the-local-filesystem).
+
+* `[media]` **`sourceUrl` no longer reaches private networks.** The server fetches this URL
+  from wherever it is deployed, so an unrestricted value was a server-side request forgery
+  primitive against the cloud metadata endpoint and anything else on the CM's network. Only
+  `http`/`https` is accepted, hostnames that resolve into private, loopback or link-local
+  space are refused unless `MEDIA_ALLOW_PRIVATE_SOURCE_URL=true`, and the fetch is now
+  subject to the same timeout as every other outbound request.
+
+* `[server]` **The `config` tool and `config://main` resource redact secrets.** Both
+  returned the full configuration — the Item Service and PowerShell passwords, the GraphQL
+  API key and the server's own `AUTHORIZATION_HEADER` — to any client that could call a
+  tool. The keys remain present so "is one configured?" is still answerable.
+
+* `[http]` **The authorization check is constant-time and the `Bearer` strip is anchored.**
+  `===` on a shared secret leaks, through timing, how many leading characters were right,
+  and the unanchored `Bearer` pattern also matched inside a token that happened to contain
+  it. Unauthorized responses are now JSON rather than plain text.
+
+* `[security]` **`security-export-*` / `security-import-*` reject `root` and `path`
+  together.** The descriptions always said not to combine them; nothing enforced it, so the
+  cmdlet resolved its parameter sets in an order the caller could not see.
+
 ### 🐛 Bug Fixes
+
+* `[tools]` **A whitespace-only `id` addressed the wrong item, across ~26 merged tools.**
+  Validation trims before deciding what was supplied, but each tool branched on raw
+  truthiness, so `{id: "  ", path: "/sitecore/content/Home"}` passed validation as a path
+  call and then sent `-Id '  '`. Both now use the same `hasTarget` predicate.
+
+* `[composition]` **The composition tools silently preferred `path` when both a path and an
+  ID were supplied.** That is the ambiguity the merged tools reject by design; they now
+  reject it too, in `create-component-datasource`, `add-rendering-to-placeholder`,
+  `get-allowed-components-by-placeholder` and `list-insert-options`, and for the
+  `renderingPath`/`renderingId` pair as well.
+
+* `[composition]` **A colon anywhere in a path was read as a database prefix.**
+  `/sitecore/content/Home/A:B` resolved to database `/sitecore/content/Home/A`. Only a
+  leading identifier followed by a colon counts now.
+
+* `[indexing]` **`indexing-find-item` reported a failed search as an empty one.** It bypassed
+  the shared error shaping entirely, returning the full serialized .NET `ErrorRecord` with
+  `isError` unset. It now shapes errors like every other PowerShell tool. Its `first`/`skip`
+  are integers, and `criteria` requires at least one entry rather than sending `-Criteria @()`.
+
+* `[logging]` **`logging-get-logs` discarded the shaped error message.** It parsed the tool
+  result as JSON without checking `isError`, so a PowerShell failure surfaced as
+  "Unexpected token" instead of the message the error shaping had just built. An
+  unparseable `date` now errors instead of globbing for `NaNNaNNaN`, and the date is
+  formatted in UTC rather than the MCP host's local timezone.
+
+* `[powershell]` **A non-JSON response from the CM was reported as a parse bug.** An HTML
+  error page from the CM produced "Unexpected token <" from the very function that owns
+  error presentation; it now says what actually happened and shows the start of the response.
+
+* `[powershell]` **`xmlLooksLikeError` matched the `writeErrorStream` property name rather
+  than its value**, so output carrying the flag set to `false` was reported as a failure.
+
+* `[media]` **`media-upload` could not find the item it had just created.** It rebuilt the
+  path in TypeScript by stripping the extension, which threw on a name with no extension and
+  missed any name Sitecore's `ProposeValidItemName` rewrites. The read-back now asks Sitecore
+  for the same transformation.
+
+* `[http]` **The `/mcp` body limit was Express's 100kb default**, which is smaller than a
+  single base64 image, so `media-upload`'s inline `content` failed — as an HTML error, which
+  is what the JSON 404 fallback exists to prevent. The limit is now 32mb (`MCP_BODY_LIMIT`)
+  and a malformed or oversized body answers in JSON.
+
+* `[config]` **A malformed `GRAPHQL_HEADERS` killed the process during module import**, which
+  on stdio is a subprocess that dies with no explanation. It is now reported and ignored, the
+  same way an unknown `TOOL_PROFILE` is.
+
+* `[config]` **An unrecognised `TRANSPORT` fell through to stdio in silence**, so a typo in a
+  container's config left nothing listening and no clue why. It now says so on stderr.
+
+* `[tools]` **A `TOOL_GROUPS` allowlist of nothing but typos registered zero tools.** Unknown
+  names are dropped rather than kept, so the allowlist is ignored instead. `DISABLED_TOOLS`
+  names that match no tool are now reported once registration is done — a denylist typo used
+  to fail open in silence.
+
+* `[annotations]` **Four tools carried annotations the name-based inference got wrong.**
+  `media-download` claimed `readOnlyHint` while `saveTo` writes a local file;
+  `query-graphql-<schema>` claimed it while forwarding any document, mutations included;
+  `security-import-user`/`security-import-role` and `media-upload` overwrite live state and
+  are now `destructiveHint`.
+
+* `[http]` **The listen port was hardcoded.** `PORT` and `HOST` are now read, the server logs
+  where it is listening, and `EADDRINUSE` explains itself instead of surfacing as an
+  unhandled error.
+
+* `[build]` **`prepare` did not produce `dist/bundle.js`**, which `main` and `bin` point at,
+  so a git install shipped a `bin` target that did not exist. The Docker image tags now come
+  from `$npm_package_version` instead of three hardcoded copies of it.
 
 * `[graphql]` **`query-graphql-<schema>` sent `variables` as a string.** The MCP parameter
   is a JSON string, but it was forwarded verbatim, so the request body carried

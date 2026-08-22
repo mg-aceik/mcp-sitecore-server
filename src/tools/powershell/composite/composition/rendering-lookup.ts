@@ -1,5 +1,7 @@
 import { z } from "zod";
+import type { CallToolResult } from "@modelcontextprotocol/server";
 import { quotePowerShellString } from "../../command-builder.js";
+import { hasTarget, requireOneTarget } from "@/tools/target-input.js";
 
 /**
  * Addressing a rendering definition item, and resolving the item references its fields
@@ -46,14 +48,28 @@ export type RenderingSelector = {
  * calling script has already established.
  */
 export function renderingLookupCall(selector: RenderingSelector): string | undefined {
-    if (selector.renderingPath) {
-        const path = selector.renderingPath.includes(":")
+    if (hasTarget(selector.renderingPath)) {
+        const path = /^\s*[A-Za-z][A-Za-z0-9_-]*:/.test(selector.renderingPath!)
             ? quotePowerShellString(selector.renderingPath)
             : `($database + ':' + ${quotePowerShellString(selector.renderingPath)})`;
         return `Get-Item -Path ${path} -ErrorAction SilentlyContinue`;
     }
-    if (selector.renderingId) {
+    if (hasTarget(selector.renderingId)) {
         return `Get-Item -Path ($database + ':') -ID ${quotePowerShellString(selector.renderingId)} -ErrorAction SilentlyContinue`;
     }
     return undefined;
+}
+
+/**
+ * Validates the rendering addressing inputs: exactly one, for the same reason
+ * `requireOneTarget` gives. Preferring `renderingPath` when both were supplied would act
+ * on one of two renderings the caller named.
+ */
+export function requireOneRenderingSelector(
+    selector: RenderingSelector
+): CallToolResult | undefined {
+    return requireOneTarget(
+        selector as Record<string, unknown>,
+        ["renderingPath", "renderingId"]
+    );
 }

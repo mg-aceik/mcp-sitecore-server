@@ -117,6 +117,7 @@ import { listSiteComponentsPowershellTool } from "./tools/powershell/composite/c
 import { listInsertOptionsPowershellTool } from "./tools/powershell/composite/composition/list-insert-options.js";
 import {
     isGroupEnabled,
+    reportUnmatchedTools,
     resolveToolGating,
     withToolGating,
     type ToolGating,
@@ -321,4 +322,7 @@ export async function registerAll(server: McpServer, config: Config, gating?: To
         }
         await register(TOOL_GROUP_REGISTRARS[group], server, config);
     }
+
+    // Now that every name is known, say so if a denylist entry matched nothing.
+    reportUnmatchedTools(resolved);
 }

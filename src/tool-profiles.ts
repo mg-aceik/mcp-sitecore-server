@@ -1,7 +1,11 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 
 /**
- * Tool gating: which of the server's ~115 tools get registered.
+ * Tool gating: which of the server's 117 tools get registered.
+ *
+ * (117 is the count with the default `GRAPHQL_SCHEMAS=edge,master`: the GraphQL group
+ * registers a query and an introspection tool per schema, so the total moves with that
+ * setting. Everything else is fixed.)
  *
  * Schema cost is paid on every turn whether a tool is ever called or not, so a client
  * that only needs part of the surface should be able to say so. Three optional
@@ -103,6 +107,13 @@ export type ToolGating = {
     disabledGroups: Set<string>;
     /** Tool names hidden by the active profile or by `DISABLED_TOOLS`. */
     disabledTools: Set<string>;
+    /**
+     * The denylisted names that actually matched a tool. A name that never matches is a
+     * typo, and a typo in a denylist fails open — the tool the operator meant to hide
+     * stays registered. `reportUnmatchedTools` says so once registration is done, which is
+     * the earliest point at which the full set of names is known.
+     */
+    matchedTools: Set<string>;
 };
 
 function splitList(value: string | undefined): string[] {
@@ -120,12 +131,21 @@ function splitList(value: string | undefined): string[] {
 export function resolveToolGating(env: NodeJS.ProcessEnv = process.env): ToolGating {
     const requestedGroups = splitList(env.TOOL_GROUPS);
     const known = new Set<string>(TOOL_GROUPS);
+    const recognisedGroups = requestedGroups.filter((group) => known.has(group));
     for (const group of requestedGroups) {
         if (!known.has(group)) {
             console.error(
                 `TOOL_GROUPS: unknown group '${group}'. Known groups: ${TOOL_GROUPS.join(", ")}.`
             );
         }
+    }
+    // Unknown names are dropped rather than kept, so an allowlist of nothing but typos
+    // behaves as if TOOL_GROUPS were unset instead of registering zero tools in silence.
+    if (requestedGroups.length > 0 && recognisedGroups.length === 0) {
+        console.error(
+            "TOOL_GROUPS: no recognised group names, so the allowlist is being ignored and every "
+            + "group is registered. Fix the names to narrow the surface."
+        );
     }
 
     const profileName = (env.TOOL_PROFILE ?? "").trim().toLowerCase();
@@ -138,13 +158,44 @@ export function resolveToolGating(env: NodeJS.ProcessEnv = process.env): ToolGat
     }
 
     return {
-        enabledGroups: requestedGroups.length > 0 ? new Set(requestedGroups) : null,
+        enabledGroups: recognisedGroups.length > 0 ? new Set(recognisedGroups) : null,
         disabledGroups: new Set(Object.keys(profile?.disabledGroups ?? {})),
         disabledTools: new Set([
             ...Object.keys(profile?.disabledTools ?? {}),
             ...splitList(env.DISABLED_TOOLS),
         ]),
+        matchedTools: new Set<string>(),
     };
+}
+
+/**
+ * Reports denylisted tool names that never matched anything registered.
+ *
+ * Group names are validated when they are read; tool names cannot be, because the full
+ * set only exists once the registrars have run. Without this, `DISABLED_TOOLS=media-uplod`
+ * silently leaves `media-upload` registered — a denylist that fails open and says nothing.
+ */
+const reportedUnmatched = new Set<string>();
+
+export function reportUnmatchedTools(gating: ToolGating): string[] {
+    const unmatched = [...gating.disabledTools].filter((name) => !gating.matchedTools.has(name));
+    // The HTTP transport builds a server per request, so report each name once per process
+    // rather than once per exchange.
+    const fresh = unmatched.filter((name) => !reportedUnmatched.has(name));
+    fresh.forEach((name) => reportedUnmatched.add(name));
+    if (fresh.length > 0) {
+        console.error(
+            `DISABLED_TOOLS: no tool is named ${fresh.map((n) => `'${n}'`).join(", ")}, so `
+            + `nothing was hidden for ${fresh.length === 1 ? "it" : "them"}. Check the `
+            + `spelling against the tool list; a group may also have excluded it already.`
+        );
+    }
+    return unmatched;
+}
+
+/** Test seam: forget which unmatched names have already been reported. */
+export function resetUnmatchedToolReporting(): void {
+    reportedUnmatched.clear();
 }
 
 export function isGroupEnabled(group: string, gating: ToolGating): boolean {
@@ -159,23 +210,36 @@ export function isToolEnabled(name: string, gating: ToolGating): boolean {
 }
 
 /**
+ * The handle `registerTool` hands back for a tool that was denied.
+ *
+ * Returning `undefined` would make a denylist entry turn any caller that chains off the
+ * registration — `.disable()`, `.update()` — into a TypeError, so gating would break code
+ * that works with gating off. An inert handle keeps the call sites uniform.
+ */
+function deniedToolHandle() {
+    const noop = () => undefined;
+    return { enabled: false, enable: noop, disable: noop, update: noop, remove: noop };
+}
+
+/**
  * Patches `server.registerTool` so that a denylisted tool is silently not registered.
  *
  * Filtering here rather than at each call site means `DISABLED_TOOLS` covers every tool
  * in the server, including the ones a single registrar function registers several of.
  * The group allowlist is applied in `register.ts`, which skips whole registrar sets and
  * so also skips their startup cost.
+ *
+ * The patch is installed unconditionally: it is also what records which denylist names
+ * matched, and `reportUnmatchedTools` needs that even when the current call happens to
+ * have an empty denylist.
  */
 export function withToolGating(server: McpServer, gating: ToolGating): McpServer {
-    if (gating.disabledTools.size === 0) {
-        return server;
-    }
-
     const originalRegisterTool = server.registerTool.bind(server) as (...args: any[]) => any;
 
     (server as any).registerTool = (name: string, config: Record<string, any>, cb: any) => {
         if (!isToolEnabled(name, gating)) {
-            return undefined;
+            gating.matchedTools.add(name);
+            return deniedToolHandle();
         }
         return originalRegisterTool(name, config, cb);
     };

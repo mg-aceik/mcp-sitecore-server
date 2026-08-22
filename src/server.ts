@@ -1,5 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/server";
-import { envSchema, type Config, type EnvConfig } from "./config.js";
+import { envSchema, redactConfig, type Config, type EnvConfig } from "./config.js";
 import fs from 'fs';
 import path from 'path';
 import { registerAll } from "./register.js";
@@ -26,11 +26,16 @@ export async function getServer(config: Config): Promise<McpServer> {
 
     // Parse the environment variables and set default values
 
+    // Both of these are readable by any connected client, so the passwords, the GraphQL
+    // API key and the server's own bearer token are masked. Everything an agent needs from
+    // them -- which endpoint, which account, which schemas -- survives redaction.
+    const visibleConfig = redactConfig(config);
+
     server.registerResource("config", "config://main", {}, async (uri) => {
                     return {
                         contents: [{
                             uri: uri.href,
-                            text: JSON.stringify(config, null, 2),
+                            text: JSON.stringify(visibleConfig, null, 2),
                         }]
                     }
                 });
@@ -38,14 +43,16 @@ export async function getServer(config: Config): Promise<McpServer> {
     server.registerTool(
         "config",
         {
-            description: "Prints the configuration of the Sitecore MCP server.",
+            description:
+                "Prints the configuration of the Sitecore MCP server. Secrets (passwords, the "
+                + "GraphQL API key, the authorization header) are redacted.",
         },
         async (params) => {
             return {
                 content: [
                     {
                         type: "text",
-                        text: JSON.stringify(config, null, 2)
+                        text: JSON.stringify(visibleConfig, null, 2)
                     }
                 ]
             };

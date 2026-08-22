@@ -2,7 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
-import { requireOneTarget } from "@/tools/target-input.js";
+import { hasTarget, requireOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../../simple/generic.js";
 import { quotePowerShellString } from "../../command-builder.js";
 
@@ -46,7 +46,7 @@ export function setLayoutPowershellTool(server: McpServer, config: Config) {
                 ? `Get-Item -Path ${quotePowerShellString(`${params.database}:`)} -Id ${quotePowerShellString(params.layoutId)}`
                 : `Get-Item -Path ${quotePowerShellString(params.layoutPath)}`;
 
-            const target = params.id
+            const target = hasTarget(params.id)
                 ? `-Id ${quotePowerShellString(params.id)}`
                 : `-Path ${quotePowerShellString(params.path)}`;
 

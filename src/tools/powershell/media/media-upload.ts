@@ -4,8 +4,11 @@ import { z } from "zod";
 import { readFile } from "node:fs/promises";
 import { safeMcpResponse } from "@/helper.js";
 import { requireOneTarget } from "@/tools/target-input.js";
+import { fetchWithTimeout } from "@/utils.js";
 import { runGenericPowershellCommand } from "../simple/generic.js";
-import { mediaFetch, mediaServiceUrl, toMediaLibraryRelativePath } from "./media-service.js";
+import { quotePowerShellString } from "../command-builder.js";
+import { mediaFetch, mediaServiceUrl, mediaTimeoutMs, toMediaLibraryRelativePath } from "./media-service.js";
+import { assertFetchableSourceUrl, resolveLocalMediaPath } from "./local-files.js";
 
 /**
  * Uploads a media item through the SPE mediaUpload handler — the same wire protocol as
@@ -24,20 +27,32 @@ export function mediaUploadTool(server: McpServer, config: Config) {
         {
             description:
                 "Uploads a file into the Sitecore media library via the SPE mediaUpload service and "
-                + "returns the created media item (ID, path, size, mime type). Source is exactly one "
+                + "returns the created media item (ID, path, size, mime type). Overwrites an existing "
+                + "item at the destination unless skipExisting is set. Source is exactly one "
                 + "of sourceUrl (fetched by this server — use this to import from a live site), "
                 + "filePath (local to the machine running this MCP server), or content (base64). "
                 + "Requires <mediaUpload enabled=\"true\"> in the CM's SPE services config.",
+            // Inferred annotations would call this a non-destructive write, but the default
+            // behaviour replaces the blob of whatever media item already sits at the
+            // destination, and sourceUrl makes the server fetch an arbitrary host.
+            annotations: {
+                title: "Media Upload",
+                readOnlyHint: false,
+                destructiveHint: true,
+                openWorldHint: true,
+            },
             inputSchema: z.object({
                 destination: z.string()
                     .describe("Media library path for the item, including the file name with extension (e.g. 'Project/Stride/Corporate/Migrated/team-photo.jpg' — the '/sitecore/media library/' prefix is optional), or the GUID of an existing media item to overwrite."),
                 sourceUrl: z.string().optional()
-                    .describe("URL to fetch the bytes from (e.g. an image on the site being migrated). Supply this, filePath or content."),
+                    .describe("http(s) URL to fetch the bytes from (e.g. an image on the site being migrated). Supply this, filePath or content."),
                 filePath: z.string().optional()
-                    .describe("Path to a file on the machine running this MCP server. Supply this, sourceUrl or content."),
+                    .describe("Path to a file on the machine running this MCP server. Refused over the HTTP transport unless MEDIA_LOCAL_FILE_ROOT names a directory to confine it to. Supply this, sourceUrl or content."),
                 content: z.string().optional()
                     .describe("The file bytes as base64. Suits small files only — prefer sourceUrl or filePath for anything sizable. Supply this, sourceUrl or filePath."),
-                database: z.string().optional().default("master")
+                database: z.string()
+                    .regex(/^[A-Za-z][A-Za-z0-9_-]*$/, "database must be a plain database name, e.g. 'master'")
+                    .optional().default("master")
                     .describe("The database holding the media library. Defaults to master."),
                 alt: z.string().optional()
                     .describe("Alt text to set on the media item after upload."),
@@ -56,13 +71,14 @@ export function mediaUploadTool(server: McpServer, config: Config) {
 
                 let bytes: Buffer;
                 if (params.sourceUrl) {
-                    const source = await fetch(params.sourceUrl);
+                    const url = await assertFetchableSourceUrl(params.sourceUrl);
+                    const source = await fetchWithTimeout(url.toString(), {}, mediaTimeoutMs());
                     if (!source.ok) {
                         throw new Error(`Fetching sourceUrl failed: ${source.status} ${source.statusText}`);
                     }
                     bytes = Buffer.from(await source.arrayBuffer());
                 } else if (params.filePath) {
-                    bytes = await readFile(params.filePath);
+                    bytes = await readFile(resolveLocalMediaPath(params.filePath, "filePath"));
                 } else {
                     bytes = Buffer.from(params.content!, "base64");
                 }
@@ -83,16 +99,57 @@ export function mediaUploadTool(server: McpServer, config: Config) {
 
                 // Read the item back so the caller leaves with the ID (for image field
                 // values) rather than a bare 200 — and set the alt text on the way.
-                const isGuid = /^\{?[0-9a-f-]{36}\}?$/i.test(destination);
+                //
+                // The item's name is not the file name: Sitecore runs the name through
+                // ItemUtil.ProposeValidItemName, which rewrites characters it will not
+                // accept, so reconstructing the path in TypeScript finds nothing for a
+                // perfectly successful upload. The lookup below asks Sitecore for the same
+                // transformation instead, and falls back to matching the media item's own
+                // file name when even that misses.
+                const isGuid = /^\{?[0-9a-fA-F-]{36}\}?$/.test(destination);
                 const lookup = isGuid
-                    ? `Get-Item -Path ($database + ':') -ID '{${destination.replace(/[{}]/g, "")}}'`
-                    : `Get-Item -Path ($database + ':/sitecore/media library/' + $destination.Substring(0, $destination.LastIndexOf('.')))`;
+                    ? `Get-Item -Path ($database + ':') -ID '{${destination.replace(/[{}]/g, "")}}' -ErrorAction SilentlyContinue`
+                    : `Get-McpUploadedMediaItem -Database $database -Destination $destination`;
+
                 const script = `
-                    $database = '${params.database}';
-                    $destination = '${destination.replace(/'/g, "''")}';
+                    $database = ${quotePowerShellString(params.database)};
+                    $destination = ${quotePowerShellString(destination)};
+
+                    function Get-McpUploadedMediaItem {
+                        param([string]$Database, [string]$Destination)
+
+                        $lastSlash = $Destination.LastIndexOf('/');
+                        $folder = '';
+                        $leaf = $Destination;
+                        if ($lastSlash -ge 0) {
+                            $folder = $Destination.Substring(0, $lastSlash);
+                            $leaf = $Destination.Substring($lastSlash + 1);
+                        }
+                        # An extension is conventional but not required by the handler.
+                        $lastDot = $leaf.LastIndexOf('.');
+                        $stem = $(if ($lastDot -gt 0) { $leaf.Substring(0, $lastDot) } else { $leaf });
+                        $proposed = [Sitecore.Data.Items.ItemUtil]::ProposeValidItemName($stem);
+
+                        $parentPath = ($Database + ':/sitecore/media library' + $(if ($folder -eq '') { '' } else { '/' + $folder }));
+                        $parent = Get-Item -Path $parentPath -ErrorAction SilentlyContinue;
+                        if ($null -eq $parent) { return $null }
+
+                        foreach ($candidate in @($proposed, $stem)) {
+                            $hit = Get-ChildItem -Path $parentPath -ErrorAction SilentlyContinue |
+                                Where-Object { $_.Name -eq $candidate } | Select-Object -First 1;
+                            if ($null -ne $hit) { return $hit }
+                        }
+
+                        # Last resort: the media item whose own file name matches what was sent.
+                        return Get-ChildItem -Path $parentPath -ErrorAction SilentlyContinue |
+                            Where-Object { $_['File Path'] -like ('*' + $leaf) -or $_.Name -like ($proposed + '*') } |
+                            Sort-Object -Property { $_.Statistics.Updated } -Descending |
+                            Select-Object -First 1;
+                    }
+
                     $item = ${lookup};
-                    if ($null -eq $item) { Write-Error "The upload returned success but no media item was found at '$destination'."; return; }
-                    ${params.alt !== undefined ? `$item.Editing.BeginEdit(); $item["Alt"] = '${params.alt.replace(/'/g, "''")}'; $item.Editing.EndEdit() | Out-Null;` : ""}
+                    if ($null -eq $item) { Write-Error "The upload returned success but no media item was found for '$destination'. The bytes were accepted by the CM; read the media library to locate the item."; return; }
+                    ${params.alt !== undefined ? `$item.Editing.BeginEdit(); $item["Alt"] = ${quotePowerShellString(params.alt)}; [void]$item.Editing.EndEdit();` : ""}
                     $media = New-Object Sitecore.Data.Items.MediaItem $item;
                     [PSCustomObject]@{
                         ID = $item.ID.ToString();

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { writeFile } from "node:fs/promises";
 import { safeMcpResponse } from "@/helper.js";
 import { mediaFetch, mediaServiceUrl, toMediaLibraryRelativePath } from "./media-service.js";
+import { resolveLocalMediaPath } from "./local-files.js";
 
 /**
  * Downloads a media item's blob through the SPE mediaDownload handler — the same wire
@@ -26,14 +27,21 @@ export function mediaDownloadTool(server: McpServer, config: Config) {
                 + "running this MCP server (always do this for anything over ~0.5MB); without "
                 + "saveTo the blob is returned inline as base64, capped at maxBytes. Requires "
                 + "<mediaDownload enabled=\"true\"> in the CM's SPE services config.",
+            // Read-only against Sitecore, but saveTo writes a file on the machine running
+            // this server, so the inferred readOnlyHint would be a false promise.
+            annotations: {
+                title: "Media Download",
+                readOnlyHint: false,
+                destructiveHint: false,
+            },
             inputSchema: z.object({
                 path: z.string()
                     .describe("The media item path WITHOUT file extension (e.g. 'Project/Stride/Corporate/Migrated/team-photo' — the '/sitecore/media library/' prefix is optional), or the media item's GUID."),
                 database: z.string().optional().default("master")
                     .describe("The database holding the media library. Defaults to master."),
                 saveTo: z.string().optional()
-                    .describe("File path on the machine running this MCP server to write the blob to. When set, the response carries metadata only — no base64."),
-                maxBytes: z.number().optional()
+                    .describe("File path on the machine running this MCP server to write the blob to. When set, the response carries metadata only — no base64. Refused over the HTTP transport unless MEDIA_LOCAL_FILE_ROOT names a directory to confine it to."),
+                maxBytes: z.number().int().positive().optional()
                     .describe(`Inline-response size cap in bytes (default ${DEFAULT_MAX_BASE64_BYTES}). A blob over the cap errors with its actual size — pass saveTo instead of raising the cap unless you truly need the bytes inline.`),
             }),
         },
@@ -60,8 +68,9 @@ export function mediaDownloadTool(server: McpServer, config: Config) {
                 };
 
                 if (params.saveTo) {
-                    await writeFile(params.saveTo, bytes);
-                    result.SavedTo = params.saveTo;
+                    const destination = resolveLocalMediaPath(params.saveTo, "saveTo");
+                    await writeFile(destination, bytes);
+                    result.SavedTo = destination;
                 } else {
                     const cap = params.maxBytes ?? DEFAULT_MAX_BASE64_BYTES;
                     if (bytes.length > cap) {

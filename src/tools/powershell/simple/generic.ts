@@ -64,7 +64,32 @@ export async function runGenericPowershellCommand(
     }
 
     const text = await client.executeScriptJson(script, scriptOptions);
-    const errorRecord = findErrorRecord(JSON.parse(text));
+
+    // A CM that answers with an HTML error page, or with nothing at all, is not a parse
+    // bug on our side. Reporting it as one ("Unexpected token <") in the very function
+    // that owns error presentation would hide what actually happened.
+    let parsed: any;
+    try {
+        parsed = JSON.parse(text);
+    } catch (error) {
+        return {
+            content: [
+                {
+                    type: "text",
+                    text:
+                        `The Sitecore PowerShell service did not return JSON `
+                        + `(${error instanceof Error ? error.message : String(error)}). This is `
+                        + `usually the CM answering with an error page rather than a script `
+                        + `result: check that ${config.powershell.serverUrl} is reachable, that `
+                        + `the remoting service is enabled, and that the credentials are valid. `
+                        + `The response began: ${text.slice(0, 500)}`,
+                },
+            ],
+            isError: true,
+        };
+    }
+
+    const errorRecord = findErrorRecord(parsed);
 
     return {
         content: [

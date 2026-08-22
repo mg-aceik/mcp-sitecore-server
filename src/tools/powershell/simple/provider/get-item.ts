@@ -2,7 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
-import { requireOneTarget } from "@/tools/target-input.js";
+import { hasTarget, requireOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../generic.js";
 import { itemProjectionInputSchema, itemProjectionPipeline } from "../../projection.js";
 
@@ -47,11 +47,11 @@ export function getItemPowerShellTool(server: McpServer, config: Config) {
             const command = `Get-Item`;
             const drive = `${params.database || "master"}:`;
 
-            const options: Record<string, any> = params.path
+            const options: Record<string, any> = hasTarget(params.path)
                 ? { "Path": params.path }
-                : params.id
+                : hasTarget(params.id)
                     ? { "ID": params.id, "Path": drive }
-                    : params.query
+                    : hasTarget(params.query)
                         ? { "Query": params.query, "Path": drive }
                         : { "Uri": params.uri, "Path": drive };
 

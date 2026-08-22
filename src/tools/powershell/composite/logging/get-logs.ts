@@ -16,20 +16,28 @@ const logFilePrefixes =
         "Publising.log",
     ];
 
+/**
+ * Sitecore names its log files with the CM's own local date, and this process may not
+ * share that timezone. Formatting in UTC makes the value predictable and documented
+ * rather than silently dependent on where the MCP server happens to run; a caller in a
+ * different zone to the CM passes an explicit `date`.
+ *
+ * An unparseable `date` throws instead of yielding "NaNNaNNaN", which used to produce a
+ * glob that matched nothing and reported it as "no logs".
+ */
 function formatDate(date?: string): string {
-    const d = date ? new Date(date) : new Date();
-    let month = '' + (d.getMonth() + 1),
-        day = '' + d.getDate(),
-        year = d.getFullYear();
-
-    if (month.length < 2) {
-        month = '0' + month;
-    }
-    if (day.length < 2) {
-        day = '0' + day;
+    if (date === undefined) {
+        return new Date().toISOString().slice(0, 10).replace(/-/g, "");
     }
 
-    return [year, month, day].join("");
+    const parsed = new Date(date);
+    if (Number.isNaN(parsed.getTime())) {
+        throw new Error(
+            `'date' is not a date this server can read: '${date}'. Use ISO 8601, `
+            + `e.g. '2023-10-01T00:00:00Z'.`
+        );
+    }
+    return parsed.toISOString().slice(0, 10).replace(/-/g, "");
 }
 
 export function getLogsPowerShellTool(server: McpServer, config: Config) {
@@ -53,7 +61,7 @@ export function getLogsPowerShellTool(server: McpServer, config: Config) {
                 date: z.string()
                     .optional()
                     .describe(`The date of the log file to retrieve. If not provided, defaults to today. Date format should be in ISO 8601 format (e.g., '2023-10-01T00:00:00Z'`),
-                tail: z.number()
+                tail: z.number().int().positive()
                     .optional()
                     .default(500)
                     .describe("The number of lines to retrieve from the end of the log file. Defaults to 500."),
@@ -65,8 +73,16 @@ export function getLogsPowerShellTool(server: McpServer, config: Config) {
 
             return safeMcpResponse((async () => {
                 const json = await runGenericPowershellCommand(config, command, {});
+                const raw = (json.content[0] as any)?.text as string;
 
-                const filteredLogs = filterByLogLevel(JSON.parse((json.content[0] as any).text as string) as any, LogLevel[params.level as keyof typeof LogLevel] || LogLevel.DEBUG);
+                // On failure `raw` is the shaped error message, not JSON. Parsing it anyway
+                // threw a SyntaxError that replaced a message built to be actionable with
+                // "Error executing tool: Unexpected token".
+                if (json.isError) {
+                    return json;
+                }
+
+                const filteredLogs = filterByLogLevel(JSON.parse(raw) as any, LogLevel[params.level as keyof typeof LogLevel] || LogLevel.DEBUG);
 
                 return {
                     content: [

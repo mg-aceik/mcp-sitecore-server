@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { hasTarget } from "@/tools/target-input.js";
 
 /**
  * Addressing for the item that holds a rendering.
@@ -31,7 +32,7 @@ export type ItemTarget = {
 
 /** The cmdlet parameters that address the item, one branch per addressing input. */
 export function itemTargetParameters(target: ItemTarget): Record<string, any> {
-    if (target.id) {
+    if (hasTarget(target.id)) {
         return { "Id": target.id, "Database": target.database };
     }
     return { "Path": target.path };
@@ -42,7 +43,7 @@ export function itemTargetParameters(target: ItemTarget): Record<string, any> {
  * used, because the database is only part of the answer when the caller named an ID.
  */
 export function itemTargetDescription(target: ItemTarget): string {
-    return target.id
+    return hasTarget(target.id)
         ? `the item with ID '${target.id}' in database '${target.database}'`
         : `the item at path '${target.path}'`;
 }

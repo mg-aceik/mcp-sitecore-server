@@ -4,6 +4,11 @@ import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
 import { PowershellClient } from "@/tools/powershell/client.js";
 import { quotePowerShellString } from "@/tools/powershell/command-builder.js";
+import {
+    findErrorRecord,
+    formatPowershellError,
+    wantsFullErrors,
+} from "@/tools/powershell/error-shaping.js";
 
 // The results of usage of this tool are not quite good.
 // Problems:
@@ -77,9 +82,11 @@ export async function findItemPowerShellTool(server: McpServer, config: Config) 
                         value: z.string().describe("The value to search for."),
 
                     })
-                ),
-                first: z.number().optional().default(200).describe("The maximum number of results to return. Defaults to 200."),
-                skip: z.number().optional().default(0).describe("The number of results to skip. Defaults to 0."),
+                    // An empty array reaches Find-Item as `-Criteria @()`, which is not a
+                    // search for everything: it is a call the cmdlet cannot interpret.
+                ).min(1, "Supply at least one search criterion."),
+                first: z.number().int().positive().optional().default(200).describe("The maximum number of results to return. Defaults to 200."),
+                skip: z.number().int().nonnegative().optional().default(0).describe("The number of results to skip. Defaults to 0."),
             }),
         },
         async (params) => {
@@ -124,21 +131,49 @@ export async function findItemPowerShellTool(server: McpServer, config: Config) 
 
             const command = `Find-Item -Index ${quotePowerShellString(params.index)} -Criteria @(${criteria}) -First ${params.first} -Skip ${params.skip} | Select-Object  @{n="Name"; e={$_.Name}}, @{n="Path"; e={$_.Path}},@{n="ItemId"; e={$_.ItemId.ToString()}}, @{n="TemplateId"; e={$_.TemplateId.ToString()}}, @{n="TemplateName"; e={$_.TemplateName}} ${extraFields}`;
 
-            return safeMcpResponse(client.executeScriptJson(command, {}).then(
-                (result: any) => {
-                    const items = JSON.parse(result).Obj;
+            return safeMcpResponse((async () => {
+                const result = await client.executeScriptJson(command, {});
 
+                let parsed: any;
+                try {
+                    parsed = JSON.parse(result);
+                } catch (error) {
                     return {
+                        isError: true,
                         content: [{
-                            type: "text",
-                            text: result === "{}" ? "No items found." : JSON.stringify(items, null, 2)
-                        }]
+                            type: "text" as const,
+                            text:
+                                `The Sitecore PowerShell service did not return JSON for the search `
+                                + `(${error instanceof Error ? error.message : String(error)}). The `
+                                + `response began: ${result.slice(0, 500)}`,
+                        }],
                     };
-                },
-                (error: any) => {
-                    throw error; // Rethrow the error to be handled by safeMcpResponse
                 }
-            ));
+
+                // Find-Item failures used to be returned as a successful result carrying the
+                // full serialized .NET ErrorRecord — 17,000-odd characters, and isError
+                // unset, so the agent read a failed search as an empty one. Shape it the
+                // same way every other PowerShell tool does.
+                const errorRecord = findErrorRecord(parsed);
+                if (errorRecord) {
+                    return {
+                        isError: true,
+                        content: [{
+                            type: "text" as const,
+                            text: wantsFullErrors(undefined)
+                                ? result
+                                : formatPowershellError(errorRecord),
+                        }],
+                    };
+                }
+
+                return {
+                    content: [{
+                        type: "text" as const,
+                        text: result === "{}" ? "No items found." : JSON.stringify(parsed.Obj, null, 2)
+                    }]
+                };
+            })());
 
         }
     );

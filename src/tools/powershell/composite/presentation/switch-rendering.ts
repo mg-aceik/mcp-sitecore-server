@@ -2,7 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
-import { requireOneTarget } from "@/tools/target-input.js";
+import { hasTarget, requireOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../../simple/generic.js";
 import { PowershellCommandBuilder, quotePowerShellString } from "../../command-builder.js";
 import { EFFECTIVE_FINAL_LAYOUT_DESCRIPTION, getFinalLayoutSwitchValue } from "../../utils.js";
@@ -108,7 +108,7 @@ export function switchRenderingPowershellTool(server: McpServer, config: Config)
 
             const commandBuilder = new PowershellCommandBuilder();
 
-            const itemParameters: Record<string, any> = params.id
+            const itemParameters: Record<string, any> = hasTarget(params.id)
                 ? { "Id": params.id, "Database": params.database }
                 : { "Path": params.path };
 
@@ -138,7 +138,7 @@ export function switchRenderingPowershellTool(server: McpServer, config: Config)
             if (params.uniqueId) {
                 const nothingSwitched =
                     `Switch-Rendering changed nothing: no rendering with unique ID '${params.uniqueId}' `
-                    + `was switched on ${params.id
+                    + `was switched on ${hasTarget(params.id)
                         ? `the item with ID '${params.id}' in database '${params.database}'`
                         : `the item at path '${params.path}'`}. `
                     + `Verify the unique ID, the language, and that you are targeting the right layout `
@@ -169,7 +169,7 @@ export function switchRenderingPowershellTool(server: McpServer, config: Config)
                 };
 
             const notFound = renderingNotFoundMessage(
-                `${oldRenderingLookup.described} on ${params.id
+                `${oldRenderingLookup.described} on ${hasTarget(params.id)
                     ? `the item with ID '${params.id}' in database '${params.database}'`
                     : `the item at path '${params.path}'`}`,
                 "presentation-get-rendering"

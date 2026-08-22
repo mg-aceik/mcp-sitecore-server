@@ -2,7 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
-import { requireOneTarget } from "@/tools/target-input.js";
+import { hasTarget, requireOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../../simple/generic.js";
 import { PowershellCommandBuilder, quotePowerShellString } from "../../command-builder.js";
 import { getFinalLayoutSwitchValue } from "../../utils.js";
@@ -123,7 +123,7 @@ export function listRenderingsPowershellTool(server: McpServer, config: Config) 
             }
 
             const language = params.language ? ` -Language ${quotePowerShellString(params.language)}` : "";
-            const target = params.id
+            const target = hasTarget(params.id)
                 ? `Get-Item -Path ${quotePowerShellString(`${params.database || "master"}:`)} -ID ${quotePowerShellString(params.id)}`
                 : `Get-Item -Path ${quotePowerShellString(params.path)}`;
 

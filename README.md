@@ -7,7 +7,7 @@ open-source [Model Context Protocol](https://modelcontextprotocol.io) server tha
 agents direct read/write access to Sitecore, so you stop copy-pasting between your agent
 and the Content Editor.
 
-- **117 tools** across search, query, create, read, update, delete, media, PowerShell, logging, security and presentation
+- **117 tools** across search, query, create, read, update, delete, media, PowerShell, logging, security and presentation (with the default two GraphQL schemas; the GraphQL group adds two tools per schema)
 - Covers three Sitecore API surfaces: **Item Service**, **GraphQL Edge** and **Sitecore PowerShell Extensions**
 - Works with **SitecoreAI** and **Sitecore XM/XP** (all versions), from any MCP-compatible client
 - Implements **MCP protocol revision 2026-07-28**, and answers the 2025 `initialize` handshake from the same tool registrations

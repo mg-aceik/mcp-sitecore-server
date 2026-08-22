@@ -2,7 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
-import { requireOneTarget } from "@/tools/target-input.js";
+import { hasTarget, requireOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../generic.js";
 import { AccessRights } from "./access-rights.js";
 
@@ -38,7 +38,7 @@ export function addItemAclPowerShellTool(server: McpServer, config: Config) {
 
             const command = `Add-ItemAcl`;
             const options: Record<string, any> = {
-                ...(params.id ? { "ID": params.id } : { "Path": params.path }),
+                ...(hasTarget(params.id) ? { "ID": params.id } : { "Path": params.path }),
                 "Identity": params.identity,
                 "AccessRight": params.accessRight,
                 "PropagationType": params.propagationType,

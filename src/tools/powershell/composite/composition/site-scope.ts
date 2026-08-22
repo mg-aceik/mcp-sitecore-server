@@ -1,5 +1,7 @@
 import { z } from "zod";
+import type { CallToolResult } from "@modelcontextprotocol/server";
 import { quotePowerShellString } from "../../command-builder.js";
+import { hasTarget, requireOneTarget } from "@/tools/target-input.js";
 import { renderingLookupGuard } from "../presentation/rendering-guard.js";
 
 /**
@@ -179,10 +181,40 @@ export type ItemSelector = {
     language?: string;
 };
 
+/**
+ * A `db:` prefix on a path, or `undefined` when there is none.
+ *
+ * Only a leading segment that looks like a database name counts. Matching a bare colon
+ * anywhere in the string read `/sitecore/content/Home/A:B` as database
+ * `/sitecore/content/Home/A`, which is not a database and is not what the caller wrote.
+ */
+function pathDatabasePrefix(path: string | undefined): string | undefined {
+    const match = /^\s*([A-Za-z][A-Za-z0-9_-]*):/.exec(path ?? "");
+    return match ? match[1] : undefined;
+}
+
+/** True when the path already names its own database, so `database` must not be applied. */
+export function pathCarriesDatabase(path: string | undefined): boolean {
+    return pathDatabasePrefix(path) !== undefined;
+}
+
 /** The database a selector reads, taking a `db:` prefix on the path into account. */
 export function selectorDatabase(selector: ItemSelector): string {
-    const prefix = selector.path?.includes(":") ? selector.path.split(":")[0].trim() : "";
-    return prefix || selector.database || "master";
+    return pathDatabasePrefix(selector.path) || selector.database || "master";
+}
+
+/**
+ * Validates a composition tool's addressing inputs.
+ *
+ * The same rule the merged tools apply in `target-input.ts`: exactly one. Preferring
+ * `path` when both were supplied would silently act on one of two items the caller named,
+ * which is the failure that rule exists to prevent.
+ */
+export function requireOneSelector(
+    selector: ItemSelector,
+    idKey: "pageId" | "itemId"
+): CallToolResult | undefined {
+    return requireOneTarget(selector as Record<string, unknown>, ["path", idKey]);
 }
 
 /**
@@ -191,17 +223,19 @@ export function selectorDatabase(selector: ItemSelector): string {
  * default item.
  */
 export function itemLookupExpression(selector: ItemSelector): string | undefined {
-    const id = selector.pageId ?? selector.itemId;
-    const language = selector.language ? ` -Language ${quotePowerShellString(selector.language)}` : "";
+    const id = hasTarget(selector.pageId) ? selector.pageId : selector.itemId;
+    const language = hasTarget(selector.language)
+        ? ` -Language ${quotePowerShellString(selector.language)}`
+        : "";
 
-    if (selector.path) {
-        const path = selector.path.includes(":")
-            ? selector.path
+    if (hasTarget(selector.path)) {
+        const path = pathCarriesDatabase(selector.path)
+            ? selector.path!
             : `${selectorDatabase(selector)}:${selector.path}`;
         return `Get-Item -Path ${quotePowerShellString(path)}${language} -ErrorAction SilentlyContinue`;
     }
 
-    if (id) {
+    if (hasTarget(id)) {
         const database = `${selectorDatabase(selector)}:`;
         return `Get-Item -Path ${quotePowerShellString(database)} -ID ${quotePowerShellString(id)}${language} -ErrorAction SilentlyContinue`;
     }

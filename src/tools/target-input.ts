@@ -34,8 +34,13 @@ export function describeTargetInputs(names: readonly string[]): string {
  * True when the caller actually named a target with this input. An empty or blank string
  * is not a target: it reaches the cmdlet as an empty `-Path`, which either errors deep in
  * PowerShell or resolves to something unintended.
+ *
+ * Exported because every tool that branches on which target was supplied must use the
+ * *same* predicate the validation used. Branching on raw truthiness instead lets a
+ * whitespace-only `id` pass validation (blank, so not a target) and then win the branch
+ * (non-empty, so truthy), sending `-Id '  '` for a call that named a path.
  */
-function isSupplied(value: unknown): boolean {
+export function hasTarget(value: unknown): boolean {
     if (value === undefined || value === null) {
         return false;
     }
@@ -47,7 +52,7 @@ export function suppliedTargets(
     params: Record<string, unknown>,
     names: readonly string[]
 ): string[] {
-    return names.filter((name) => isSupplied(params[name]));
+    return names.filter((name) => hasTarget(params[name]));
 }
 
 /**
@@ -74,6 +79,30 @@ export function requireOneTarget(
         + `item to fall back on.`
         : `Supply exactly one of ${alternatives}. ${supplied.length} were supplied `
         + `(${supplied.map((name) => `'${name}'`).join(", ")}), and one call cannot mean two items.`;
+
+    return { isError: true, content: [{ type: "text", text }] };
+}
+
+/**
+ * Validates inputs that are mutually exclusive but individually optional — a cmdlet's
+ * `-Root` and `-Path`, for instance, where supplying neither is valid and means "use the
+ * default". Zero or one is fine; two or more is the same ambiguity `requireOneTarget`
+ * rejects, so it is rejected here too rather than left to the cmdlet's parameter-set
+ * resolution.
+ */
+export function requireAtMostOneTarget(
+    params: Record<string, unknown>,
+    names: readonly string[]
+): CallToolResult | undefined {
+    const supplied = suppliedTargets(params, names);
+    if (supplied.length <= 1) {
+        return undefined;
+    }
+
+    const text =
+        `Supply at most one of ${describeTargetInputs(names)}. ${supplied.length} were supplied `
+        + `(${supplied.map((name) => `'${name}'`).join(", ")}), and they name different locations. `
+        + `Omit both to use the default.`;
 
     return { isError: true, content: [{ type: "text", text }] };
 }

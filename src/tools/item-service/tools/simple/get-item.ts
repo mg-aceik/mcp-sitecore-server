@@ -4,7 +4,7 @@ import { z } from "zod";
 import { getItemById } from "../../logic/simple/get-item.js";
 import { getItemByPath } from "../../logic/simple/get-item-by-path.js";
 import { safeMcpResponse } from "@/helper.js";
-import { requireOneTarget } from "@/tools/target-input.js";
+import { hasTarget, requireOneTarget } from "@/tools/target-input.js";
 
 export function getItemTool(server: McpServer, config: Config) {
     server.registerTool(
@@ -32,8 +32,8 @@ export function getItemTool(server: McpServer, config: Config) {
 
             // Two Item Service endpoints, one per address: an ID reads /items('{...}') and a
             // path reads /items?path=... So the branch picks the request, not just a parameter.
-            return safeMcpResponse(params.id
-                ? getItemById(config, params.id, params.options || {})
+            return safeMcpResponse(hasTarget(params.id)
+                ? getItemById(config, params.id!, params.options || {})
                 : getItemByPath(config, params.path!, params.options || {}));
         }
     );

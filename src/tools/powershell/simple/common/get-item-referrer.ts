@@ -2,7 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
-import { requireOneTarget } from "@/tools/target-input.js";
+import { hasTarget, requireOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../generic.js";
 import { itemProjectionInputSchema, itemProjectionPipeline } from "../../projection.js";
 
@@ -33,7 +33,7 @@ export function getItemReferrerPowerShellTool(server: McpServer, config: Config)
 
             const command = `Get-ItemReferrer`;
             const options: Record<string, any> = {
-                ...(params.id ? { "ID": params.id } : { "Path": params.path }),
+                ...(hasTarget(params.id) ? { "ID": params.id } : { "Path": params.path }),
             };
 
             if (params.database) {

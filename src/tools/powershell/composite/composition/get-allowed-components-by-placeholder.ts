@@ -9,6 +9,7 @@ import {
     itemLookupGuard,
     itemNotFoundMessage,
     missingSelectorMessage,
+    requireOneSelector,
     pageSelectorInputSchema,
 } from "./site-scope.js";
 import {
@@ -51,6 +52,10 @@ export function getAllowedComponentsByPlaceholderPowershellTool(server: McpServe
             }),
         },
         async (params) => {
+            const ambiguousPage = requireOneSelector(params, "pageId");
+            if (ambiguousPage) {
+                return ambiguousPage;
+            }
             const lookup = itemLookupExpression(params);
             if (!lookup) {
                 return { isError: true, content: [{ type: "text", text: missingSelectorMessage("pageId") }] };

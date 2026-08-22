@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
+import { requireAtMostOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../generic.js";
 
 export function exportRolePowerShellTool(server: McpServer, config: Config) {
@@ -21,6 +22,14 @@ export function exportRolePowerShellTool(server: McpServer, config: Config) {
             }),
         },
         async (params) => {
+            // 'root' and 'path' name two different locations, and the docs have always said
+            // not to combine them. Enforcing it here beats letting the cmdlet resolve its
+            // parameter sets in an order the caller cannot see.
+            const ambiguous = requireAtMostOneTarget(params, ["root", "path"]);
+            if (ambiguous) {
+                return ambiguous;
+            }
+
             const command = `Export-Role`;
             const options: Record<string, any> = {
                 "Identity": params.identity,

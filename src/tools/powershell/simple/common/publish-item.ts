@@ -2,7 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
-import { requireOneTarget } from "@/tools/target-input.js";
+import { hasTarget, requireOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../generic.js";
 import { getSwitchParameterValue } from "../../utils.js";
 
@@ -45,7 +45,7 @@ export function publishItemPowerShellTool(server: McpServer, config: Config) {
             }
 
             const options: Record<string, any> = {
-                ...(params.id ? { "Id": params.id } : { "Path": params.path }),
+                ...(hasTarget(params.id) ? { "Id": params.id } : { "Path": params.path }),
             };
             const command = `Publish-Item`;
 

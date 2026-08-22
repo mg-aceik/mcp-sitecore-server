@@ -145,7 +145,10 @@ export function wantsFullErrors(full: boolean | undefined, env: NodeJS.ProcessEn
  * a string on the error stream, or a serialized `ErrorRecord`'s own properties.
  */
 export function xmlLooksLikeError(text: string): boolean {
-    return /\sS="Error"/.test(text)
+    return /\sS="[Ee]rror"/.test(text)
         || /N="ErrorCategory_Message"/.test(text)
-        || /N="writeErrorStream"/.test(text);
+        // Match the *value*, not the property name: SPE serializes the flag on non-error
+        // output too, so `N="writeErrorStream"` alone reported every such response as a
+        // failure.
+        || /N="writeErrorStream"\s*>\s*true\s*</i.test(text);
 }

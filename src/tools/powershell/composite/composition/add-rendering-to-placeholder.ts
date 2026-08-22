@@ -10,6 +10,7 @@ import {
     itemLookupGuard,
     itemNotFoundMessage,
     missingSelectorMessage,
+    requireOneSelector,
     pageSelectorInputSchema,
 } from "./site-scope.js";
 import {
@@ -17,7 +18,7 @@ import {
     PLACEHOLDER_PATH_DESCRIPTION,
     PROJECT_DESCRIPTION,
 } from "./placeholder-settings.js";
-import { RENDERING_LOOKUP_FUNCTIONS, renderingSelectorInputSchema, renderingLookupCall } from "./rendering-lookup.js";
+import { RENDERING_LOOKUP_FUNCTIONS, renderingSelectorInputSchema, renderingLookupCall, requireOneRenderingSelector } from "./rendering-lookup.js";
 import { RENDERING_PARAMETER_FUNCTIONS } from "./rendering-parameters.js";
 
 /**
@@ -102,11 +103,19 @@ export function addRenderingToPlaceholderPowershellTool(server: McpServer, confi
             }),
         },
         async (params) => {
+            const ambiguousPage = requireOneSelector(params, "pageId");
+            if (ambiguousPage) {
+                return ambiguousPage;
+            }
             const lookup = itemLookupExpression(params);
             if (!lookup) {
                 return { isError: true, content: [{ type: "text", text: missingSelectorMessage("pageId") }] };
             }
 
+            const ambiguousRendering = requireOneRenderingSelector(params);
+            if (ambiguousRendering) {
+                return ambiguousRendering;
+            }
             const rendering = renderingLookupCall(params);
             if (!rendering) {
                 return {

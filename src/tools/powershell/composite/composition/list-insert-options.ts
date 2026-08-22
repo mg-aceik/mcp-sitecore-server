@@ -2,7 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { safeMcpResponse } from "@/helper.js";
 import { runGenericPowershellCommand } from "../../simple/generic.js";
-import { SITE_SCOPE_FUNCTIONS, itemLookupExpression, itemLookupGuard, itemNotFoundMessage, itemSelectorInputSchema, missingSelectorMessage } from "./site-scope.js";
+import { SITE_SCOPE_FUNCTIONS, itemLookupExpression, itemLookupGuard, itemNotFoundMessage, itemSelectorInputSchema, missingSelectorMessage, requireOneSelector } from "./site-scope.js";
 import { z } from "zod";
 
 /**
@@ -35,6 +35,10 @@ export function listInsertOptionsPowershellTool(server: McpServer, config: Confi
             }),
         },
         async (params) => {
+            const ambiguous = requireOneSelector(params, "itemId");
+            if (ambiguous) {
+                return ambiguous;
+            }
             const lookup = itemLookupExpression(params);
             if (!lookup) {
                 return { isError: true, content: [{ type: "text", text: missingSelectorMessage("itemId") }] };

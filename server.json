@@ -136,6 +136,34 @@
           "description": "If set, the HTTP transport requires an 'authorization' header matching this value",
           "is_required": false,
           "is_secret": true
+        },
+        {
+          "name": "PORT",
+          "description": "Port the Streamable HTTP transport listens on (ignored on stdio)",
+          "is_required": false,
+          "default": "3001"
+        },
+        {
+          "name": "HOST",
+          "description": "Interface the Streamable HTTP transport binds to; unset binds all interfaces",
+          "is_required": false
+        },
+        {
+          "name": "MCP_BODY_LIMIT",
+          "description": "Maximum request body accepted at /mcp",
+          "is_required": false,
+          "default": "32mb"
+        },
+        {
+          "name": "MEDIA_LOCAL_FILE_ROOT",
+          "description": "Directory that media-upload filePath and media-download saveTo are confined to; required for those parameters under TRANSPORT=streamable-http",
+          "is_required": false
+        },
+        {
+          "name": "MEDIA_ALLOW_PRIVATE_SOURCE_URL",
+          "description": "Allow media-upload sourceUrl to reach private, loopback and link-local addresses",
+          "is_required": false,
+          "default": "false"
         }
       ]
     }

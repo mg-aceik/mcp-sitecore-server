@@ -2,7 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
-import { requireOneTarget } from "@/tools/target-input.js";
+import { hasTarget, requireOneTarget } from "@/tools/target-input.js";
 import { prepareArgsString } from "../../utils.js";
 import { AccessRights } from "../../simple/security/access-rights.js";
 import { runGenericPowershellCommand } from "../../simple/generic.js";
@@ -48,7 +48,7 @@ export function setItemAclPowerShellTool(server: McpServer, config: Config) {
 
             // The ID form resolves against the database root, as `-Id` requires; the path
             // form addresses the item directly.
-            const itemLookup = params.id
+            const itemLookup = hasTarget(params.id)
                 ? `Get-Item -Id ${quotePowerShellString(params.id)} -Path ${quotePowerShellString(`${params.database}:`)}`
                 : `Get-Item -Path ${quotePowerShellString(params.path)}`;
 

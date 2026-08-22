@@ -12,7 +12,10 @@ Service configuration these settings talk to.
 
 | Variable    | Default | Description                                                                                                                                                                                                                    |
 | ----------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `TRANSPORT` | `stdio` | `stdio` or `streamable-http`. Streamable HTTP listens on port 3001 and serves MCP at `/mcp`, with a `/health` liveness endpoint. `sse` is gone — see [SSE removal](#sse-removal) below.                                        |
+| `TRANSPORT` | `stdio` | `stdio` or `streamable-http`. Streamable HTTP serves MCP at `/mcp`, with a `/health` liveness endpoint. An unrecognised value falls back to `stdio` and says so on stderr. `sse` is gone — see [SSE removal](#sse-removal) below. |
+| `PORT`      | `3001`  | Port the Streamable HTTP transport listens on. Ignored on stdio.                                                                                                                                                                 |
+| `HOST`      | all interfaces | Interface to bind. Set it to `127.0.0.1` to keep the port off the network.                                                                                                                                            |
+| `MCP_BODY_LIMIT` | `32mb` | Maximum request body the `/mcp` endpoint accepts. Express's own default of 100kb is smaller than a single base64 image, so `media-upload`'s inline `content` needs the headroom.                                       |
 
 ### SSE removal
 
@@ -65,10 +68,29 @@ All three are unset by default, which registers every tool. See
 | ------------------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `AUTHORIZATION_HEADER`         | —       | If set, the server expects an `authorization` header matching this value. If unset, no authorization check is performed. Set it whenever the HTTP port is reachable by anything other than your own machine. |
 | `NODE_TLS_REJECT_UNAUTHORIZED` | —       | Read by Node itself. `.env.template` ships it set to `0` so the server can talk to a local Sitecore instance with a self-signed certificate.                                      |
+| `MEDIA_LOCAL_FILE_ROOT`        | —       | Directory that `media-upload`'s `filePath` and `media-download`'s `saveTo` are confined to. Required to use those parameters at all under `TRANSPORT=streamable-http`; see [Media and the local filesystem](#media-and-the-local-filesystem). |
+| `MEDIA_ALLOW_PRIVATE_SOURCE_URL` | `false` | `true` lets `media-upload`'s `sourceUrl` reach private, loopback and link-local addresses. Leave it off unless you are deliberately importing from your own network.            |
 
 > **Warning:** `NODE_TLS_REJECT_UNAUTHORIZED=0` disables TLS certificate verification for
 > every outbound request. Set it to `1`, or remove it, in production or on an untrusted
 > network.
+
+### Media and the local filesystem
+
+`media-upload` can read bytes from `filePath`, and `media-download` can write them to
+`saveTo`. Both act on the machine running this MCP server, not on Sitecore.
+
+On stdio that is unremarkable: the server is a subprocess of your own client and can
+already reach anything you can. Over `TRANSPORT=streamable-http` it is not, because
+`AUTHORIZATION_HEADER` is empty by default and anyone who can reach the port would get
+arbitrary file read and write on the host. So both parameters are **refused** on the HTTP
+transport unless `MEDIA_LOCAL_FILE_ROOT` names a directory, and when it is set every path
+— on either transport — must resolve inside it.
+
+`sourceUrl` is the other way out of the process: the server fetches it. Only `http` and
+`https` are accepted, and hostnames that resolve to private, loopback or link-local
+addresses (including the `169.254.169.254` cloud metadata endpoint) are refused unless
+`MEDIA_ALLOW_PRIVATE_SOURCE_URL=true`.
 
 ## Resources
 

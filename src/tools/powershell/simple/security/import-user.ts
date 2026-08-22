@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
+import { requireAtMostOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../generic.js";
 
 export function importUserPowerShellTool(server: McpServer, config: Config) {
@@ -9,6 +10,13 @@ export function importUserPowerShellTool(server: McpServer, config: Config) {
         "security-import-user",
         {
             description: "Imports (deserializes) a Sitecore user from the server filesystem, overwriting the user's current state with the serialized one. The .user file must exist — export it first with security-export-user. On SitecoreAI prefer Sitecore CLI serialization; this operates on the CM's own filesystem only.",
+            // Import overwrites the live user with the serialized state, which is not
+            // reversible from the server's side.
+            annotations: {
+                title: "Import User",
+                readOnlyHint: false,
+                destructiveHint: true,
+            },
             inputSchema: z.object({
                 identity: z.string()
                     .describe("The identity of the user to import (e.g. 'admin' or full path 'sitecore\\admin')"),
@@ -21,6 +29,14 @@ export function importUserPowerShellTool(server: McpServer, config: Config) {
             }),
         },
         async (params) => {
+            // 'root' and 'path' name two different locations, and the docs have always said
+            // not to combine them. Enforcing it here beats letting the cmdlet resolve its
+            // parameter sets in an order the caller cannot see.
+            const ambiguous = requireAtMostOneTarget(params, ["root", "path"]);
+            if (ambiguous) {
+                return ambiguous;
+            }
+
             const command = `Import-User`;
             const options: Record<string, any> = {
                 "Identity": params.identity,
