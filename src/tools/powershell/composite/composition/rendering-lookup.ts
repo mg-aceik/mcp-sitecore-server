@@ -15,10 +15,10 @@ function Get-McpItemByReference {
     param([string]$Database, [string]$Reference)
 
     if ([string]::IsNullOrWhiteSpace($Reference)) { return $null }
-    $reference = $Reference.Trim();
+    $trimmed = $Reference.Trim();
     try {
-        if ($reference.StartsWith('{')) { return Get-Item -Path ($Database + ':') -ID $reference -ErrorAction SilentlyContinue }
-        return Get-Item -Path ($Database + ':' + $reference) -ErrorAction SilentlyContinue;
+        if ($trimmed.StartsWith('{')) { return Get-Item -Path ($Database + ':') -ID $trimmed -ErrorAction SilentlyContinue }
+        return Get-Item -Path ($Database + ':' + $trimmed) -ErrorAction SilentlyContinue;
     }
     catch { return $null }
 }
