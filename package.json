@@ -23,9 +23,8 @@
     "bundle": "rollup -c",
     "prepare": "npm run build",
     "watch": "tsc --watch",
-    "inspector": "npx @modelcontextprotocol/inspector@latest dist/index.js",
-    "start": "npm run build && node dist/app.js",
-    "start:sse": "npm run build && cross-env TRANSPORT=sse node dist/index.js",
+    "inspector": "npx @modelcontextprotocol/inspector@latest node dist/index.js",
+    "start": "npm run start:streamable-http",
     "start:streamable-http": "npm run build && cross-env TRANSPORT=streamable-http node dist/index.js",
     "start:stdio": "npm run build && cross-env TRANSPORT=stdio node dist/index.js",
     "run": "npm run build && node dist/run.js",
@@ -43,15 +42,15 @@
   },
   "dependencies": {
     "@antonytm/clixml-parser": "^0.1.5",
-    "dotenv": "^16.6.1",
-    "graphql": "^16.11.0",
-    "@modelcontextprotocol/server": "^2.0.0",
-    "@modelcontextprotocol/server-legacy": "^2.0.0",
     "@modelcontextprotocol/node": "^2.0.0",
-    "@modelcontextprotocol/client": "^2.0.0",
+    "@modelcontextprotocol/server": "^2.0.0",
+    "dotenv": "^16.6.1",
+    "express": "^5.2.1",
+    "graphql": "^16.11.0",
     "zod": "^4.2.0"
   },
   "devDependencies": {
+    "@modelcontextprotocol/client": "^2.0.0",
     "@modelcontextprotocol/inspector": "^0.16.8",
     "@rollup/plugin-alias": "^5.1.1",
     "@rollup/plugin-commonjs": "^28.0.9",
@@ -60,7 +59,6 @@
     "@types/express": "^5.0.6",
     "@types/node": "^24.13.2",
     "cross-env": "^7.0.3",
-    "express": "^5.2.1",
     "rollup": "^4.62.2",
     "rollup-plugin-copy": "^3.5.0",
     "ts-node": "^10.9.2",
@@ -70,5 +68,8 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

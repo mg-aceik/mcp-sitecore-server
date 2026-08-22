@@ -236,7 +236,11 @@ Add the following Model Context Protocol server to your Cursor, VS Code, Claude:
 
 ### Environment Variables Description
 
-- `TRANSPORT`: The transport protocol to use. Options are `streamable-http`, `stdio` or `sse`.
+- `TRANSPORT`: The transport protocol to use. Options are `stdio` (the default) and
+  `streamable-http`, which listens on port 3001 and serves MCP at `/mcp`. `sse` is gone:
+  the SSE transport was removed from the MCP specification and the SDK. Setting it still
+  starts an HTTP server on port 3001 -- Streamable HTTP at `/mcp` -- and says so on
+  stderr, so a client configured for `/sse` has to be repointed at `/mcp`.
 - `GRAPHQL_ENDPOINT`: The GraphQL endpoint URL for the Sitecore instance.
 - `GRAPHQL_SCHEMAS`: The Sitecore schemas to use for the GraphQL API, comma-separated.
 - `GRAPHQL_API_KEY`: The API key for the GraphQL endpoint.
@@ -270,7 +274,8 @@ Add the following Model Context Protocol server to your Cursor, VS Code, Claude:
 1. Clone the repository
 2. Run `npm install` to install dependencies
 3. Run `npm run build` to build the project
-4. Run `npm start` to start the server
+4. Run `npm start` to start the server over Streamable HTTP on port 3001 (`/mcp`), or
+   `npm run start:stdio` to start it over stdio
 
 ## Contributing
 

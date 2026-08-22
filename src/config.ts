@@ -60,14 +60,21 @@ export const envSchema = z.object({
 });
 
 export const envStartSchema = z.object({
-    //* The transport to use for the server. Can be one of 'stdio' or 'sse'.
+    //* The transport to use for the server. Can be one of 'stdio' or 'streamable-http'.
     //* If not specified, the default is 'stdio'.
     //* The 'stdio' transport is used for local work.
     //* The 'streamable-http' transport is used for HTTP-based communication.
-    //* The 'sse' remains for legacy support.
-    TRANSPORT: z.string().default("stdio").optional().transform((val) => {
-        if (val?.toLowerCase() === "sse") return "sse";
-        if (val?.toLowerCase() === "streamable-http") return "streamable-http";
+    //* 'sse' is gone from the MCP spec and the SDK. Anyone who set it wanted an HTTP
+    //* server on port 3001, so it falls through to 'streamable-http' -- same port,
+    //* endpoint /mcp instead of /sse -- and says so on stderr. Falling back to
+    //* 'stdio' instead would leave a container with no listener at all.
+    TRANSPORT: z.string().optional().transform((val) => {
+        const transport = val?.toLowerCase();
+        if (transport === "sse") {
+            console.error("TRANSPORT=sse is no longer supported: the SSE transport was removed in MCP SDK v2. Serving Streamable HTTP on port 3001 instead -- point your client at /mcp, not /sse.");
+            return "streamable-http";
+        }
+        if (transport === "streamable-http") return "streamable-http";
         return "stdio";
     })
 });

@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Node.js (v22 or later)
+- Node.js (v22 or later; v20 is the minimum the MCP SDK supports)
 - Sitecore XM, XP or XM Cloud instance
 - Enabled Powershell Remoting API on the Sitecore instance
 
@@ -14,12 +14,23 @@
 
 ## Debugging
 
-1. Run `npm run start` to build the project and start the server.
-2. It will start the local MCP server on port 3001 in SSE mode.
-3. Run `npm run inspector` to start the inspector.
-4. Open the inspector in your browser at `http://127.0.0.1:6274/#resources` and connect to `http://localhost:3001/sse` URL.
+There is no SSE endpoint any more -- the MCP SDK removed the SSE transport, so the
+server speaks Streamable HTTP or stdio.
 
-It allows you to inspect the requests and responses between the client and the server. You can run these commands in *JavaScript Debug Terminal* in VS Code to be able to debug the code.
+Over stdio, `npm run inspector` does the whole job: it launches the inspector with
+`node dist/index.js` as the server, which defaults to stdio.
+
+Over Streamable HTTP:
+
+1. Run `npm run start` to build the project and start the server. It listens on port
+   3001 and serves Streamable HTTP at `/mcp`.
+2. Run `npx @modelcontextprotocol/inspector@latest` with no server arguments.
+3. Open the inspector in your browser at `http://127.0.0.1:6274/#resources`, choose the
+   *Streamable HTTP* transport and connect to `http://localhost:3001/mcp`.
+
+Either way it lets you inspect the requests and responses between the client and the
+server. You can run these commands in *JavaScript Debug Terminal* in VS Code to be able to
+debug the code.
 
 ## Testing
 
