@@ -27,11 +27,22 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
  * `powershell.core` is the pair of tools that sit directly under
  * `src/tools/powershell/` rather than in a category folder:
  * `get-powershell-documentation` and `run-powershell-script`.
+ *
+ * `powershell.composition` is the site-aware composition set added in Tier 1
+ * (`composite/composition/`). It is its own group rather than part of
+ * `powershell.presentation` because the two answer different questions and are wanted at
+ * different times: `powershell.presentation` is the thin SPE wrapper set that writes what
+ * it is told, while `powershell.composition` is the site-scoped layer that reads
+ * placeholder settings, datasource locations and available renderings in order to refuse
+ * an invalid layout. A client that only reads a page's structure wants the first; an agent
+ * authoring pages wants the second, and paying for both when it needs one is the cost this
+ * grouping exists to avoid.
  */
 export const TOOL_GROUPS = [
     "graphql",
     "item-service",
     "powershell.core",
+    "powershell.composition",
     "powershell.security",
     "powershell.common",
     "powershell.presentation",

@@ -144,6 +144,7 @@ import { setRenderingParameterByPathPowershellTool } from "./tools/powershell/co
 import { getLogsPowerShellTool } from "./tools/powershell/composite/logging/get-logs.js";
 import { getSitecoreCliDocumentation } from "./tools/sitecore-cli/get-sitecore-cli-documentation.js";
 import { listRenderingsPowershellTool } from "./tools/powershell/composite/presentation/list-renderings.js";
+import { getAllowedComponentsByPlaceholderPowershellTool } from "./tools/powershell/composite/composition/get-allowed-components-by-placeholder.js";
 import {
     isGroupEnabled,
     resolveToolGating,
@@ -193,6 +194,10 @@ export const TOOL_GROUP_REGISTRARS: Record<ToolGroup, ToolRegistrar[]> = {
     "powershell.core": [
         getPowershellDocumentationTool,
         runPowershellScriptTool,
+    ],
+
+    "powershell.composition": [
+        getAllowedComponentsByPlaceholderPowershellTool,
     ],
 
     "powershell.security": [
