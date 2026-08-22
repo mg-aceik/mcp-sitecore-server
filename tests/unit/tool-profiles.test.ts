@@ -16,7 +16,7 @@ describe("resolveToolGating", () => {
         for (const group of TOOL_GROUPS) {
             expect(isGroupEnabled(group, gating)).toBe(true);
         }
-        expect(isToolEnabled("common-publish-item-by-path", gating)).toBe(true);
+        expect(isToolEnabled("common-publish-item", gating)).toBe(true);
     });
 
     it("limits registration to the named groups", () => {
@@ -31,20 +31,19 @@ describe("resolveToolGating", () => {
         const gating = resolveToolGating({ DISABLED_TOOLS: "indexing-find-item, run-powershell-script" });
         expect(isToolEnabled("indexing-find-item", gating)).toBe(false);
         expect(isToolEnabled("run-powershell-script", gating)).toBe(false);
-        expect(isToolEnabled("provider-get-item-by-path", gating)).toBe(true);
+        expect(isToolEnabled("provider-get-item", gating)).toBe(true);
         // A denylist alone must not turn into an allowlist.
         expect(gating.enabledGroups).toBeNull();
     });
 
     it("applies the xmcloud profile", () => {
         const gating = resolveToolGating({ TOOL_PROFILE: "xmcloud" });
-        expect(isToolEnabled("common-publish-item-by-id", gating)).toBe(false);
-        expect(isToolEnabled("common-publish-item-by-path", gating)).toBe(false);
+        expect(isToolEnabled("common-publish-item", gating)).toBe(false);
         expect(isToolEnabled("common-restart-application", gating)).toBe(false);
         expect(isGroupEnabled("powershell.security", gating)).toBe(false);
         // Everything else stays.
         expect(isGroupEnabled("powershell.common", gating)).toBe(true);
-        expect(isToolEnabled("provider-get-item-by-path", gating)).toBe(true);
+        expect(isToolEnabled("provider-get-item", gating)).toBe(true);
     });
 
     it("applies the xp profile as a no-op, matching the unset default", () => {
@@ -62,10 +61,10 @@ describe("resolveToolGating", () => {
     it("lets the denylist win over the group allowlist", () => {
         const gating = resolveToolGating({
             TOOL_GROUPS: "powershell.provider",
-            DISABLED_TOOLS: "provider-get-item-by-uri",
+            DISABLED_TOOLS: "provider-get-item",
         });
         expect(isGroupEnabled("powershell.provider", gating)).toBe(true);
-        expect(isToolEnabled("provider-get-item-by-uri", gating)).toBe(false);
+        expect(isToolEnabled("provider-get-item", gating)).toBe(false);
     });
 
     it("ignores an unknown profile rather than failing to start", () => {

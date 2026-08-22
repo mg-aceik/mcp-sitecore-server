@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 /**
- * Tool gating: which of the server's ~150 tools get registered.
+ * Tool gating: which of the server's ~115 tools get registered.
  *
  * Schema cost is paid on every turn whether a tool is ever called or not, so a client
  * that only needs part of the surface should be able to say so. Three optional
@@ -88,10 +88,7 @@ export const TOOL_PROFILES: Record<string, ToolProfile> = {
                 + "TOOL_PROFILE=xp with DISABLED_TOOLS if you need those.",
         },
         disabledTools: {
-            "common-publish-item-by-id":
-                "An XM Cloud CM has no web database and no local Edge publishing target; "
-                + "publishing is a deployment-environment operation.",
-            "common-publish-item-by-path":
+            "common-publish-item":
                 "An XM Cloud CM has no web database and no local Edge publishing target; "
                 + "publishing is a deployment-environment operation.",
             "common-restart-application":
