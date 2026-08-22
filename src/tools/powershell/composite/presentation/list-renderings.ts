@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
+import { requireOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../../simple/generic.js";
 import { PowershellCommandBuilder, quotePowerShellString } from "../../command-builder.js";
 import { getSwitchParameterValue } from "../../utils.js";
@@ -10,7 +11,7 @@ import { renderingLookupGuard } from "./rendering-guard.js";
 /**
  * Lists the renderings placed on a page as structured rows.
  *
- * `presentation-get-layout-by-*` calls `Get-Layout`, which is faithful to SPE — it
+ * `presentation-get-layout` calls `Get-Layout`, which is faithful to SPE — it
  * returns the layout *definition* item — but it is not the question agents ask. Called
  * on a page it described the `Headless Layout` item in 35,573 characters and said
  * nothing about the page's renderings. This is the sibling that answers the real
@@ -22,7 +23,7 @@ import { renderingLookupGuard } from "./rendering-guard.js";
  */
 const ROW_DESCRIPTION =
     "Returns one row per rendering: Index (position in the device's rendering list, which "
-    + "is what presentation-add-rendering-* and presentation-set-rendering-* address), "
+    + "is what presentation-add-rendering and presentation-set-rendering address), "
     + "Placeholder (the full placeholder path), RenderingName, RenderingID, Datasource and "
     + "UniqueId. Set includeParameters to add each rendering's Parameters.";
 
@@ -30,7 +31,7 @@ const INCLUDE_PARAMETERS_DESCRIPTION =
     "Include each rendering's raw Parameters string. Off by default: on an SXA or Stride "
     + "site the URL-encoded parameter blobs are the largest part of the response by far "
     + "(they more than doubled a 25-rendering page), and they are rarely what the caller "
-    + "is after. Use presentation-get-rendering-parameter-* to read a single one.";
+    + "is after. Use presentation-get-rendering-parameter to read a single one.";
 
 const FINAL_LAYOUT_DESCRIPTION =
     "Which layout to read. Defaults to true (the final layout), which is the effective "
@@ -96,15 +97,19 @@ for ($index = 0; $index -lt $renderings.Count; $index++) {
 
 export function listRenderingsPowershellTool(server: McpServer, config: Config) {
     server.registerTool(
-        "presentation-list-renderings-by-path",
+        "presentation-list-renderings",
         {
             description:
-                "Lists the renderings placed on the item at this path — the components that make up "
-                + "the page. This is the tool to use to see a page's composition; "
-                + "presentation-get-layout-by-path returns the assigned layout definition item "
-                + `instead. ${ROW_DESCRIPTION}`,
+                "Lists the renderings placed on an item — the components that make up the page. "
+                + "This is the tool to use to see a page's composition; presentation-get-layout "
+                + `returns the assigned layout definition item instead. ${ROW_DESCRIPTION}`,
             inputSchema: {
-                path: z.string().describe("The path of the item whose renderings to list (e.g. master:/sitecore/content/Home)."),
+                id: z.string().optional()
+                    .describe("The ID of the item whose renderings to list (e.g. {110D559F-DEA5-42EA-9C1C-8A5DF7E70EF9}). Supply this or path."),
+                path: z.string().optional()
+                    .describe("The path of the item whose renderings to list (e.g. master:/sitecore/content/Home). Supply this or id."),
+                database: z.string().optional()
+                    .describe("The database containing the item. Defaults to master, and is only used with id — a path carries its own prefix."),
                 placeholder: z.string().optional().describe("Only list renderings in this placeholder. Supports wildcards, e.g. '*main*'."),
                 language: z.string().optional().describe("The item language. Defaults to the context language."),
                 finalLayout: z.boolean().optional().describe(FINAL_LAYOUT_DESCRIPTION),
@@ -112,37 +117,17 @@ export function listRenderingsPowershellTool(server: McpServer, config: Config) 
             },
         },
         async (params) => {
-            const itemLookup = `Get-Item -Path ${quotePowerShellString(params.path)}`
-                + (params.language ? ` -Language ${quotePowerShellString(params.language)}` : "")
-                + " -ErrorAction SilentlyContinue";
+            const invalid = requireOneTarget(params, ["id", "path"]);
+            if (invalid) {
+                return invalid;
+            }
 
-            const command = buildListRenderingsCommand(itemLookup, params);
-            return safeMcpResponse(runGenericPowershellCommand(config, command, {}));
-        }
-    );
+            const language = params.language ? ` -Language ${quotePowerShellString(params.language)}` : "";
+            const target = params.id
+                ? `Get-Item -Path ${quotePowerShellString(`${params.database || "master"}:`)} -ID ${quotePowerShellString(params.id)}`
+                : `Get-Item -Path ${quotePowerShellString(params.path)}`;
 
-    server.registerTool(
-        "presentation-list-renderings-by-id",
-        {
-            description:
-                "Lists the renderings placed on the item with this ID — the components that make up "
-                + "the page. This is the tool to use to see a page's composition; "
-                + "presentation-get-layout-by-id returns the assigned layout definition item "
-                + `instead. ${ROW_DESCRIPTION}`,
-            inputSchema: {
-                id: z.string().describe("The ID of the item whose renderings to list (e.g. {110D559F-DEA5-42EA-9C1C-8A5DF7E70EF9})."),
-                database: z.string().optional().describe("The database containing the item. Defaults to master."),
-                placeholder: z.string().optional().describe("Only list renderings in this placeholder. Supports wildcards, e.g. '*main*'."),
-                language: z.string().optional().describe("The item language. Defaults to the context language."),
-                finalLayout: z.boolean().optional().describe(FINAL_LAYOUT_DESCRIPTION),
-                includeParameters: z.boolean().optional().describe(INCLUDE_PARAMETERS_DESCRIPTION),
-            },
-        },
-        async (params) => {
-            const database = params.database || "master";
-            const itemLookup = `Get-Item -Path ${quotePowerShellString(`${database}:`)} -ID ${quotePowerShellString(params.id)}`
-                + (params.language ? ` -Language ${quotePowerShellString(params.language)}` : "")
-                + " -ErrorAction SilentlyContinue";
+            const itemLookup = `${target}${language} -ErrorAction SilentlyContinue`;
 
             const command = buildListRenderingsCommand(itemLookup, params);
             return safeMcpResponse(runGenericPowershellCommand(config, command, {}));

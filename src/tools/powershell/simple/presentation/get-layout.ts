@@ -2,18 +2,22 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
+import { requireOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../generic.js";
 import { itemProjectionInputSchema, itemProjectionPipeline } from "../../projection.js";
 import { getSwitchParameterValue } from "../../utils.js";
 
-export function getLayoutByIdPowershellTool(server: McpServer, config: Config) {
+export function getLayoutPowershellTool(server: McpServer, config: Config) {
     server.registerTool(
-        "presentation-get-layout-by-id",
+        "presentation-get-layout",
         {
-            description: "Gets the layout definition item assigned to the item with this ID -- the Sitecore layout item itself (e.g. 'Headless Layout'), not the renderings placed on the page. Use presentation-list-renderings-by-id to see a page's components.",
+            description: "Gets the layout definition item assigned to an item -- the Sitecore layout item itself (e.g. 'Headless Layout'), not the renderings placed on the page. Use presentation-list-renderings to see a page's components.",
             inputSchema: {
                 ...itemProjectionInputSchema,
-                id: z.string().describe("The ID of the item to retrieve layout for."),
+                id: z.string().optional()
+                    .describe("The ID of the item to retrieve layout for. Supply this or path."),
+                path: z.string().optional()
+                    .describe("The path of the item to retrieve layout for. Supply this or id."),
                 finalLayout: z
                     .boolean()
                     .optional()
@@ -24,10 +28,20 @@ export function getLayoutByIdPowershellTool(server: McpServer, config: Config) {
             },
         },
         async (params) => {
+            const invalid = requireOneTarget(params, ["id", "path"]);
+            if (invalid) {
+                return invalid;
+            }
+
             const command = `Get-Layout`;
             const options: Record<string, any> = {};
 
-            options["Id"] = params.id;
+            if (params.id) {
+                options["Id"] = params.id;
+            } else {
+                options["Path"] = params.path;
+            }
+
             options["FinalLayout"] = getSwitchParameterValue(params.finalLayout);
             options["Language"] = params.language;
 
@@ -37,4 +51,4 @@ export function getLayoutByIdPowershellTool(server: McpServer, config: Config) {
             }));
         }
     );
-};
+}

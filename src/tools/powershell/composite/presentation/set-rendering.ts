@@ -2,20 +2,25 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
+import { requireOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../../simple/generic.js";
 import { PowershellCommandBuilder } from "../../command-builder.js";
 import { getSwitchParameterValue, getNumberParameterValue } from "../../utils.js";
 import { renderingLookupGuard, renderingNotFoundMessage } from "./rendering-guard.js";
+import {
+    itemTargetDescription,
+    itemTargetParameters,
+    renderingItemTargetInputSchema,
+} from "./item-target.js";
 
-export function setRenderingByIdPowershellTool(server: McpServer, config: Config) {
+export function setRenderingPowershellTool(server: McpServer, config: Config) {
     server.registerTool(
-        "presentation-set-rendering-by-id",
+        "presentation-set-rendering",
         {
-            description: "Updates rendering specified by item ID with new values.",
+            description: "Updates a rendering placed on an item with new values.",
             inputSchema: {
-                itemId: z.string().describe("The ID of the item holding the rendering."),
+                ...renderingItemTargetInputSchema,
                 uniqueId: z.string().describe("The unique ID of the rendering."),
-                database: z.string().describe("The context database.").optional().default("master"),
                 placeholder: z.string().describe("New rendering placeholder value if specified.").optional(),
                 dataSource: z.string().describe("New rendering data source if specified.").optional(),
                 finalLayout: z
@@ -28,16 +33,29 @@ export function setRenderingByIdPowershellTool(server: McpServer, config: Config
             },
         },
         async (params) => {
+            const invalid = requireOneTarget(params, ["id", "path"]);
+            if (invalid) {
+                return invalid;
+            }
+
             const commandBuilder = new PowershellCommandBuilder();
 
             const getRenderingParameters: Record<string, any> = {};
-            getRenderingParameters["Id"] = params.itemId;
-            getRenderingParameters["UniqueId"] = params.uniqueId;
-            getRenderingParameters["Database"] = params.database;
 
-            const setRenderingParameters: Record<string, any> = {};
-            setRenderingParameters["Id"] = params.itemId;
-            setRenderingParameters["Database"] = params.database;
+            // The ID form ordered these -Id, -UniqueId, -Database; the path form sent no
+            // database at all. itemTargetParameters keeps each branch as it was.
+            if (params.id) {
+                getRenderingParameters["Id"] = params.id;
+                getRenderingParameters["UniqueId"] = params.uniqueId;
+                getRenderingParameters["Database"] = params.database;
+            } else {
+                getRenderingParameters["Path"] = params.path;
+                getRenderingParameters["UniqueId"] = params.uniqueId;
+            }
+
+            const setRenderingParameters: Record<string, any> = {
+                ...itemTargetParameters(params),
+            };
             setRenderingParameters["Placeholder"] = params.placeholder;
             setRenderingParameters["DataSource"] = params.dataSource;
             setRenderingParameters["FinalLayout"] = getSwitchParameterValue(params.finalLayout);
@@ -46,8 +64,8 @@ export function setRenderingByIdPowershellTool(server: McpServer, config: Config
             setRenderingParameters["Parameter"] = params.parameter;
 
             const notFound = renderingNotFoundMessage(
-                `a rendering with unique ID '${params.uniqueId}' on the item with ID '${params.itemId}' in database '${params.database}'`,
-                "presentation-get-rendering-by-id"
+                `a rendering with unique ID '${params.uniqueId}' on ${itemTargetDescription(params)}`,
+                "presentation-get-rendering"
             );
 
             const command = `

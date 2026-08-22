@@ -2,17 +2,23 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
+import { requireOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../generic.js";
 import { getSwitchParameterValue } from "../../utils.js";
 
-export function removePlaceholderSettingByIdPowershellTool(server: McpServer, config: Config) {
+export function removePlaceholderSettingPowershellTool(server: McpServer, config: Config) {
     server.registerTool(
-        "presentation-remove-placeholder-setting-by-id",
+        "presentation-remove-placeholder-setting",
         {
-            description: "Removes placeholder setting from the item specified by ID.",
+            description: "Removes placeholder setting from an item.",
             inputSchema: {
-                itemId: z.string().describe("The id of the item to remove placeholder settings from."),
-                database: z.string().describe("The context database.").optional().default("master"),
+                id: z.string().optional()
+                    .describe("The id of the item to remove placeholder settings from. Supply this or path."),
+                path: z.string().optional()
+                    .describe("The path of the item to remove placeholder settings from. Supply this or id."),
+                database: z.string()
+                    .describe("The context database. Only sent when addressing by id -- a path carries its own database prefix (e.g. master:/sitecore/content/Home).")
+                    .optional().default("master"),
                 uniqueId: z.string().describe("The placeholder setting unique id to remove.").optional(),
                 key: z.string().describe("The placeholder setting key to remove.").optional(),
                 finalLayout: z.boolean()
@@ -22,11 +28,24 @@ export function removePlaceholderSettingByIdPowershellTool(server: McpServer, co
             },
         },
         async (params) => {
+            const invalid = requireOneTarget(params, ["id", "path"]);
+            if (invalid) {
+                return invalid;
+            }
+
             const command = `Remove-PlaceholderSetting`;
 
             const options: Record<string, any> = {};
-            options["Id"] = params.itemId;
-            options["Database"] = params.database;
+
+            // Each branch sends exactly what its own tool sent: the ID form took a database,
+            // the path form never did.
+            if (params.id) {
+                options["Id"] = params.id;
+                options["Database"] = params.database;
+            } else {
+                options["Path"] = params.path;
+            }
+
             options["UniqueId"] = params.uniqueId;
             options["Key"] = params.key;
             options["FinalLayout"] = getSwitchParameterValue(params.finalLayout);

@@ -2,18 +2,24 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
+import { requireOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../../simple/generic.js";
 import { PowershellCommandBuilder } from "../../command-builder.js";
 import { getSwitchParameterValue } from "../../utils.js";
 import { renderingLookupGuard, renderingNotFoundMessage } from "./rendering-guard.js";
+import {
+    itemTargetDescription,
+    itemTargetParameters,
+    renderingItemTargetInputSchema,
+} from "./item-target.js";
 
-export function removeRenderingParameterByPathPowershellTool(server: McpServer, config: Config) {
+export function removeRenderingParameterPowershellTool(server: McpServer, config: Config) {
     server.registerTool(
-        "presentation-remove-rendering-parameter-by-path",
+        "presentation-remove-rendering-parameter",
         {
-            description: "Removes the specified rendering parameter from the rendering placed on the item specified by path.",
+            description: "Removes the specified rendering parameter from the rendering placed on an item.",
             inputSchema: {
-                itemPath: z.string().describe("The path of the item holding the rendering."),
+                ...renderingItemTargetInputSchema,
                 renderingUniqueId: z.string().describe("The unique ID of the rendering holding the rendering parameter."),
                 name: z.string().describe("The name of the rendering parameter to remove.").optional(),
                 finalLayout: z
@@ -24,10 +30,16 @@ export function removeRenderingParameterByPathPowershellTool(server: McpServer, 
             },
         },
         async (params) => {
+            const invalid = requireOneTarget(params, ["id", "path"]);
+            if (invalid) {
+                return invalid;
+            }
+
             const commandBuilder = new PowershellCommandBuilder();
 
-            const getRenderingParameters: Record<string, any> = {};
-            getRenderingParameters["Path"] = params.itemPath;
+            const getRenderingParameters: Record<string, any> = {
+                ...itemTargetParameters(params),
+            };
             getRenderingParameters["UniqueId"] = params.renderingUniqueId;
             getRenderingParameters["FinalLayout"] = getSwitchParameterValue(params.finalLayout);
             getRenderingParameters["Language"] = params.language;
@@ -35,14 +47,15 @@ export function removeRenderingParameterByPathPowershellTool(server: McpServer, 
             const removeRenderingParameterParameters: Record<string, any> = {};
             removeRenderingParameterParameters["Name"] = params.name;
 
-            const setRenderingParameters: Record<string, any> = {};
-            setRenderingParameters["Path"] = params.itemPath;
+            const setRenderingParameters: Record<string, any> = {
+                ...itemTargetParameters(params),
+            };
             setRenderingParameters["FinalLayout"] = getSwitchParameterValue(params.finalLayout);
             setRenderingParameters["Language"] = params.language;
 
             const notFound = renderingNotFoundMessage(
-                `a rendering with unique ID '${params.renderingUniqueId}' on the item at path '${params.itemPath}'`,
-                "presentation-get-rendering-by-path"
+                `a rendering with unique ID '${params.renderingUniqueId}' on ${itemTargetDescription(params)}`,
+                "presentation-get-rendering"
             );
 
             const command = `

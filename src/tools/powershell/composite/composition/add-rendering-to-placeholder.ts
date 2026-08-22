@@ -21,7 +21,7 @@ import { RENDERING_LOOKUP_FUNCTIONS, renderingSelectorInputSchema, renderingLook
 import { RENDERING_PARAMETER_FUNCTIONS } from "./rendering-parameters.js";
 
 /**
- * A composition-aware wrapper over `presentation-add-rendering-by-*`, which today writes
+ * A composition-aware wrapper over `presentation-add-rendering`, which today writes
  * whatever it is told.
  *
  * Three things it adds:
@@ -48,7 +48,7 @@ import { RENDERING_PARAMETER_FUNCTIONS } from "./rendering-parameters.js";
 const DESCRIPTION =
     "Adds a rendering to a placeholder on a page, refusing it when the placeholder's "
     + "settings do not allow that component (the allow-list is named in the error). This "
-    + "is the tool to compose a page with: presentation-add-rendering-by-path writes "
+    + "is the tool to compose a page with: presentation-add-rendering writes "
     + "whatever it is told, and an invalid layout still saves and renders. Assigns a "
     + "collision-free DynamicPlaceholderId when the rendering's parameters template "
     + "defines one, and writes the full parameter set the template declares. Returns the "
@@ -187,7 +187,7 @@ $page = Get-Item -Path ($database + ':') -ID $page.ID.ToString();
 $written = @(Get-Rendering -Item $page${finalLayout ? " -FinalLayout" : ""} -ErrorAction SilentlyContinue |
     Where-Object { -not $existingUniqueIds.ContainsKey($_.UniqueId) }) | Select-Object -Last 1;
 if ($null -eq $written) {
-    Write-Error ("Add-Rendering reported no error but the rendering is not on the item. Read the page with presentation-list-renderings-by-path and retry.");
+    Write-Error ("Add-Rendering reported no error but the rendering is not on the item. Read the page with presentation-list-renderings and retry.");
     return;
 }
 # Add-Rendering ignores the Parameters on the instance it is handed and the CM writes
@@ -241,7 +241,7 @@ if ($dynamicId -gt 0 -and (Get-McpParameterValue -Parameters $written.Parameters
     $missingParameters += 'DynamicPlaceholderId';
 }
 if ($missingParameters.Count -gt 0) {
-    Write-Error ("The rendering was added but these parameters did not persist: " + ($missingParameters -join ', ') + ". The layout holds '" + $written.Parameters + "'. Read the page with presentation-list-renderings-by-path before writing again.");
+    Write-Error ("The rendering was added but these parameters did not persist: " + ($missingParameters -join ', ') + ". The layout holds '" + $written.Parameters + "'. Read the page with presentation-list-renderings before writing again.");
     return;
 }
 $childPlaceholder = Get-McpChildPlaceholder -Item $page -Rendering $rendering -ParentPlaceholder $written.Placeholder -DynamicPlaceholderId $dynamicId -Project ${quotePowerShellString(params.project ?? "")};

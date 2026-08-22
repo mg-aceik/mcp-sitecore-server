@@ -86,39 +86,23 @@ import { getItemClonePowerShellTool } from "./tools/powershell/simple/common/get
 import { convertFromItemClonePowerShellTool } from "./tools/powershell/simple/common/convert-from-item-clone.js";
 import { newItemClonePowerShellTool } from "./tools/powershell/composite/common/new-item-clone.js";
 
-import { getLayoutByIdPowershellTool } from "./tools/powershell/simple/presentation/get-layout-by-id.js";
-import { getLayoutByPathPowershellTool } from "./tools/powershell/simple/presentation/get-layout-by-path.js";
-import { setLayoutIdPowershellTool } from "./tools/powershell/composite/presentation/set-layout-by-id.js";
-import { setLayoutByPathPowershellTool } from "./tools/powershell/composite/presentation/set-layout-by-path.js";
-import { resetLayoutByIdPowershellTool } from "./tools/powershell/simple/presentation/reset-layout-by-id.js";
-import { resetLayoutByPathPowershellTool } from "./tools/powershell/simple/presentation/reset-layout-by-path.js";
-import { mergeLayoutByIdPowershellTool } from "./tools/powershell/simple/presentation/merge-layout-by-id.js";
-import { mergeLayoutByPathPowershellTool } from "./tools/powershell/simple/presentation/merge-layout-by-path.js";
+import { getLayoutPowershellTool } from "./tools/powershell/simple/presentation/get-layout.js";
+import { setLayoutPowershellTool } from "./tools/powershell/composite/presentation/set-layout.js";
+import { resetLayoutPowershellTool } from "./tools/powershell/simple/presentation/reset-layout.js";
+import { mergeLayoutPowershellTool } from "./tools/powershell/simple/presentation/merge-layout.js";
 import { getLayoutDevicePowershellTool } from "./tools/powershell/simple/presentation/get-layout-device.js";
 import { getDefaultLayoutDevicePowershellTool } from "./tools/powershell/simple/presentation/get-default-layout-device.js";
-import { getRenderingByIdPowershellTool } from "./tools/powershell/simple/presentation/get-rendering-by-id.js";
-import { getRenderingByPathPowershellTool } from "./tools/powershell/simple/presentation/get-rendering-by-path.js";
-import { removeRenderingByPathPowershellTool } from "./tools/powershell/simple/presentation/remove-rendering-by-path.js";
-import { removeRenderingByIdPowershellTool } from "./tools/powershell/simple/presentation/remove-rendering-by-id.js";
-import { addRenderingByPathPowershellTool } from "./tools/powershell/composite/presentation/add-rendering-by-path.js";
-import { addRenderingByIdPowershellTool } from "./tools/powershell/composite/presentation/add-rendering-by-id.js";
-import { setRenderingByPathPowershellTool } from "./tools/powershell/composite/presentation/set-rendering-by-path.js";
-import { setRenderingByIdPowershellTool } from "./tools/powershell/composite/presentation/set-rendering-by-id.js";
-import { switchRenderingByIdPowershellTool } from "./tools/powershell/composite/presentation/switch-rendering-by-id.js";
-import { switchRenderingByPathPowershellTool } from "./tools/powershell/composite/presentation/switch-rendering-by-path.js";
-import { switchRenderingByUniqueIdPowershellTool } from "./tools/powershell/composite/presentation/switch-rendering-by-unique-id.js";
-import { getPlaceholderSettingByIdPowershellTool } from "./tools/powershell/simple/presentation/get-placeholder-setting-by-id.js";
-import { getPlaceholderSettingByPathPowershellTool } from "./tools/powershell/simple/presentation/get-placeholder-setting-by-path.js";
-import { addPlaceholderSettingByIdPowershellTool } from "./tools/powershell/composite/presentation/add-placeholder-setting-by-id.js";
-import { addPlaceholderSettingByPathPowershellTool } from "./tools/powershell/composite/presentation/add-placeholder-setting-by-path.js";
-import { removePlaceholderSettingByIdPowershellTool } from "./tools/powershell/simple/presentation/remove-placeholder-setting-by-id.js";
-import { removePlaceholderSettingByPathPowershellTool } from "./tools/powershell/simple/presentation/remove-placeholder-setting-by-path.js";
-import { getRenderingParameterByIdPowershellTool } from "./tools/powershell/composite/presentation/get-rendering-parameter-by-id.js";
-import { getRenderingParameterByPathPowershellTool } from "./tools/powershell/composite/presentation/get-rendering-parameter-by-path.js";
-import { removeRenderingParameterByIdPowershellTool } from "./tools/powershell/composite/presentation/remove-rendering-parameter-by-id.js";
-import { removeRenderingParameterByPathPowershellTool } from "./tools/powershell/composite/presentation/remove-rendering-parameter-by-path.js";
-import { setRenderingParameterByIdPowershellTool } from "./tools/powershell/composite/presentation/set-rendering-parameter-by-id.js";
-import { setRenderingParameterByPathPowershellTool } from "./tools/powershell/composite/presentation/set-rendering-parameter-by-path.js";
+import { getRenderingPowershellTool } from "./tools/powershell/simple/presentation/get-rendering.js";
+import { removeRenderingPowershellTool } from "./tools/powershell/simple/presentation/remove-rendering.js";
+import { addRenderingPowershellTool } from "./tools/powershell/composite/presentation/add-rendering.js";
+import { setRenderingPowershellTool } from "./tools/powershell/composite/presentation/set-rendering.js";
+import { switchRenderingPowershellTool } from "./tools/powershell/composite/presentation/switch-rendering.js";
+import { getPlaceholderSettingPowershellTool } from "./tools/powershell/simple/presentation/get-placeholder-setting.js";
+import { addPlaceholderSettingPowershellTool } from "./tools/powershell/composite/presentation/add-placeholder-setting.js";
+import { removePlaceholderSettingPowershellTool } from "./tools/powershell/simple/presentation/remove-placeholder-setting.js";
+import { getRenderingParameterPowershellTool } from "./tools/powershell/composite/presentation/get-rendering-parameter.js";
+import { removeRenderingParameterPowershellTool } from "./tools/powershell/composite/presentation/remove-rendering-parameter.js";
+import { setRenderingParameterPowershellTool } from "./tools/powershell/composite/presentation/set-rendering-parameter.js";
 import { getLogsPowerShellTool } from "./tools/powershell/composite/logging/get-logs.js";
 import { getSitecoreCliDocumentation } from "./tools/sitecore-cli/get-sitecore-cli-documentation.js";
 import { listRenderingsPowershellTool } from "./tools/powershell/composite/presentation/list-renderings.js";
@@ -263,42 +247,26 @@ export const TOOL_GROUP_REGISTRARS: Record<ToolGroup, ToolRegistrar[]> = {
 
     "powershell.presentation": [
         //Simple Presentation PowerShell Tools
-        getLayoutByIdPowershellTool,
-        getLayoutByPathPowershellTool,
-        resetLayoutByIdPowershellTool,
-        resetLayoutByPathPowershellTool,
-        mergeLayoutByIdPowershellTool,
-        mergeLayoutByPathPowershellTool,
+        getLayoutPowershellTool,
+        resetLayoutPowershellTool,
+        mergeLayoutPowershellTool,
         getLayoutDevicePowershellTool,
         getDefaultLayoutDevicePowershellTool,
-        getRenderingByIdPowershellTool,
-        getRenderingByPathPowershellTool,
-        removeRenderingByPathPowershellTool,
-        removeRenderingByIdPowershellTool,
-        getPlaceholderSettingByIdPowershellTool,
-        getPlaceholderSettingByPathPowershellTool,
-        removePlaceholderSettingByIdPowershellTool,
-        removePlaceholderSettingByPathPowershellTool,
+        getRenderingPowershellTool,
+        removeRenderingPowershellTool,
+        getPlaceholderSettingPowershellTool,
+        removePlaceholderSettingPowershellTool,
 
         //Composite Presentation PowerShell Tools
         listRenderingsPowershellTool,
-        setLayoutIdPowershellTool,
-        setLayoutByPathPowershellTool,
-        addRenderingByPathPowershellTool,
-        addRenderingByIdPowershellTool,
-        setRenderingByPathPowershellTool,
-        setRenderingByIdPowershellTool,
-        switchRenderingByIdPowershellTool,
-        switchRenderingByPathPowershellTool,
-        switchRenderingByUniqueIdPowershellTool,
-        addPlaceholderSettingByIdPowershellTool,
-        addPlaceholderSettingByPathPowershellTool,
-        getRenderingParameterByIdPowershellTool,
-        getRenderingParameterByPathPowershellTool,
-        removeRenderingParameterByIdPowershellTool,
-        removeRenderingParameterByPathPowershellTool,
-        setRenderingParameterByIdPowershellTool,
-        setRenderingParameterByPathPowershellTool,
+        setLayoutPowershellTool,
+        addRenderingPowershellTool,
+        setRenderingPowershellTool,
+        switchRenderingPowershellTool,
+        addPlaceholderSettingPowershellTool,
+        getRenderingParameterPowershellTool,
+        removeRenderingParameterPowershellTool,
+        setRenderingParameterPowershellTool,
     ],
 
     "powershell.logging": [
