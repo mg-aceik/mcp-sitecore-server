@@ -12,10 +12,10 @@ import { renderingLookupGuard } from "../presentation/rendering-guard.js";
  *
  * The site is resolved from `Factory.GetSiteInfoList()` rather than by walking the
  * content tree looking for a known template. That list is what Sitecore itself serves
- * from, so it is correct on XM Cloud (where SXA registers a site per content site item)
+ * from, so it is correct on SitecoreAI (where SXA registers a site per content site item)
  * *and* on XM/XP (where the site is defined in config and its root may be
  * `/sitecore/content` itself). The template-based shortcut — "find the ancestor whose
- * template is Headless Site" — only works on XM Cloud, and this server targets both.
+ * template is Headless Site" — only works on SitecoreAI, and this server targets both.
  */
 
 /** Sitecore's own infrastructure sites, which are never content sites. */
@@ -38,7 +38,7 @@ const SYSTEM_SITE_NAMES = [
  * PowerShell rendering of the system-site denylist above, for the `list-sites` filter.
  *
  * `website` is deliberately absent: on XM/XP it is *the* content site, and hiding it
- * would make the tool useless there. On an XM Cloud CM it shows up alongside the real
+ * would make the tool useless there. On a SitecoreAI CM it shows up alongside the real
  * content sites, rooted at `/sitecore/content`, which is truthful rather than tidy.
  */
 export const SYSTEM_SITE_NAMES_POWERSHELL = `@(${SYSTEM_SITE_NAMES.map(quotePowerShellString).join(", ")})`;
@@ -98,7 +98,7 @@ function Get-McpSiteRoot {
     $ordered = @($roots | Sort-Object -Property Length -Descending);
 
     # Prefer a site root that actually owns a site-level placeholder settings tree. On an
-    # XM Cloud CM several sites are rooted at /sitecore/content (website, modules_website,
+    # SitecoreAI CM several sites are rooted at /sitecore/content (website, modules_website,
     # ...) and only the real content site carries the Presentation folder.
     foreach ($root in $ordered) {
         $settings = Get-Item -Path ($database + ':' + $root + '/Presentation/Placeholder Settings') -ErrorAction SilentlyContinue;
@@ -131,7 +131,7 @@ function Get-McpProjectName {
     param([Sitecore.Data.Items.Item]$SiteRoot)
 
     if ($null -eq $SiteRoot) { return $null }
-    # /sitecore/content/<project>/<site> is the XM Cloud tenant layout, and <project> is
+    # /sitecore/content/<project>/<site> is the SitecoreAI tenant layout, and <project> is
     # also the folder name used under /sitecore/layout/Placeholder Settings/Project.
     $segments = @($SiteRoot.Paths.FullPath -split '/' | Where-Object { $_ -ne '' });
     if ($segments.Count -ge 3) { return $segments[2] }

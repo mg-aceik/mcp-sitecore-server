@@ -5,7 +5,7 @@ import { safeMcpResponse } from "@/helper.js";
 import { requireOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../../simple/generic.js";
 import { PowershellCommandBuilder } from "../../command-builder.js";
-import { getSwitchParameterValue } from "../../utils.js";
+import { EFFECTIVE_FINAL_LAYOUT_DESCRIPTION, getFinalLayoutSwitchValue } from "../../utils.js";
 import { renderingLookupGuard, renderingNotFoundMessage } from "./rendering-guard.js";
 import {
     itemTargetDescription,
@@ -24,7 +24,7 @@ export function removeRenderingParameterPowershellTool(server: McpServer, config
                 name: z.string().describe("The name of the rendering parameter to remove.").optional(),
                 finalLayout: z
                     .boolean()
-                    .describe("Specifies layout holding the rendering parameter. If 'true', the final layout is used, otherwise - shared layout.")
+                    .describe(EFFECTIVE_FINAL_LAYOUT_DESCRIPTION)
                     .optional(),
                 language: z.string().describe("The item language varsion.").optional(),
             }),
@@ -41,7 +41,7 @@ export function removeRenderingParameterPowershellTool(server: McpServer, config
                 ...itemTargetParameters(params),
             };
             getRenderingParameters["UniqueId"] = params.renderingUniqueId;
-            getRenderingParameters["FinalLayout"] = getSwitchParameterValue(params.finalLayout);
+            getRenderingParameters["FinalLayout"] = getFinalLayoutSwitchValue(params.finalLayout);
             getRenderingParameters["Language"] = params.language;
 
             const removeRenderingParameterParameters: Record<string, any> = {};
@@ -50,7 +50,7 @@ export function removeRenderingParameterPowershellTool(server: McpServer, config
             const setRenderingParameters: Record<string, any> = {
                 ...itemTargetParameters(params),
             };
-            setRenderingParameters["FinalLayout"] = getSwitchParameterValue(params.finalLayout);
+            setRenderingParameters["FinalLayout"] = getFinalLayoutSwitchValue(params.finalLayout);
             setRenderingParameters["Language"] = params.language;
 
             const notFound = renderingNotFoundMessage(

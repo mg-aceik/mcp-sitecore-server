@@ -27,7 +27,7 @@
  * output, not `UrlEncode`'s `+`. Parameter *names* are written raw, as authored pages do.
  *
  * **`Add-Rendering` discards the `Parameters` on the instance it is given.** Verified
- * against a live XM Cloud CM: `New-Rendering` produces a `RenderingDefinition`, setting
+ * against a live SitecoreAI CM: `New-Rendering` produces a `RenderingDefinition`, setting
  * `.Parameters` on it sticks, `Add-Rendering -Instance` reports success — and the layout
  * comes back with a completely different parameter string (and a different `UniqueId`).
  * What lands is the CM's own work: it writes the full parameter key set from the

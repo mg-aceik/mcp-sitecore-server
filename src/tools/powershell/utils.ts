@@ -31,6 +31,24 @@ export function getSwitchParameterValue(value: boolean | undefined): string | un
     return undefined;
 }
 
+/**
+ * The rendering-instance tools (get/set/switch/remove-rendering and the
+ * rendering-parameter tools) default `finalLayout` to true, matching
+ * `presentation-list-renderings`: the final layout is the effective presentation, and a
+ * uniqueId the caller just read from a listing exists there. Before this default the
+ * tools read the shared layout, so an id straight out of `list-renderings` produced
+ * "no matching rendering" for any instance that lives only in the final layout.
+ */
+export const EFFECTIVE_FINAL_LAYOUT_DESCRIPTION =
+    "Which layout to target. Defaults to true (the final layout), which is the effective "
+    + "presentation for the page and where the uniqueIds reported by "
+    + "presentation-list-renderings live. Set false to target the shared layout only.";
+
+/** The `-FinalLayout` switch value for the tools that default to the final layout. */
+export function getFinalLayoutSwitchValue(finalLayout: boolean | undefined): string | undefined {
+    return getSwitchParameterValue(finalLayout !== false);
+}
+
 export function getNumberParameterValue(value: number | undefined): number | undefined
 {
     if (value || value === 0)

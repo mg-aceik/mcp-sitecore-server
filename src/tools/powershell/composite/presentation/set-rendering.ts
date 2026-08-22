@@ -5,7 +5,11 @@ import { safeMcpResponse } from "@/helper.js";
 import { requireOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../../simple/generic.js";
 import { PowershellCommandBuilder } from "../../command-builder.js";
-import { getSwitchParameterValue, getNumberParameterValue } from "../../utils.js";
+import {
+    EFFECTIVE_FINAL_LAYOUT_DESCRIPTION,
+    getFinalLayoutSwitchValue,
+    getNumberParameterValue,
+} from "../../utils.js";
 import { renderingLookupGuard, renderingNotFoundMessage } from "./rendering-guard.js";
 import {
     itemTargetDescription,
@@ -25,7 +29,7 @@ export function setRenderingPowershellTool(server: McpServer, config: Config) {
                 dataSource: z.string().describe("New rendering data source if specified.").optional(),
                 finalLayout: z
                     .boolean()
-                    .describe("Specifies the layout to update the rendering. If 'true', the final layout is used, otherwise - shared layout.")
+                    .describe(EFFECTIVE_FINAL_LAYOUT_DESCRIPTION)
                     .optional(),
                 language: z.string().describe("The language version of the item holding the rendering.").optional(),
                 index: z.number().describe("New index of the rendering in the layout.").optional(),
@@ -52,13 +56,19 @@ export function setRenderingPowershellTool(server: McpServer, config: Config) {
                 getRenderingParameters["Path"] = params.path;
                 getRenderingParameters["UniqueId"] = params.uniqueId;
             }
+            // The lookup must read the same layout the update targets: without these the
+            // lookup ran against the shared layout in the context language, and a rendering
+            // that lives only in the final layout could never be found, whatever the caller
+            // passed for finalLayout.
+            getRenderingParameters["FinalLayout"] = getFinalLayoutSwitchValue(params.finalLayout);
+            getRenderingParameters["Language"] = params.language;
 
             const setRenderingParameters: Record<string, any> = {
                 ...itemTargetParameters(params),
             };
             setRenderingParameters["Placeholder"] = params.placeholder;
             setRenderingParameters["DataSource"] = params.dataSource;
-            setRenderingParameters["FinalLayout"] = getSwitchParameterValue(params.finalLayout);
+            setRenderingParameters["FinalLayout"] = getFinalLayoutSwitchValue(params.finalLayout);
             setRenderingParameters["Language"] = params.language;
             setRenderingParameters["Index"] = getNumberParameterValue(params.index);
             setRenderingParameters["Parameter"] = params.parameter;

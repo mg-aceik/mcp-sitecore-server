@@ -20,6 +20,10 @@ import { removeUserPowerShellTool } from "./tools/powershell/simple/security/rem
 import { disableUserPowerShellTool } from "./tools/powershell/simple/security/disable-user.js";
 import { enableUserPowerShellTool } from "./tools/powershell/simple/security/enable-user.js";
 import { unlockUserPowerShellTool } from "./tools/powershell/simple/security/unlock-user.js";
+import { exportUserPowerShellTool } from "./tools/powershell/simple/security/export-user.js";
+import { importUserPowerShellTool } from "./tools/powershell/simple/security/import-user.js";
+import { exportRolePowerShellTool } from "./tools/powershell/simple/security/export-role.js";
+import { importRolePowerShellTool } from "./tools/powershell/simple/security/import-role.js";
 import { setUserPowerShellTool } from "./tools/powershell/simple/security/set-user.js";
 import { setUserPasswordPowerShellTool } from "./tools/powershell/simple/security/set-user-password.js";
 import { getRoleByIdentityPowerShellTool } from "./tools/powershell/simple/security/get-role-by-identity.js";
@@ -101,6 +105,8 @@ import { removeRenderingParameterPowershellTool } from "./tools/powershell/compo
 import { setRenderingParameterPowershellTool } from "./tools/powershell/composite/presentation/set-rendering-parameter.js";
 import { getLogsPowerShellTool } from "./tools/powershell/composite/logging/get-logs.js";
 import { getSitecoreCliDocumentation } from "./tools/sitecore-cli/get-sitecore-cli-documentation.js";
+import { mediaUploadTool } from "./tools/powershell/media/media-upload.js";
+import { mediaDownloadTool } from "./tools/powershell/media/media-download.js";
 import { listRenderingsPowershellTool } from "./tools/powershell/composite/presentation/list-renderings.js";
 import { getAllowedComponentsByPlaceholderPowershellTool } from "./tools/powershell/composite/composition/get-allowed-components-by-placeholder.js";
 import { createComponentDatasourcePowershellTool } from "./tools/powershell/composite/composition/create-component-datasource.js";
@@ -181,6 +187,10 @@ export const TOOL_GROUP_REGISTRARS: Record<ToolGroup, ToolRegistrar[]> = {
         unlockUserPowerShellTool,
         setUserPowerShellTool,
         setUserPasswordPowerShellTool,
+        exportUserPowerShellTool,
+        importUserPowerShellTool,
+        exportRolePowerShellTool,
+        importRolePowerShellTool,
         getDomainByNamePowerShellTool,
         getAllDomainsPowerShellTool,
         getRoleByIdentityPowerShellTool,
@@ -283,6 +293,11 @@ export const TOOL_GROUP_REGISTRARS: Record<ToolGroup, ToolRegistrar[]> = {
         //Composite Indexing PowerShell Tools
         initializeSearchIndexingItemPowerShellTool,
         removeSearchIndexItemPowerShellTool,
+    ],
+
+    "powershell.media": [
+        mediaUploadTool,
+        mediaDownloadTool,
     ],
 
     "sitecore-cli": [

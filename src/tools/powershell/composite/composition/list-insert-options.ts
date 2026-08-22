@@ -11,7 +11,7 @@ import { z } from "zod";
  * Read from the item's `__Masters` field, which inherits from the template's standard
  * values and is where insert options are configured. The `uiGetMasters` pipeline would be
  * the more complete answer — it is what the Content Editor runs, and it is where insert
- * *rules* are evaluated — but it is not registered on an XM Cloud CM (verified: "Could not
+ * *rules* are evaluated — but it is not registered on a SitecoreAI CM (verified: "Could not
  * get pipeline: uiGetMasters"), so the field is the portable answer. That difference is
  * stated in the tool description rather than hidden, because a project using insert rules
  * will see fewer options here than the editor shows.
@@ -22,7 +22,7 @@ const DESCRIPTION =
     + "template's standard values). Each row reports Kind: 'Branch' items copy a whole "
     + "subtree, 'Template' items create a single item. Note that insert *rules* are not "
     + "evaluated (the uiGetMasters pipeline the Content Editor runs is not available on an "
-    + "XM Cloud CM), so a project that uses them may see more options in the editor than "
+    + "SitecoreAI CM), so a project that uses them may see more options in the editor than "
     + "are listed here. IDs that resolve to no item are reported under Unresolved.";
 
 export function listInsertOptionsPowershellTool(server: McpServer, config: Config) {

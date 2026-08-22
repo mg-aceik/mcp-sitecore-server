@@ -26,7 +26,7 @@ const LIST_DESCRIPTION =
     + "database, hostname and the root item's ID and template. Sitecore's own "
     + "infrastructure sites (shell, login, service, ...) are filtered out; pass "
     + "includeSystemSites to see everything Sitecore has registered. Note that 'website' "
-    + "is reported — on XM/XP it is the content site, and on an XM Cloud CM it shows up "
+    + "is reported — on XM/XP it is the content site, and on a SitecoreAI CM it shows up "
     + "rooted at /sitecore/content alongside the real content sites.";
 
 const INFO_DESCRIPTION =

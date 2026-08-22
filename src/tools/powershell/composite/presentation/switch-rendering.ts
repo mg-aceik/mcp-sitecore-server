@@ -5,7 +5,7 @@ import { safeMcpResponse } from "@/helper.js";
 import { requireOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../../simple/generic.js";
 import { PowershellCommandBuilder, quotePowerShellString } from "../../command-builder.js";
-import { getSwitchParameterValue } from "../../utils.js";
+import { EFFECTIVE_FINAL_LAYOUT_DESCRIPTION, getFinalLayoutSwitchValue } from "../../utils.js";
 import { renderingLookupGuard, renderingNotFoundMessage } from "./rendering-guard.js";
 
 /**
@@ -14,16 +14,57 @@ import { renderingLookupGuard, renderingNotFoundMessage } from "./rendering-guar
  * The item is named by `id` or `path`. The rendering to replace is named by
  * `oldRenderingId`, `oldRenderingPath` or `uniqueId`, and the last of those takes a
  * different route through SPE: `Switch-Rendering -UniqueId` resolves the instance itself,
- * so that branch neither reads the renderings first nor guards the lookup, exactly as
+ * so that branch does not guard the lookup up front, exactly as
  * `presentation-switch-rendering-by-unique-id` did. The other two branches keep issue #62's
  * guard, because they select with `Where-Object` and would otherwise hand `Switch-Rendering`
  * an empty collection and silently do nothing.
+ *
+ * SPE's `Switch-Rendering` assigns the replacement a NEW uniqueId — the caller's id dies
+ * with the old instance. Every branch therefore diffs the rendering list before and after
+ * and returns one row per switched instance (new UniqueId, RenderingID, Placeholder,
+ * Datasource), so a follow-up `presentation-set-rendering` has an id that exists. The
+ * uniqueId branch also fails loudly when the diff is empty: SPE silently does nothing for
+ * an unknown uniqueId, and returning nothing here used to look like success.
  */
+
+/**
+ * Emits the before/after machinery around a switch. `lookup` is the `Get-Rendering`
+ * parameter string addressing the item on the targeted layout; `switchStatement` is the
+ * branch-specific switching code; `emptyDiffGuard` (optional) is run when nothing changed.
+ * The diff keys on UniqueId AND rendering id, so it reports the switched instances whether
+ * SPE regenerates the uniqueId (observed behavior) or ever starts preserving it.
+ */
+function buildSwitchAndReport(lookup: string, switchStatement: string, emptyDiffGuard = ""): string {
+    return `
+                $beforeRenderings = @{};
+                foreach ($rendering in @(Get-Rendering ${lookup})) {
+                    $beforeRenderings[$rendering.UniqueId] = $rendering.ItemID;
+                }
+                ${switchStatement}
+                $switchedRenderings = @(Get-Rendering ${lookup} | Where-Object {
+                    (-not $beforeRenderings.ContainsKey($_.UniqueId)) -or ($beforeRenderings[$_.UniqueId] -ne $_.ItemID)
+                });
+                ${emptyDiffGuard}
+                foreach ($rendering in $switchedRenderings) {
+                    [PSCustomObject]@{
+                        UniqueId = $rendering.UniqueId;
+                        RenderingID = $rendering.ItemID;
+                        Placeholder = $rendering.Placeholder;
+                        Datasource = $rendering.Datasource;
+                    }
+                }
+            `;
+}
+
 export function switchRenderingPowershellTool(server: McpServer, config: Config) {
     server.registerTool(
         "presentation-switch-rendering",
         {
-            description: "Switches an existing rendering on an item with an alternate one.",
+            description:
+                "Switches an existing rendering on an item with an alternate one. The switched "
+                + "instance gets a NEW uniqueId (SPE regenerates it); the tool returns one row per "
+                + "switched instance with the new UniqueId, RenderingID, Placeholder and Datasource "
+                + "— use that UniqueId for any follow-up call, the old one no longer exists.",
             inputSchema: z.object({
                 id: z.string().optional()
                     .describe("The ID of the item holding the renderings. Supply this or path."),
@@ -44,7 +85,7 @@ export function switchRenderingPowershellTool(server: McpServer, config: Config)
                     .optional().default("master"),
                 finalLayout: z
                     .boolean()
-                    .describe("Specifies the layout to update the rendering. If 'true', the final layout is used, otherwise - shared layout.")
+                    .describe(EFFECTIVE_FINAL_LAYOUT_DESCRIPTION)
                     .optional(),
                 language: z.string().describe("The language version of the item holding the renderings.").optional(),
             }),
@@ -80,25 +121,38 @@ export function switchRenderingPowershellTool(server: McpServer, config: Config)
                 switchRenderingParameters["UniqueId"] = params.uniqueId;
             }
             switchRenderingParameters["Language"] = params.language;
-            switchRenderingParameters["FinalLayout"] = getSwitchParameterValue(params.finalLayout);
+            switchRenderingParameters["FinalLayout"] = getFinalLayoutSwitchValue(params.finalLayout);
 
             const newRendering =
                 `$targetRendering = New-Rendering${commandBuilder.buildParametersString(newRenderingParameters)}`;
 
-            // -UniqueId names the instance, so SPE does the lookup and there is nothing to
-            // select or guard against.
+            const getRenderingParameters: Record<string, any> = { ...itemParameters };
+            getRenderingParameters["Language"] = params.language;
+            getRenderingParameters["FinalLayout"] = getFinalLayoutSwitchValue(params.finalLayout);
+            const lookup = commandBuilder.buildParametersString(getRenderingParameters);
+
+            // -UniqueId names the instance, so SPE does the lookup itself. SPE 8 throws
+            // "Cannot find a rendering to remove" for an unknown uniqueId; the empty-diff
+            // guard below is the backstop for SPE paths that no-op instead, so a switch
+            // that changed nothing can never read as success.
             if (params.uniqueId) {
-                const command = `
-                ${newRendering}
-                Switch-Rendering -NewRendering $targetRendering ${commandBuilder.buildParametersString(switchRenderingParameters)}
-            `;
+                const nothingSwitched =
+                    `Switch-Rendering changed nothing: no rendering with unique ID '${params.uniqueId}' `
+                    + `was switched on ${params.id
+                        ? `the item with ID '${params.id}' in database '${params.database}'`
+                        : `the item at path '${params.path}'`}. `
+                    + `Verify the unique ID, the language, and that you are targeting the right layout `
+                    + `(shared vs final) — use presentation-list-renderings to see the renderings present.`;
+
+                const command = buildSwitchAndReport(
+                    lookup,
+                    `${newRendering}
+                Switch-Rendering -NewRendering $targetRendering ${commandBuilder.buildParametersString(switchRenderingParameters)}`,
+                    renderingLookupGuard("$switchedRenderings", nothingSwitched, { collection: true })
+                );
 
                 return safeMcpResponse(runGenericPowershellCommand(config, command, {}));
             }
-
-            const getRenderingParameters: Record<string, any> = { ...itemParameters };
-            getRenderingParameters["Language"] = params.language;
-            getRenderingParameters["FinalLayout"] = getSwitchParameterValue(params.finalLayout);
 
             // The ID form compares against the literal ID; the path form resolves the
             // rendering item first and compares against its ID.
@@ -121,14 +175,15 @@ export function switchRenderingPowershellTool(server: McpServer, config: Config)
                 "presentation-get-rendering"
             );
 
-            const command = `
-                ${oldRenderingLookup.resolve}$sourceRenderings = Get-Rendering ${commandBuilder.buildParametersString(getRenderingParameters)} | Where-Object { $_.ItemID -ceq ${oldRenderingLookup.comparand} };
+            const command = buildSwitchAndReport(
+                lookup,
+                `${oldRenderingLookup.resolve}$sourceRenderings = Get-Rendering ${lookup} | Where-Object { $_.ItemID -ceq ${oldRenderingLookup.comparand} };
                 ${renderingLookupGuard("$sourceRenderings", notFound, { collection: true })}
                 ${newRendering}
                 foreach($sourceRendering in $sourceRenderings) {
                     Switch-Rendering -Instance $sourceRendering -NewRendering $targetRendering ${commandBuilder.buildParametersString(switchRenderingParameters)}
-                }
-            `;
+                }`
+            );
 
             return safeMcpResponse(runGenericPowershellCommand(config, command, {}));
         }

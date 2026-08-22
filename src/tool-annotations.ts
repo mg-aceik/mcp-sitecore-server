@@ -36,6 +36,13 @@ const WRITE_TOKENS = new Set([
     "protect",
     "unprotect",
     "enable",
+    // export writes serialized files on the server; import overwrites the live
+    // user/role with the serialized state.
+    "export",
+    "import",
+    // upload creates or overwrites a media item ("download" stays read-only: it does
+    // not mutate Sitecore).
+    "upload",
 ]);
 
 function toTitle(name: string): string {

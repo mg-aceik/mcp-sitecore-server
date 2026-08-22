@@ -276,8 +276,13 @@ describe("tools that address two things at once", () => {
         expect(byUniqueId.call!.command).toContain("New-Rendering -Id '{NEW}' -Database 'master'");
         expect(byUniqueId.call!.command).toContain("Switch-Rendering -NewRendering $targetRendering");
         expect(byUniqueId.call!.command).toContain("-Id '{ABC}' -Database 'master' -UniqueId '{U}'");
-        expect(byUniqueId.call!.command).not.toContain("Get-Rendering");
-        expect(byUniqueId.call!.command).not.toContain("Write-Error");
+        // SPE resolves -UniqueId itself, so there is no Where-Object selection to guard —
+        // but the branch does diff the rendering list around the switch (SPE regenerates
+        // the uniqueId, so the new id has to be read back and returned), and it fails
+        // loudly when the diff is empty because SPE silently no-ops on an unknown id.
+        expect(byUniqueId.call!.command).not.toContain("Where-Object { $_.ItemID");
+        expect(byUniqueId.call!.command).toContain("$switchedRenderings");
+        expect(byUniqueId.call!.command).toContain("Switch-Rendering changed nothing");
 
         const byOldId = await tool.call("presentation-switch-rendering", {
             id: "{ABC}", oldRenderingId: "{OLD}", newRenderingId: "{NEW}", database: "master",

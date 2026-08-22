@@ -24,6 +24,7 @@ vi.mock("../../src/tools/item-service/logic/simple/get-item", () => ({ getItemBy
 vi.mock("../../src/tools/item-service/logic/simple/get-item-by-path", () => ({ getItemByPath }));
 
 import { getItemTool } from "../../src/tools/item-service/tools/simple/get-item";
+import { mediaUploadTool } from "../../src/tools/powershell/media/media-upload";
 import { newItemClonePowerShellTool } from "../../src/tools/powershell/composite/common/new-item-clone";
 import { updateItemReferrerPowerShellTool } from "../../src/tools/powershell/composite/common/update-item-referrer";
 import { initializeSearchIndexingItemPowerShellTool } from "../../src/tools/powershell/composite/indexing/initialialize-search-indexing-item";
@@ -205,6 +206,26 @@ describe("every merged tool", () => {
         expect(getItemByPath).toHaveBeenCalledWith(expect.anything(), "/sitecore/content/Home", {});
     });
 
+    // media-upload validates its *source* (sourceUrl / filePath / content) with the same
+    // discriminator the merged tools use for addressing, so it appears in the sweep — but
+    // the id/path harness above does not fit it. Only the invalid shapes are checked here:
+    // both stop in TypeScript before any bytes are fetched or sent, and the valid shapes
+    // are live-tested (they need a CM and a real blob).
+    it("media-upload requires exactly one of sourceUrl, filePath and content", async () => {
+        const handler = mount(mediaUploadTool, "media-upload");
+
+        const none = await handler({ destination: "Project/Test/photo.jpg", database: "master" });
+        expect(none.isError).toBe(true);
+        expect(none.content[0].text).toContain("'sourceUrl', 'filePath' or 'content'");
+
+        const two = await handler({
+            destination: "Project/Test/photo.jpg", database: "master",
+            sourceUrl: "https://example.com/a.jpg", content: "aGk=",
+        });
+        expect(two.isError).toBe(true);
+        expect(runGeneric).not.toHaveBeenCalled();
+    });
+
     it("covers every tool that validates an addressing input", async () => {
         // A merged tool that is not in the table above is a tool nobody is checking.
         const { readdirSync, readFileSync, statSync } = await import("node:fs");
@@ -218,7 +239,7 @@ describe("every merged tool", () => {
             .flatMap((file) => [...readFileSync(file, "utf8").matchAll(/registerTool\(\s*["']([a-z0-9-]+)["']/g)]
                 .map((m) => m[1]));
 
-        const covered = new Set([...MERGED.map(([name]) => name), "item-service-get-item"]);
+        const covered = new Set([...MERGED.map(([name]) => name), "item-service-get-item", "media-upload"]);
         expect([...new Set(registered)].filter((name) => !covered.has(name))).toEqual([]);
     });
 });

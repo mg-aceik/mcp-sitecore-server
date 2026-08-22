@@ -14,7 +14,7 @@ import { z } from "zod";
  * site: `global-header-desktop-secondary-right-{*}`, `headless-meta`, `social-follow-{*}`
  * and `global-alert-banner-cta-{*}` exist **only** in the global tree, so a resolver that
  * reads the site layer alone answers "nothing is allowed" for four real placeholders. The
- * fallback is also what makes this work beyond XM Cloud: a plain XM/XP site has no
+ * fallback is also what makes this work beyond SitecoreAI: a plain XM/XP site has no
  * site-level settings items at all and the global tree is the only layer there is.
  *
  * Three details that bite, all handled here:

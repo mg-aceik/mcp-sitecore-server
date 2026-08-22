@@ -36,12 +36,13 @@ describe("resolveToolGating", () => {
         expect(gating.enabledGroups).toBeNull();
     });
 
-    it("applies the xmcloud profile", () => {
-        const gating = resolveToolGating({ TOOL_PROFILE: "xmcloud" });
-        expect(isToolEnabled("common-publish-item", gating)).toBe(false);
-        expect(isToolEnabled("common-restart-application", gating)).toBe(false);
+    it("applies the sai profile", () => {
+        const gating = resolveToolGating({ TOOL_PROFILE: "sai" });
         expect(isGroupEnabled("powershell.security", gating)).toBe(false);
-        // Everything else stays.
+        // Everything else stays — publishing targets Edge on SitecoreAI, so
+        // common-publish-item and common-restart-application remain available.
+        expect(isToolEnabled("common-publish-item", gating)).toBe(true);
+        expect(isToolEnabled("common-restart-application", gating)).toBe(true);
         expect(isGroupEnabled("powershell.common", gating)).toBe(true);
         expect(isToolEnabled("provider-get-item", gating)).toBe(true);
     });
@@ -53,9 +54,9 @@ describe("resolveToolGating", () => {
     });
 
     it("unions DISABLED_TOOLS on top of the profile", () => {
-        const gating = resolveToolGating({ TOOL_PROFILE: "xmcloud", DISABLED_TOOLS: "indexing-find-item" });
+        const gating = resolveToolGating({ TOOL_PROFILE: "sai", DISABLED_TOOLS: "indexing-find-item" });
         expect(isToolEnabled("indexing-find-item", gating)).toBe(false);
-        expect(isToolEnabled("common-restart-application", gating)).toBe(false);
+        expect(isGroupEnabled("powershell.security", gating)).toBe(false);
     });
 
     it("lets the denylist win over the group allowlist", () => {
@@ -68,13 +69,13 @@ describe("resolveToolGating", () => {
     });
 
     it("ignores an unknown profile rather than failing to start", () => {
-        const gating = resolveToolGating({ TOOL_PROFILE: "xm-cloud-typo" });
+        const gating = resolveToolGating({ TOOL_PROFILE: "sai-typo" });
         expect(gating.disabledTools.size).toBe(0);
         expect(gating.disabledGroups.size).toBe(0);
     });
 
     it("is case-insensitive about the profile name", () => {
-        expect(resolveToolGating({ TOOL_PROFILE: "XmCloud" }).disabledTools.size).toBeGreaterThan(0);
+        expect(resolveToolGating({ TOOL_PROFILE: "SAI" }).disabledGroups.size).toBeGreaterThan(0);
     });
 });
 

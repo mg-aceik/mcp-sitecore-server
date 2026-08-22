@@ -6,7 +6,7 @@ import { SYSTEM_SITE_NAMES_POWERSHELL } from "./site-scope.js";
  *
  * The site list comes from `Factory.GetSiteInfoList()`, which is what Sitecore actually
  * serves from, rather than from the `Site` definition items under
- * `<site>/Settings/Site Grouping`. Both exist on XM Cloud, only the first exists on XM/XP,
+ * `<site>/Settings/Site Grouping`. Both exist on SitecoreAI, only the first exists on XM/XP,
  * and the first is the one that answers "which sites are there". The definition item is
  * still reported when it can be found, because that is what a caller edits.
  *

@@ -10,7 +10,7 @@ export function publishItemPowerShellTool(server: McpServer, config: Config) {
     server.registerTool(
         "common-publish-item",
         {
-            description: "Publishes a Sitecore item.",
+            description: "Publishes a Sitecore item. On SitecoreAI there is no web database — content publishes to Edge, which lives on Sitecore's cloud servers only, so this works on deployed environments but a local development CM has no publishing target.",
             inputSchema: z.object({
                 id: z.string().optional()
                     .describe("The ID of the item that should be published. Supply this or path."),

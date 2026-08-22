@@ -5,7 +5,7 @@ import { safeMcpResponse } from "@/helper.js";
 import { requireOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../../simple/generic.js";
 import { PowershellCommandBuilder, quotePowerShellString } from "../../command-builder.js";
-import { getSwitchParameterValue } from "../../utils.js";
+import { getFinalLayoutSwitchValue } from "../../utils.js";
 import { renderingLookupGuard } from "./rendering-guard.js";
 
 /**
@@ -54,7 +54,7 @@ function buildListRenderingsCommand(itemLookup: string, params: ListRenderingsPa
         Language: params.language,
         // `finalLayout` defaults to true: the final layout is the effective presentation,
         // and "what is on this page" is what the caller is asking.
-        FinalLayout: getSwitchParameterValue(params.finalLayout !== false),
+        FinalLayout: getFinalLayoutSwitchValue(params.finalLayout),
     };
     const getRenderingParameters = new PowershellCommandBuilder().buildParametersString(filters);
 

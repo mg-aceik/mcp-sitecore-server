@@ -8,7 +8,7 @@ import {
     xmlLooksLikeError,
 } from "../../src/tools/powershell/error-shaping";
 
-// Trimmed from a real response captured against an XM Cloud CM:
+// Trimmed from a real response captured against a SitecoreAI CM:
 // `Get-Item -Path 'master:/sitecore/content' -Bogus 1` (9,269 characters in full).
 const namedParameterNotFound = {
     ToString: "A parameter cannot be found that matches parameter name 'Bogus'.",

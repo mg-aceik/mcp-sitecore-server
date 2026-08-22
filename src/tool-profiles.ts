@@ -14,9 +14,9 @@ import type { McpServer } from "@modelcontextprotocol/server";
  * Unset means register everything, so none of this is a breaking change, and the
  * denylist always wins on conflict.
  *
- * **No tool is denied by default.** This server targets XM Cloud *and* XM/XP, and what
- * is dead weight on one is essential on the other: the publish tools cannot work against
- * an XM Cloud CM, which has no `web` database, but they are core workflow on XP.
+ * **No tool is denied by default.** This server targets SitecoreAI *and* XM/XP, and what
+ * is dead weight on one is essential on the other: CM-side identity management is core
+ * workflow on XP but lives in the Sitecore Cloud Portal on SitecoreAI.
  */
 
 /**
@@ -49,6 +49,7 @@ export const TOOL_GROUPS = [
     "powershell.logging",
     "powershell.provider",
     "powershell.indexing",
+    "powershell.media",
     "sitecore-cli",
 ] as const;
 
@@ -76,25 +77,22 @@ export const TOOL_PROFILES: Record<string, ToolProfile> = {
         disabledGroups: {},
         disabledTools: {},
     },
-    xmcloud: {
+    sai: {
         description:
-            "Sitecore XM Cloud. Hides the tools that cannot work against an XM Cloud CM, or "
-            + "that an agent should never reach for there by accident.",
+            "SitecoreAI (SAI). Hides the CM-side identity tools, which are misleading on a "
+            + "platform where users and roles live in the Sitecore Cloud Portal. Publishing "
+            + "and application restart stay available: on SitecoreAI content publishes to "
+            + "Edge, which lives on Sitecore's cloud servers only (there is no web database), "
+            + "so common-publish-item works on deployed environments even though a local "
+            + "development CM has no publishing target.",
         disabledGroups: {
             "powershell.security":
                 "Users, roles and domains are managed in the Sitecore Cloud Portal, not on the "
                 + "CM, so the CM-side identity tools are misleading at best. This also hides the "
-                + "item ACL, lock and protect tools, which do work on an XM Cloud CM — use "
+                + "item ACL, lock and protect tools, which do work on a SitecoreAI CM — use "
                 + "TOOL_PROFILE=xp with DISABLED_TOOLS if you need those.",
         },
-        disabledTools: {
-            "common-publish-item":
-                "An XM Cloud CM has no web database and no local Edge publishing target; "
-                + "publishing is a deployment-environment operation.",
-            "common-restart-application":
-                "The CM is a managed container; recycling the application pool is not the "
-                + "caller's to do.",
-        },
+        disabledTools: {},
     },
 };
 

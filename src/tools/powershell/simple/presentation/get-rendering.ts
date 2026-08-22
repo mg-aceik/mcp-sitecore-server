@@ -4,7 +4,7 @@ import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
 import { requireOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../generic.js";
-import { getSwitchParameterValue } from "../../utils.js";
+import { EFFECTIVE_FINAL_LAYOUT_DESCRIPTION, getFinalLayoutSwitchValue } from "../../utils.js";
 
 export function getRenderingPowershellTool(server: McpServer, config: Config) {
     server.registerTool(
@@ -23,7 +23,7 @@ export function getRenderingPowershellTool(server: McpServer, config: Config) {
                 placeholder: z.string().describe("The rendering datasource filter.").optional(),
                 language: z.string().describe("The item language filter.").optional(),
                 finalLayout: z.boolean()
-                    .describe("Specifies layout holding the rendering definition. If 'true', the final layout is used, otherwise - shared layout.")
+                    .describe(EFFECTIVE_FINAL_LAYOUT_DESCRIPTION)
                     .optional(),
                 uniqueId: z.string().describe("The rendering definition unique id.").optional(),
             }),
@@ -49,7 +49,7 @@ export function getRenderingPowershellTool(server: McpServer, config: Config) {
             options["DataSource"] = params.dataSource;
             options["Placeholder"] = params.placeholder;
             options["Language"] = params.language;
-            options["FinalLayout"] = getSwitchParameterValue(params.finalLayout);
+            options["FinalLayout"] = getFinalLayoutSwitchValue(params.finalLayout);
             options["UniqueId"] = params.uniqueId;
 
             return safeMcpResponse(runGenericPowershellCommand(config, command, options));
