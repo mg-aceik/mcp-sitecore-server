@@ -143,6 +143,7 @@ import { setRenderingParameterByIdPowershellTool } from "./tools/powershell/comp
 import { setRenderingParameterByPathPowershellTool } from "./tools/powershell/composite/presentation/set-rendering-parameter-by-path.js";
 import { getLogsPowerShellTool } from "./tools/powershell/composite/logging/get-logs.js";
 import { getSitecoreCliDocumentation } from "./tools/sitecore-cli/get-sitecore-cli-documentation.js";
+import { listRenderingsPowershellTool } from "./tools/powershell/composite/presentation/list-renderings.js";
 import {
     isGroupEnabled,
     resolveToolGating,
@@ -307,6 +308,7 @@ export const TOOL_GROUP_REGISTRARS: Record<ToolGroup, ToolRegistrar[]> = {
         removePlaceholderSettingByPathPowershellTool,
 
         //Composite Presentation PowerShell Tools
+        listRenderingsPowershellTool,
         setLayoutIdPowershellTool,
         setLayoutByPathPowershellTool,
         addRenderingByPathPowershellTool,

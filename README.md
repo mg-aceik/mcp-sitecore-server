@@ -86,8 +86,10 @@ An open-source Model Context Protocol server that gives AI agents (Claude, ChatG
     - [x] `provider-get-item-by-query`: returns an item by query
     - [x] `provider-get-item-by-path`: returns an item by path
   - [x] Presentation
-    - [x] `presentation-get-layout-by-id`: returns item presentation layout by ID
-    - [x] `presentation-get-layout-by-path`: returns item presentation layout by path
+    - [x] `presentation-get-layout-by-id`: returns the layout definition item assigned to the item (by ID) -- not the renderings on the page
+    - [x] `presentation-get-layout-by-path`: returns the layout definition item assigned to the item (by path) -- not the renderings on the page
+    - [x] `presentation-list-renderings-by-id`: lists the renderings placed on the item (by ID) as structured rows -- the page's composition
+    - [x] `presentation-list-renderings-by-path`: lists the renderings placed on the item (by path) as structured rows -- the page's composition
     - [x] `presentation-set-layout-by-id`: sets item presentation layout by ID
     - [x] `presentation-set-layout-by-path`: sets item presentation layout by path
     - [x] `presentation-reset-layout-by-id`: resets item presentation layout by ID

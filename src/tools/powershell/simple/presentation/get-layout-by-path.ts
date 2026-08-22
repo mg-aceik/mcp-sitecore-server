@@ -10,7 +10,7 @@ export function getLayoutByPathPowershellTool(server: McpServer, config: Config)
     server.registerTool(
         "presentation-get-layout-by-path",
         {
-            description: "Gets item layout by path.",
+            description: "Gets the layout definition item assigned to the item at this path -- the Sitecore layout item itself (e.g. 'Headless Layout'), not the renderings placed on the page. Use presentation-list-renderings-by-path to see a page's components.",
             inputSchema: {
                 ...itemProjectionInputSchema,
                 path: z.string().describe("The path of the item to retrieve layout for.").default("master:"),

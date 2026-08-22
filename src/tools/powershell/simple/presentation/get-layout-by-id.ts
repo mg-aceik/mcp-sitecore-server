@@ -10,7 +10,7 @@ export function getLayoutByIdPowershellTool(server: McpServer, config: Config) {
     server.registerTool(
         "presentation-get-layout-by-id",
         {
-            description: "Gets item layout by Id.",
+            description: "Gets the layout definition item assigned to the item with this ID -- the Sitecore layout item itself (e.g. 'Headless Layout'), not the renderings placed on the page. Use presentation-list-renderings-by-id to see a page's components.",
             inputSchema: {
                 ...itemProjectionInputSchema,
                 id: z.string().describe("The ID of the item to retrieve layout for."),
