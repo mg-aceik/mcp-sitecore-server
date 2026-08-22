@@ -73,7 +73,7 @@ export function requireOneTarget(
         ? `Supply exactly one of ${alternatives}. None was supplied, and there is no default `
         + `item to fall back on.`
         : `Supply exactly one of ${alternatives}. ${supplied.length} were supplied `
-        + `(${describeTargetInputs(supplied)}), and one call cannot mean two items.`;
+        + `(${supplied.map((name) => `'${name}'`).join(", ")}), and one call cannot mean two items.`;
 
     return { isError: true, content: [{ type: "text", text }] };
 }

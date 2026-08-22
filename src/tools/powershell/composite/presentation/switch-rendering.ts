@@ -83,7 +83,7 @@ export function switchRenderingPowershellTool(server: McpServer, config: Config)
             switchRenderingParameters["FinalLayout"] = getSwitchParameterValue(params.finalLayout);
 
             const newRendering =
-                `$targetRendering = New-Rendering ${commandBuilder.buildParametersString(newRenderingParameters)}`;
+                `$targetRendering = New-Rendering${commandBuilder.buildParametersString(newRenderingParameters)}`;
 
             // -UniqueId names the instance, so SPE does the lookup and there is nothing to
             // select or guard against.
