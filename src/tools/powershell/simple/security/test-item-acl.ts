@@ -18,7 +18,7 @@ export function testItemAclPowerShellTool(server: McpServer, config: Config) {
                     .describe("The path of the item to test access rights on (e.g. /sitecore/content/Home). Supply this or id."),
                 identity: z.string()
                     .describe("The identity of the user or role to test (e.g. 'sitecore\\admin')"),
-                accessRight: z.enum(AccessRights as [string, ...string[]])
+                accessRight: z.enum(AccessRights)
                     .describe("The access right to test (e.g. 'item:read', 'item:write')"),
                 propType: z.enum(["Descendants", "Children", "Entity"]).optional()
                     .describe("The propagation type for the access right"),

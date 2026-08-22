@@ -28,8 +28,8 @@ export function publishItemPowerShellTool(server: McpServer, config: Config) {
                     .describe("Republishes all items provided to the publishing job."),
                 compareRevisions: z.boolean().optional()
                     .describe("Turns revision comparison on."),
-                fromDate: z.date().optional()
-                    .describe("Publishes items newer than the date provided only."),
+                fromDate: z.string().optional()
+                    .describe("Publishes items newer than the date provided only. An ISO 8601 date or date-time, e.g. '2026-01-31' or '2026-01-31T09:00:00Z'."),
                 asJob : z.boolean().optional()
                     .describe("The Sitecore API called to perform the publish is different with this parameter."),
                 language: z.string().optional()

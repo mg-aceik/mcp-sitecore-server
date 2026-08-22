@@ -46,7 +46,7 @@ export function getLogsPowerShellTool(server: McpServer, config: Config) {
                     .optional()
                     .default("log")
                     .describe(`The name of the log file to retrieve. If not provided, defaults to log.*. Possible options: ${logFilePrefixes.join(", ")}.`),
-                level: z.enum(Object.values(LogLevel) as [string, ...[string]])
+                level: z.enum(Object.values(LogLevel))
                     .optional()
                     .default(LogLevel.DEBUG)
                     .describe("The level of the log to retrieve. Defaults to DEBUG."),

@@ -23,7 +23,7 @@ export function setItemAclPowerShellTool(server: McpServer, config: Config) {
                     .optional().default("master"),
                 identity: z.string()
                     .describe("The identity of the account (user or role) to grant permissions to (e.g. 'sitecore\\admin')"),
-                accessRight: z.enum(AccessRights as [string, ...string[]])
+                accessRight: z.enum(AccessRights)
                     .describe("The access right to grant (e.g. 'item:read', 'item:write')"),
                 propagationType: z.enum(["Descendants", "Children", "Entity"]).default("Entity")
                     .describe("The propagation type for the access right"),

@@ -72,7 +72,7 @@ export async function findItemPowerShellTool(server: McpServer, config: Config) 
                 //array of objects
                 criteria: z.array(
                     z.object({
-                        filter: z.enum(filterValues as [string, ...string[]]).describe("The type of filter to apply to the search criteria."),
+                        filter: z.enum(filterValues).describe("The type of filter to apply to the search criteria."),
                         field: z.string().describe(FIELD_DESCRIPTION),
                         value: z.string().describe("The value to search for."),
 
