@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../client";
+import { client, transport, callTool } from "../../../client";
 import { resetLayoutByPath } from "../../tools/reset-layout";
 import { getRenderingByPath } from "../../tools/get-rendering";
 
@@ -12,16 +11,16 @@ const newRenderingPath = "master:/sitecore/layout/Renderings/Feature/Tests/Switc
 const newRenderingId = "{1C8B443B-E78A-4AE7-AB30-CB0166299877}";
 
 const language = "ja-jp";
-const finalLayout = "true";
+const finalLayout = true;
 
 describe("powershell", () => {
-    it("presentation-switch-rendering-by-path", async () => {
+    it("presentation-switch-rendering", async () => {
         // Arrange
         // Initialize item initial state before test.
         await resetLayoutByPath(client, itemPath, language, finalLayout);
 
         const switchRenderingArgs: Record<string, any> = {
-            itemPath,
+            path: itemPath,
             oldRenderingPath,
             newRenderingPath,
             finalLayout,
@@ -29,7 +28,7 @@ describe("powershell", () => {
         };
         
         // Act
-        await callTool(client, "presentation-switch-rendering-by-path", switchRenderingArgs);
+        await callTool(client, "presentation-switch-rendering", switchRenderingArgs);
 
         // Assert
         const renderings = await getRenderingByPath(client, itemPath, undefined, language, finalLayout);

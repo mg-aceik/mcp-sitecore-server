@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { safeMcpResponse } from "@/helper.js";
 import type { Config } from "@/config.js";
 import { z } from "zod";
@@ -9,10 +9,10 @@ export function runPowershellScriptTool(server: McpServer, config: Config) {
         "run-powershell-script",
         {
             description: "Runs a PowerShell script and returns the output.",
-            inputSchema: {
+            inputSchema: z.object({
                 script: z.string()
                     .describe("The Powershell script to run."),
-            },
+            }),
         },
         async (params) => {
             const command = params.script;

@@ -1,11 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { client, transport, callTool } from "../../../../client";
 
 await client.connect(transport);
 
 describe("powershell", () => {
-    it("indexing-remove-search-index-item-by-id", async () => {
+    it("indexing-remove-search-index-item", async () => {
         const testItemId = "{3A683100-550A-4864-BC21-084FE88CD6CF}";
 
         // First, add the item to the index to ensure it exists
@@ -15,7 +14,7 @@ describe("powershell", () => {
         };
 
         // Add the item to the index first
-        await callTool(client, "indexing-initialize-search-index-item-by-id", addToIndexArgs);
+        await callTool(client, "indexing-initialize-search-index-item", addToIndexArgs);
 
         // Now test removing the item from the index
         const removeArgs: Record<string, any> = {
@@ -23,7 +22,7 @@ describe("powershell", () => {
             indexName: "sitecore_test_index"
         };
 
-        const result = await callTool(client, "indexing-remove-search-index-item-by-id", removeArgs);
+        const result = await callTool(client, "indexing-remove-search-index-item", removeArgs);
         const json = JSON.parse(result.content[0].text);
 
         // Verify that the command executed successfully

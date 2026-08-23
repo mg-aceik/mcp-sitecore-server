@@ -1,4 +1,4 @@
-# Remove-ArchiveItem
+# Restore-ArchiveItem
 
 Restores items to the original database from the specified archive.
 

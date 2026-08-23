@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../client";
+import { client, transport, callTool } from "../../../client";
 
 await client.connect(transport);
 
@@ -9,16 +8,16 @@ const itemId = "{968F73D2-B5AC-4A26-BB96-AF32AEA8C7DE}";
 
 const uniqueId = "{B343725A-3A93-446E-A9C8-3A2CBD3DB489}";
 const database = "master";
-const finalLayout = "true";
+const finalLayout = true;
 const language = "ja-jp";
 const name = "sample";
 
 describe("powershell", () => {
-    it("presentation-get-rendering-parameter-by-id", async () => {
+    it("presentation-get-rendering-parameter", async () => {
         // Arrange
         const getRenderingParameterArgs: Record<string, any> =
         {
-            itemId,
+            id: itemId,
             renderingUniqueId: uniqueId,
             name,
             database,
@@ -27,7 +26,7 @@ describe("powershell", () => {
         };
 
         // Act
-        const result = await callTool(client, "presentation-get-rendering-parameter-by-id", getRenderingParameterArgs);
+        const result = await callTool(client, "presentation-get-rendering-parameter", getRenderingParameterArgs);
 
         // Assert
         const json = JSON.parse(result.content[0].text);

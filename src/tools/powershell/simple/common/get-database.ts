@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -9,10 +9,10 @@ export function getDatabasePowerShellTool(server: McpServer, config: Config) {
         "common-get-database",
         {
             description: "Gets information about Sitecore databases.",
-            inputSchema: {
+            inputSchema: z.object({
                 name: z.string().optional()
                     .describe("The name of the database to retrieve (e.g. 'master', 'core', 'web'). If not provided, all databases will be returned.")
-            },
+            }),
         },
         async (params) => {
             const options: Record<string, any> = {};

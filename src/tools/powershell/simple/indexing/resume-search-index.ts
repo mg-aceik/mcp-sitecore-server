@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -9,9 +9,9 @@ export function resumeSearchIndexPowerShellTool(server: McpServer, config: Confi
         "indexing-resume-search-index",
         {
             description: "Resume one or more Sitecore search indexes. If no name is provided, all paused indexes will be resumed.",
-            inputSchema: {
+            inputSchema: z.object({
                 name: z.string().optional().describe("The name of the index to resume. If not provided, all paused indexes will be resumed."),
-            },
+            }),
         },
         async (params) => {
             const command = `Resume-SearchIndex`;

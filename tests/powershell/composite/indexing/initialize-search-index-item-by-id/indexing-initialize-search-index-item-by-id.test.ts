@@ -1,11 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { client, transport, callTool } from "../../../../client";
 
 await client.connect(transport);
 
 describe("powershell", () => {
-    it("indexing-initialize-search-index-item-by-id", async () => {
+    it("indexing-initialize-search-index-item", async () => {
         const testItemId = "{FAEC8BE9-E2F1-4758-930B-0A1D05C9B9AA}";
 
         const args: Record<string, any> = {
@@ -13,7 +12,7 @@ describe("powershell", () => {
             indexName: "sitecore_test_index"
         };
 
-        const result = await callTool(client, "indexing-initialize-search-index-item-by-id", args);
+        const result = await callTool(client, "indexing-initialize-search-index-item", args);
         const json = JSON.parse(result.content[0].text);
 
         // Verify that the command executed successfully

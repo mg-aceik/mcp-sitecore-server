@@ -1,19 +1,18 @@
 import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { client, transport, callTool } from "../../../../client";
 import { time } from "console";
 
 await client.connect(transport);
 
 describe("powershell", () => {
-    it("security-lock-item-by-path", async () => {
+    it("security-lock-item", async () => {
         // Using a common content path that should exist in most Sitecore instances
         const args: Record<string, any> = {
             path: "/sitecore/content/Home/Tests/Security/Lock-Item/Lock-Item-By-Path",
-            passThru: "true"
+            passThru: true
         };
 
-        const result = await callTool(client, "security-lock-item-by-path", args);
+        const result = await callTool(client, "security-lock-item", args);
         const json = JSON.parse(result.content[0].text);
 
         expect(json.Obj[0].__Lock).contains(
@@ -25,6 +24,6 @@ describe("powershell", () => {
             path: "/sitecore/content/Home/Tests/Security/Lock-Item/Lock-Item-By-Path",
         };
 
-        await callTool(client, "security-unlock-item-by-path", forceArgs);
+        await callTool(client, "security-unlock-item", forceArgs);
     });
 });

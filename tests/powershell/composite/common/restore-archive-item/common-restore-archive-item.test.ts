@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { client, transport, callTool } from "../../../../client";
 
 await client.connect(transport);
 
@@ -33,7 +32,7 @@ describe("powershell", () => {
             id: itemId,
         };
 
-        const getItemResult = await callTool(client, "provider-get-item-by-id", getItemArgs);
+        const getItemResult = await callTool(client, "provider-get-item", getItemArgs);
         const item = JSON.parse(getItemResult.content[0].text).Obj[0];
 
         expect(item).toBeDefined();

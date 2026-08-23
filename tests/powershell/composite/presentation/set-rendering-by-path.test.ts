@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../client";
+import { client, transport, callTool } from "../../../client";
 import { resetLayoutByPath } from "../../tools/reset-layout";
 import { getRenderingByPath } from "../../tools/get-rendering";
 
@@ -12,16 +11,16 @@ const sampleRenderingId = "{493B3A83-0FA7-4484-8FC9-4680991CF743}";
 const language = "ja-jp";
 const placeholder = "/test/placeholder";
 const dataSource = "test_datasource";
-const finalLayout = "true";
+const finalLayout = true;
 
 describe("powershell", () => {
-    it("presentation-set-rendering-by-path", async () => {
+    it("presentation-set-rendering", async () => {
         // Arrange
         // Initialize item initial state before test.
         await resetLayoutByPath(client, itemPath, language, finalLayout);
 
         const setRenderingArgs: Record<string, any> = {
-            itemPath,
+            path: itemPath,
             uniqueId,
             placeholder,
             dataSource,
@@ -34,7 +33,7 @@ describe("powershell", () => {
         };
 
         // Act
-        await callTool(client, "presentation-set-rendering-by-path", setRenderingArgs);
+        await callTool(client, "presentation-set-rendering", setRenderingArgs);
 
         // Assert
         const renderings = await getRenderingByPath(client, itemPath, undefined, language, finalLayout);

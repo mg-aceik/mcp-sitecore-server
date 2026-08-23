@@ -1,11 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { client, transport, callTool } from "../../../../client";
 
 await client.connect(transport);
 
 describe("powershell", () => {
-    it("common-update-item-referrer-by-path", async () => {
+    it("common-update-item-referrer", async () => {
         // Arrange
         // /sitecore/content/Home/Tests/Common/Update-Item-Referrer-By-Path
         const itemPath = "{1856552C-118B-48B6-B766-A12A0069BEED}";
@@ -17,7 +16,7 @@ describe("powershell", () => {
         };
 
         // Act
-        await callTool(client, "common-update-item-referrer-by-path", args);
+        await callTool(client, "common-update-item-referrer", args);
         
         // Assert
         const itemReferrerArgs: Record<string, any> = {
@@ -29,8 +28,8 @@ describe("powershell", () => {
         };
 
         // Act
-        const itemReferrersResult = await callTool(client, "common-get-item-referrer-by-path", itemReferrerArgs);
-        const targetReferrersResult = await callTool(client, "common-get-item-referrer-by-path", targetReferrerArgs);
+        const itemReferrersResult = await callTool(client, "common-get-item-referrer", itemReferrerArgs);
+        const targetReferrersResult = await callTool(client, "common-get-item-referrer", targetReferrerArgs);
 
         const itemReferrersJson = JSON.parse(itemReferrersResult.content[0].text);
         const targetReferrersJson = JSON.parse(targetReferrersResult.content[0].text);
@@ -46,6 +45,6 @@ describe("powershell", () => {
         };
 
         // Act
-        await callTool(client, "common-update-item-referrer-by-path", updateReferrerArgs);
+        await callTool(client, "common-update-item-referrer", updateReferrerArgs);
     });
 });

@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../client";
+import { client, transport, callTool } from "../../../client";
 import { getCurrentLayoutId } from "../../tools/get-current-layout-id";
 import { resetLayoutById } from "../../tools/reset-layout";
 
@@ -16,27 +15,27 @@ const database = "master";
 const language = "ja-jp";
 
 describe("powershell", () => {
-    it("presentation-merge-layout-by-id", async () => {
+    it("presentation-merge-layout", async () => {
         // Arrange
         // Reset layout to ensure we have correct initial state before test.
         // reset shared layout
-        await resetLayoutById(client, itemId, database, undefined, "false");
+        await resetLayoutById(client, itemId, database, undefined, false);
         // reset final layout
-        await resetLayoutById(client, itemId, database, language, "true");
+        await resetLayoutById(client, itemId, database, language, true);
 
         // Set initial layout before test.
         const setLayoutArgs: Record<string, any> = {
-            itemId,
+            id: itemId,
             layoutId: layoutId,
             layoutPath: "master:",
             language,
-            finalLayout: "true",
+            finalLayout: true,
         };
 
         // Initialize item initial state before test.
-        await callTool(client, "presentation-set-layout-by-id", setLayoutArgs);
+        await callTool(client, "presentation-set-layout", setLayoutArgs);
 
-        const currentLayoutId = await getCurrentLayoutId(client, itemId, "true", "ja-jp");
+        const currentLayoutId = await getCurrentLayoutId(client, itemId, true, "ja-jp");
         expect(currentLayoutId.toLowerCase()).toBe(layoutId.toLowerCase());
 
         const mergeLayoutArgs: Record<string, any> = {
@@ -46,10 +45,10 @@ describe("powershell", () => {
         };
 
         // Act
-        await callTool(client, "presentation-merge-layout-by-id", mergeLayoutArgs);
+        await callTool(client, "presentation-merge-layout", mergeLayoutArgs);
 
         // Assert
-        const assertLayoutId = await getCurrentLayoutId(client, itemId, "false");
+        const assertLayoutId = await getCurrentLayoutId(client, itemId, false);
         expect(assertLayoutId.toLowerCase()).toBe(layoutId.toLowerCase());
     });
 });

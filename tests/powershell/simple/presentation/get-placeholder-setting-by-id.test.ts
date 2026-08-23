@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../client";
+import { client, transport, callTool } from "../../../client";
 
 await client.connect(transport);
 
@@ -14,15 +13,15 @@ const uniqueId = "{E59BAEAE-9F59-44CB-BD23-61F5C8278BE1}";
 
 const database = "master";
 const language = "ja-jp";
-const finalLayout = "true";
+const finalLayout = true;
 
 const overridenPlaceholderSettingKey = "test_placeholder_override_key";
 
 describe("powershell", () => {
-    it("presentation-get-placeholder-setting-by-id-using-uniqueid", async () => {
+    it("presentation-get-placeholder-setting-using-uniqueid", async () => {
         // Arrange
         const args: Record<string, any> = {
-            itemId,
+            id: itemId,
             database,
             uniqueId,
             language,
@@ -30,7 +29,7 @@ describe("powershell", () => {
         };
 
         // Act
-        const result = await callTool(client, "presentation-get-placeholder-setting-by-id", args);
+        const result = await callTool(client, "presentation-get-placeholder-setting", args);
         
         // Assert
         const json = JSON.parse(result.content[0].text);
@@ -40,10 +39,10 @@ describe("powershell", () => {
         expect(objectToAssert.MetaDataItemId.toLowerCase()).toBe(placeholderSettingId.toLowerCase());
     });
 
-    it("presentation-get-placeholder-setting-by-id-using-key", async () => {
+    it("presentation-get-placeholder-setting-using-key", async () => {
         // Arrange
         const getPlaceholderSettingArgs: Record<string, any> = {
-            itemId,
+            id: itemId,
             database,
             key: overridenPlaceholderSettingKey,
             language,
@@ -51,7 +50,7 @@ describe("powershell", () => {
         };
 
         // Act
-        const result = await callTool(client, "presentation-get-placeholder-setting-by-id", getPlaceholderSettingArgs);
+        const result = await callTool(client, "presentation-get-placeholder-setting", getPlaceholderSettingArgs);
         
         // Assert
         const json = JSON.parse(result.content[0].text);

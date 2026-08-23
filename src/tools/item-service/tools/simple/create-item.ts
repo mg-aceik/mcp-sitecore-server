@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { createItem } from "../../logic/simple/create-item.js";
@@ -9,7 +9,7 @@ export function createItemTool(server: McpServer, config: Config) {
         'item-service-create-item',
         {
             description: "Create a new Sitecore item under parent path with name using template id.",
-            inputSchema: {
+            inputSchema: z.object({
                 parentPath: z.string(),
                 itemName: z.string(),
                 templateId: z.string(),
@@ -19,7 +19,7 @@ export function createItemTool(server: McpServer, config: Config) {
                     database: z.string().optional(),
                     language: z.string().optional(),
                 }).optional(),
-            },
+            }),
         },
         async (params) => {
             return safeMcpResponse(createItem(config, params.parentPath, { ItemName: params.itemName, TemplateID: params.templateId, ...params.data }, params.options || {}));

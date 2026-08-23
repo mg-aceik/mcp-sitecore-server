@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -9,7 +9,7 @@ export function newUserPowerShellTool(server: McpServer, config: Config) {
         "security-new-user",
         {
             description: "Creates a new Sitecore user.",
-            inputSchema: {
+            inputSchema: z.object({
                 identity: z.string(),
                 password: z.string().optional(),
                 email: z.string().optional(),
@@ -18,7 +18,7 @@ export function newUserPowerShellTool(server: McpServer, config: Config) {
                 portrait: z.string().optional(),
                 enabled: z.boolean().optional(),
                 profileItemId: z.string().optional(),
-            },
+            }),
         },
         async (params) => {
             const command = `New-User`;

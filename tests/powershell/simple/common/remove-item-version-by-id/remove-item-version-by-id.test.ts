@@ -1,11 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { client, transport, callTool } from "../../../../client";
 
 await client.connect(transport);
 
 describe("powershell", () => {
-    it("common-remove-item-version-by-id-language", async () => {
+    it("common-remove-item-version-language", async () => {
         // Arrange
         // /sitecore/content/Home/Tests/Common/Remove-Item-Version-By-Id
         const itemId = "{FD02997A-5477-4E17-88A1-EDB9D879AA77}";
@@ -17,7 +16,7 @@ describe("powershell", () => {
         };
 
         // Act
-        await callTool(client, "common-remove-item-version-by-id", args);
+        await callTool(client, "common-remove-item-version", args);
 
         // Assert
         const getItemArgs: Record<string, any> = {
@@ -25,7 +24,7 @@ describe("powershell", () => {
             language: language,
         };
 
-        const result = await callTool(client, "provider-get-item-by-id", getItemArgs);
+        const result = await callTool(client, "provider-get-item", getItemArgs);
         const json = JSON.parse(result.content[0].text);
 
         expect(json.Obj).toBeUndefined();
@@ -37,10 +36,10 @@ describe("powershell", () => {
             targetLanguage: language
         };
 
-        await callTool(client, "common-add-item-version-by-id", addVersionArgs);
+        await callTool(client, "common-add-item-version", addVersionArgs);
     });
 
-    it("common-remove-item-version-by-id-number", async () => {
+    it("common-remove-item-version-number", async () => {
         // Arrange
         const itemId = "{FD02997A-5477-4E17-88A1-EDB9D879AA77}";
         const language = "ja-JP";
@@ -53,7 +52,7 @@ describe("powershell", () => {
         };
 
         // Act
-        await callTool(client, "common-remove-item-version-by-id", args);
+        await callTool(client, "common-remove-item-version", args);
 
         // Assert
         const getItemArgs: Record<string, any> = {
@@ -62,7 +61,7 @@ describe("powershell", () => {
             version: version
         };
 
-        const result = await callTool(client, "provider-get-item-by-id", getItemArgs);
+        const result = await callTool(client, "provider-get-item", getItemArgs);
         const json = JSON.parse(result.content[0].text);
 
         expect(json.Obj).toBeUndefined();
@@ -74,6 +73,6 @@ describe("powershell", () => {
             targetLanguage: language
         };
 
-        await callTool(client, "common-add-item-version-by-id", addVersionArgs);
+        await callTool(client, "common-add-item-version", addVersionArgs);
     });
 });

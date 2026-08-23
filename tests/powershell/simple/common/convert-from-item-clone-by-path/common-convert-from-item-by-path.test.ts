@@ -1,11 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { client, transport, callTool } from "../../../../client";
 
 await client.connect(transport);
 
 describe("powershell", () => {
-    it("common-convert-from-item-clone-by-path", async () => {
+    it("common-convert-from-item-clone", async () => {
         // Arrange
         const itemPath = "/sitecore/content/Home/Tests/Common/Get-Item-Clone-By-Id";
         const destinationPath = "/sitecore/content/Home/Tests/Common";
@@ -17,17 +16,17 @@ describe("powershell", () => {
             name: name,
         };
 
-        const newCloneResult = await callTool(client, "common-new-item-clone-by-path", newCloneArgs);
+        const newCloneResult = await callTool(client, "common-new-item-clone", newCloneArgs);
         
         const itemClone = JSON.parse(newCloneResult.content[0].text).Obj[0];
 
         const args: Record<string, any> = {
             path: itemClone.ItemPath,
-            passThru: "true",
+            passThru: true,
         };
 
         // Act
-        const result = await callTool(client, "common-convert-from-item-clone-by-path", args);
+        const result = await callTool(client, "common-convert-from-item-clone", args);
 
         // Assert
         const json = JSON.parse(result.content[0].text);

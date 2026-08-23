@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../client";
+import { client, transport, callTool } from "../../../client";
 
 await client.connect(transport);
 
@@ -16,15 +15,15 @@ const sampleRenderingPlaceholder = "/main/centercolumn/content";
 const database = "master";
 
 describe("powershell", () => {
-    it("presentation-get-rendering-by-id-with-uniqueid", async () => {
+    it("presentation-get-rendering-with-uniqueid", async () => {
         const args: Record<string, any> = {
-            itemId,
+            id: itemId,
             uniqueId: sampleRenderingUniqueId,       
             database,
         };
 
         // Act
-        const result = await callTool(client, "presentation-get-rendering-by-id", args);
+        const result = await callTool(client, "presentation-get-rendering", args);
         const json = JSON.parse(result.content[0].text);
 
         // Assert
@@ -34,18 +33,18 @@ describe("powershell", () => {
         expect(testObject.Placeholder).toBe(sampleRenderingPlaceholder);
     });
 
-    it("presentation-get-rendering-by-id-with-filter-parameters", async () => {
+    it("presentation-get-rendering-with-filter-parameters", async () => {
         // Arrange
         const args: Record<string, any> = {
-            itemId,
+            id: itemId,
             placeholder: sampleRenderingPlaceholder,
             language: "ja-jp",
-            finalLayout: "true",
+            finalLayout: true,
             database,
         };
 
         // Act
-        const result = await callTool(client, "presentation-get-rendering-by-id", args);
+        const result = await callTool(client, "presentation-get-rendering", args);
         const json = JSON.parse(result.content[0].text);
 
         // Assert

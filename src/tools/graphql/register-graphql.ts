@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "../../config.js";
 import { safeMcpResponse } from "../../helper.js";
 import { introspection } from "./generic/introspection.js";
@@ -10,7 +10,11 @@ function registerIntrospectionTool(server: McpServer, config: Config, schema: st
     server.registerTool(
         `introspection-graphql-${schema}`,
         {
-            description: `Introspection Sitecore GraphQL ${schema} schema, use this tool before doing a query to get the schema information if you do not have it available as a resource already.`,
+            description:
+                `Returns the full SDL of the Sitecore GraphQL '${schema}' schema. Call it once `
+                + `before writing queries against a schema you have not seen — the SDL is large `
+                + `(often 100,000+ characters), so do not re-fetch it per query, and prefer the `
+                + `typed item/presentation tools when one already answers the question.`,
         },
         () => {
             return safeMcpResponse(introspection(config, schema))
@@ -22,11 +26,26 @@ function registerQueryTool(server: McpServer, config: Config, schema: string) {
     server.registerTool(
         `query-graphql-${schema}`,
         {
-            description: `Query a Sitecore GraphQL ${schema} endpoint with the given query and variables.`,
-            inputSchema: {
-                query: z.string(),
-                variables: z.string().optional(),
+            description:
+                `Executes a GraphQL query against the Sitecore '${schema}' endpoint and returns `
+                + `the data as JSON. The query is syntax-checked before it is sent. Note what the `
+                + `endpoint can see: 'edge' serves published content only (unpublished master `
+                + `changes are invisible to it), while 'master' / preview schemas read the `
+                + `authoring database. Use introspection-graphql-${schema} for the schema SDL.`,
+            // The document is only syntax-checked, so a mutation goes through as readily as
+            // a query. Claiming readOnlyHint here would be a promise this tool cannot keep.
+            annotations: {
+                title: `Query GraphQL ${schema}`,
+                readOnlyHint: false,
+                destructiveHint: false,
+                openWorldHint: true,
             },
+            inputSchema: z.object({
+                query: z.string()
+                    .describe("The GraphQL query document, e.g. 'query($path: String!) { item(path: $path, language: \"en\") { id name } }'."),
+                variables: z.string().optional()
+                    .describe("The query's variables as a JSON object string, e.g. '{\"path\": \"/sitecore/content/Home\"}'. Parsed and sent as the GraphQL variables object."),
+            }),
         },
         (params) => {
             return safeMcpResponse(query(config, schema, params.query, params.variables))

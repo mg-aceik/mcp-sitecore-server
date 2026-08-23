@@ -1,0 +1,63 @@
+import type { McpServer } from "@modelcontextprotocol/server";
+import type { Config } from "@/config.js";
+import { z } from "zod";
+import { safeMcpResponse } from "@/helper.js";
+import { hasTarget, requireOneTarget } from "@/tools/target-input.js";
+import { prepareArgsString } from "../../utils.js";
+import { AccessRights } from "../../simple/security/access-rights.js";
+import { runGenericPowershellCommand } from "../../simple/generic.js";
+import { quotePowerShellString } from "../../command-builder.js";
+
+export function setItemAclPowerShellTool(server: McpServer, config: Config) {
+    server.registerTool(
+        "security-set-item-acl",
+        {
+            description: "Sets an access control entry on a Sitecore item, replacing its existing rules.",
+            inputSchema: z.object({
+                id: z.string().optional()
+                    .describe("The ID of the item to set the ACL entry on. Supply this or path."),
+                path: z.string().optional()
+                    .describe("The path of the item to set the ACL entry on. Supply this or id."),
+                database: z.string()
+                    .describe("The database to resolve an id against. Ignored when addressing by path, which carries its own prefix (e.g. master:/sitecore/content/Home).")
+                    .optional().default("master"),
+                identity: z.string()
+                    .describe("The identity of the account (user or role) to grant permissions to (e.g. 'sitecore\\admin')"),
+                accessRight: z.enum(AccessRights)
+                    .describe("The access right to grant (e.g. 'item:read', 'item:write')"),
+                propagationType: z.enum(["Descendants", "Children", "Entity"]).default("Entity")
+                    .describe("The propagation type for the access right"),
+                securityPermission: z.enum(["AllowAccess", "DenyAccess"]).default("AllowAccess")
+                    .describe("Whether to allow or deny the specified access right"),
+            }),
+        },
+        async (params) => {
+            const invalid = requireOneTarget(params, ["id", "path"]);
+            if (invalid) {
+                return invalid;
+            }
+
+            const parameters1Obj: any = {};
+
+            parameters1Obj["Identity"] = params.identity;
+            parameters1Obj["AccessRight"] = params.accessRight;
+            parameters1Obj["PropagationType"] = params.propagationType;
+            parameters1Obj["SecurityPermission"] = params.securityPermission;
+
+            const parameters1 = prepareArgsString(parameters1Obj);
+
+            // The ID form resolves against the database root, as `-Id` requires; the path
+            // form addresses the item directly.
+            const itemLookup = hasTarget(params.id)
+                ? `Get-Item -Id ${quotePowerShellString(params.id)} -Path ${quotePowerShellString(`${params.database}:`)}`
+                : `Get-Item -Path ${quotePowerShellString(params.path)}`;
+
+            const command = `
+                $acl = New-ItemAcl ${parameters1};
+                ${itemLookup} | Set-ItemAcl -AccessRules $acl
+            `.replaceAll(/[\n]+/g, "");
+
+            return safeMcpResponse(runGenericPowershellCommand(config, command, {}));
+        }
+    );
+}

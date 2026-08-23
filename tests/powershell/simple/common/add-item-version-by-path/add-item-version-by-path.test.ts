@@ -1,11 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { client, transport, callTool } from "../../../../client";
 
 await client.connect(transport);
 
 describe("powershell", () => {
-    it("common-add-item-version-by-path", async () => {
+    it("common-add-item-version", async () => {
         // Arrange
         const itemPath = "/sitecore/content/Home/Tests/Common/Add-Item-Version-By-Path";
         const language = "en";
@@ -18,7 +17,7 @@ describe("powershell", () => {
         };
 
         // Act
-        await callTool(client, "common-add-item-version-by-path", args);
+        await callTool(client, "common-add-item-version", args);
 
         // Assert
         const getItemArgs: Record<string, any> = {
@@ -26,7 +25,7 @@ describe("powershell", () => {
             language: targetLanguage,
         };
 
-        const result = await callTool(client, "provider-get-item-by-path", getItemArgs);
+        const result = await callTool(client, "provider-get-item", getItemArgs);
         const json = JSON.parse(result.content[0].text);
         
         expect(json.Obj).toBeDefined();
@@ -37,6 +36,6 @@ describe("powershell", () => {
             language: targetLanguage,
         };
 
-        await callTool(client, "common-remove-item-version-by-path", removeVersionArgs);
+        await callTool(client, "common-remove-item-version", removeVersionArgs);
     });
 });

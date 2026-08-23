@@ -1,5 +1,5 @@
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { Client } from "@modelcontextprotocol/client";
+import { callTool } from "../../client";
 
 export async function getRenderingById(
     client: Client,
@@ -7,18 +7,18 @@ export async function getRenderingById(
     database: string,
     uniqueId: string | undefined,    
     language: string | undefined,
-    finalLayout: string | undefined
+    finalLayout: boolean | undefined
 ) : Promise<any>
 {
     const getRenderingsArgs: Record<string, any> = {
-        itemId,
+        id: itemId,
         uniqueId,
         database,
         language,
         finalLayout,
     };
 
-    const result = await callTool(client, "presentation-get-rendering-by-id", getRenderingsArgs);
+    const result = await callTool(client, "presentation-get-rendering", getRenderingsArgs);
     
     return getRenderingObject(result.content[0].text);
 }
@@ -28,7 +28,7 @@ export async function getRenderingByPath(
     path: string,
     uniqueId: string | undefined,    
     language: string | undefined,
-    finalLayout: string | undefined
+    finalLayout: boolean | undefined
 ) : Promise<any>
 {
     const getRenderingsArgs: Record<string, any> = {
@@ -38,7 +38,7 @@ export async function getRenderingByPath(
         finalLayout,
     };
 
-    const result = await callTool(client, "presentation-get-rendering-by-path", getRenderingsArgs);
+    const result = await callTool(client, "presentation-get-rendering", getRenderingsArgs);
 
     return getRenderingObject(result.content[0].text);
 }

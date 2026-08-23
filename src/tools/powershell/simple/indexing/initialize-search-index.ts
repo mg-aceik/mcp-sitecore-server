@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -9,11 +9,11 @@ export function initializeSearchIndexPowerShellTool(server: McpServer, config: C
         "indexing-initialize-search-index",
         {
             description: "Initialize one or more Sitecore search indexes. If no name is provided, all indexes will be initialized.",
-            inputSchema: {
+            inputSchema: z.object({
                 name: z.string().optional().describe("The name of the index to initialize. If not provided, all indexes will be initialized."),
                 includeRemoteIndex: z.boolean().optional().describe("Includes remote indexes in the initialization."),
                 asJob: z.boolean().optional().describe("Run the command as a job."),
-            },
+            }),
         },
         async (params) => {
             const command = `Initialize-SearchIndex`;

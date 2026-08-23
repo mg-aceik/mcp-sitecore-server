@@ -1,5 +1,6 @@
+import type { McpServer } from "@modelcontextprotocol/server";
+
 // filepath: c:\source\mcp-sitecore-server\src\tools\powershell\simple\security\register-new-domain.ts
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -10,9 +11,9 @@ export function newDomainPowerShellTool(server: McpServer, config: Config) {
         "security-new-domain",
         {
             description: "Creates a new Sitecore domain.",
-            inputSchema: {
+            inputSchema: z.object({
                 name: z.string().describe("The name of the domain to create"),
-            },
+            }),
         },
         async (params) => {
             const command = `New-Domain`;

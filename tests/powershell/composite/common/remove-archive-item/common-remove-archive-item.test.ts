@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { client, transport, callTool } from "../../../../client";
 
 await client.connect(transport);
 
@@ -16,7 +15,7 @@ describe("powershell", () => {
             path: itemPath,
         };
 
-        const getItemResult = await callTool(client, "provider-get-item-by-path", getItemArgs);
+        const getItemResult = await callTool(client, "provider-get-item", getItemArgs);
         const itemToRemove = JSON.parse(getItemResult.content[0].text).Obj[0];
 
         const itemId = itemToRemove.Obj.ID.ToString;
@@ -45,8 +44,9 @@ describe("powershell", () => {
 
         const result = await callTool(client, "common-get-archive-item", getArchiveItem);
         const json = JSON.parse(result.content[0].text);
-        
-        expect(json.Obj.map(x => x.ItemId.ToString)).not.toContain(itemId);
+        const page = json.Obj[0];
+
+        expect(page.Items.map((entry: any) => entry.ItemId)).not.toContain(itemId);
 
         // Cleanup
         const createItemArgs: Record<string, any> = {

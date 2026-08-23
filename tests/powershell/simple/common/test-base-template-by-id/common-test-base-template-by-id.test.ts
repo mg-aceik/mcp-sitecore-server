@@ -1,11 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { client, transport, callTool } from "../../../../client";
 
 await client.connect(transport);
 
 describe("powershell", () => {
-    it("common-test-base-template-by-id", async () => {
+    it("common-test-base-template", async () => {
         // Arrange
         // /sitecore/content/Home/Tests/Common/Test-Base-Template
         const itemId = "{C9E88066-3A0D-4C87-BA12-2B9C8BBCB791}";
@@ -17,7 +16,7 @@ describe("powershell", () => {
         };
 
         // Act
-        const result = await callTool(client, "common-test-base-template-by-id", args);
+        const result = await callTool(client, "common-test-base-template", args);
         
         // Assert
         const json = JSON.parse(result.content[0].text);

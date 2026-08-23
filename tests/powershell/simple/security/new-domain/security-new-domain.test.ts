@@ -1,7 +1,6 @@
 // filepath: c:\source\mcp-sitecore-server\tests\powershell\simple\security\new-domain\security-new-domain.test.ts
 import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { client, transport, callTool } from "../../../../client";
 import e from "express";
 
 await client.connect(transport);

@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -10,12 +10,12 @@ export function getArchivePowerShellTool(server: McpServer, config: Config) {
         "common-get-archive",
         {
             description: "Gets Sitecore database archives.",
-            inputSchema: {
+            inputSchema: z.object({
                 name: z.string().optional()
                     .describe("The name of the archive to retrieve."),
                 database: z.string().optional()
                     .describe("The database for which the archives should be retrieved."),
-            },
+            }),
         },
         async (params) => {
             const commandBuilder = new PowershellCommandBuilder();

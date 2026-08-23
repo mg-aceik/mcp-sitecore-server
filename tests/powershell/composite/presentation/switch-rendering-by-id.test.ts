@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../client";
+import { client, transport, callTool } from "../../../client";
 import { resetLayoutById } from "../../tools/reset-layout";
 import { getRenderingById } from "../../tools/get-rendering";
 
@@ -17,16 +16,16 @@ const newRenderingId = "{1C8B443B-E78A-4AE7-AB30-CB0166299877}";
 
 const database = "master";
 const language = "ja-jp";
-const finalLayout = "true";
+const finalLayout = true;
 
 describe("powershell", () => {
-    it("presentation-switch-rendering-by-id", async () => {
+    it("presentation-switch-rendering", async () => {
         // Arrange
         // Initialize item initial state before test.
         await resetLayoutById(client, itemId, database, language, finalLayout);
 
         const switchRenderingArgs: Record<string, any> = {
-            itemId,
+            id: itemId,
             oldRenderingId,
             newRenderingId,            
             database,
@@ -35,7 +34,7 @@ describe("powershell", () => {
         };
         
         // Act
-        await callTool(client, "presentation-switch-rendering-by-id", switchRenderingArgs);
+        await callTool(client, "presentation-switch-rendering", switchRenderingArgs);
 
         // Assert
         const renderings = await getRenderingById(client, itemId, database, undefined, language, finalLayout);

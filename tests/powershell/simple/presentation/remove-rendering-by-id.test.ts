@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../client";
+import { client, transport, callTool } from "../../../client";
 import { resetLayoutById } from "../../tools/reset-layout";
 import { getRenderingById } from "../../tools/get-rendering";
 
@@ -13,16 +12,16 @@ const sampleRenderingUniqueId = "{B343725A-3A93-446E-A9C8-3A2CBD3DB489}";
 
 const language = "ja-jp";
 const database = "master";
-const finalLayout = "true";
+const finalLayout = true;
 
 describe("powershell", () => {
-    it("presentation-remove-rendering-by-id", async () => {
+    it("presentation-remove-rendering", async () => {
         // Arrange
         // Initialize item initial state before test.        
         await resetLayoutById(client, itemId, database, language, finalLayout);
 
         const removeRenderingArgs: Record<string, any> = {
-            itemId,
+            id: itemId,
             uniqueId: sampleRenderingUniqueId,
             database,
             language,
@@ -30,7 +29,7 @@ describe("powershell", () => {
         };
 
         // Act
-        await callTool(client, "presentation-remove-rendering-by-id", removeRenderingArgs);
+        await callTool(client, "presentation-remove-rendering", removeRenderingArgs);
 
         // Assert
         const renderings = await getRenderingById(client, itemId, database, undefined, language, finalLayout);

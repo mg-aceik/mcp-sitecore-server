@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../client";
+import { client, transport, callTool } from "../../../client";
 import { getCurrentLayoutId } from "../../tools/get-current-layout-id";
 
 await client.connect(transport);
@@ -14,14 +13,14 @@ const sampleLayoutId = "{14030E9F-CE92-49C6-AD87-7D49B50E42EA}";
 // /sitecore/layout/Layouts/Feature/Tests/Reset-Layout/InitialLayout
 const initialLayoutId = "{C088204D-9C63-4A70-8846-D7233D660B0A}";
 
-const finalLayout = "true";
+const finalLayout = true;
 const language = "ja-jp";
 
 describe("powershell", () => {
-    it("presentation-reset-layout-by-id", async () => {
+    it("presentation-reset-layout", async () => {
         // Arrange
         const initialSetUpArgs: Record<string, any> = {
-            itemId,
+            id: itemId,
             layoutId: initialLayoutId,
             layoutPath: "master:",
             language,
@@ -29,7 +28,7 @@ describe("powershell", () => {
         };
 
         // Initialize item initial state before test.
-        await callTool(client, "presentation-set-layout-by-id", initialSetUpArgs);
+        await callTool(client, "presentation-set-layout", initialSetUpArgs);
 
         // Assert the test item has been initialized correctly before test.
         const currentLayoutId = await getCurrentLayoutId(client, itemId);
@@ -42,7 +41,7 @@ describe("powershell", () => {
         };
     
         // Act
-        await callTool(client, "presentation-reset-layout-by-id", resetLayoutArgs);
+        await callTool(client, "presentation-reset-layout", resetLayoutArgs);
 
         // Assert
         const resultLayoutId = await getCurrentLayoutId(client, itemId);

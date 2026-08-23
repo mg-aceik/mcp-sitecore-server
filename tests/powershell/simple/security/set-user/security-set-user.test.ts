@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { client, transport, callTool } from "../../../../client";
 
 await client.connect(transport);
 
@@ -18,7 +17,7 @@ describe("powershell", () => {
             fullName: "Test User",
             comment: "Original comment",
             portrait: "office/16x16/default_user.png",
-            enabled: "true",
+            enabled: true,
         };
         
         // Create the user

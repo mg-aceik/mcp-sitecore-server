@@ -1,11 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { client, transport, callTool } from "../../../../client";
 
 await client.connect(transport);
 
 describe("powershell", () => {
-    it("common-get-item-template-by-path", async () => {
+    it("common-get-item-template", async () => {
         // Use the Home item path which exists in any Sitecore instance
         const homePath = "/sitecore/content/Home/Tests/Common/Get-Item-Template-By-Path";
         
@@ -13,7 +12,7 @@ describe("powershell", () => {
             path: homePath
         };
 
-        const result = await callTool(client, "common-get-item-template-by-path", args);
+        const result = await callTool(client, "common-get-item-template", args);
         const json = JSON.parse(result.content[0].text);
         
         // Verify that the command executed successfully and returned template information

@@ -1,11 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { client, transport, callTool } from "../../../../client";
 
 await client.connect(transport);
 
 describe("powershell", () => {
-    it("common-new-item-workflow-event-by-path", async () => {
+    it("common-new-item-workflow-event", async () => {
         // Arrange
         const itemPath = "sitecore/content/Home/Tests/Common/New-Item-Workflow-Event-By-Path";
 
@@ -16,14 +15,14 @@ describe("powershell", () => {
         };
 
         // Act
-        await callTool(client, "common-new-item-workflow-event-by-path", args);
+        await callTool(client, "common-new-item-workflow-event", args);
         
         // Assert
         const getWorkflowArgs: Record<string, any> = {
             path: itemPath,
         };
 
-        const result = await callTool(client, "common-get-item-workflow-event-by-path", getWorkflowArgs);
+        const result = await callTool(client, "common-get-item-workflow-event", getWorkflowArgs);
 
         const json = JSON.parse(result.content[0].text);
         const lastEvent = json.Obj[json.Obj.length - 1];
@@ -43,6 +42,6 @@ describe("powershell", () => {
         };
 
         // Act
-        await callTool(client, "common-new-item-workflow-event-by-path", revertStateArgs);
+        await callTool(client, "common-new-item-workflow-event", revertStateArgs);
     });
 });
