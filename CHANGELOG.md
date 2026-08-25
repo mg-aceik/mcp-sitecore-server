@@ -228,6 +228,17 @@ MCP SDK and MCP protocol revision 2026-07-28._
   since on SitecoreAI content publishes to Edge and a deployed environment does have a
   publishing target (a local development CM does not).
 
+- **Four `TOOL_PROFILE` presets for a missing API surface**, and `TOOL_PROFILE` now takes a
+  comma-separated list so they compose. `no-spe`, `no-item-service`, `no-edge-graphql` and
+  `no-authoring-api` each hide the groups belonging to one of the server's four surfaces,
+  for an instance that does not serve it. `no-spe` is the significant one: SPE ships with
+  `remoting` disabled, and without it roughly three quarters of this server's tools cannot
+  run — schema an agent otherwise pays for on every turn. Saying which surface is absent
+  beats the equivalent `TOOL_GROUPS` allowlist, which has to enumerate every group you _do_
+  want and needs revisiting whenever a group is added. Nothing probes Sitecore to infer
+  this: a startup probe that misread a transient network failure would silently delete most
+  of the tool surface.
+
 #### Existing tools
 
 - `[powershell]` **`get-powershell-documentation` reveals the SPE reference progressively

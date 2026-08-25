@@ -7,6 +7,23 @@ agent faster, cheaper and more efficient.
 Three environment variables control which tools get registered. All three are unset by
 default, which registers everything, and the denylist always wins on conflict.
 
+## What the agent sees
+
+This page is for you; none of it reaches a connected agent, which never reads the repo. The
+guidance an agent needs to choose between the surfaces travels through the two channels a
+model actually sees, both defined in [`src/tool-guide.ts`](../src/tool-guide.ts):
+
+- a short routing block appended to the server's `initialize` **instructions**, which is
+  the only place that can steer a choice _between_ tool families — a tool's own description
+  cannot say "use the other family" until the model is already reading that tool;
+- the **`guide://tool-selection` resource**, which serves the long form (costs, subtree
+  alternatives, query-depth and result caps) and costs nothing until it is read.
+
+Individual tools carry the steer that only matters at the point of choice — for example
+`item-service-get-item-descendants` states in its own description that it makes one request
+per node. If you change a cost or a limit recorded below, change it in `src/tool-guide.ts`
+too, or the agent will keep acting on the old number.
+
 ## `TOOL_GROUPS`
 
 A comma-separated allowlist of tool groups. The groups are the directory layout, not a new
@@ -103,16 +120,41 @@ DISABLED_TOOLS=indexing-find-item,run-powershell-script
 
 ## `TOOL_PROFILE`
 
-A documented preset denylist for a platform. `DISABLED_TOOLS` entries are unioned on top
-of it. This server targets SitecoreAI (SAI) **and** XM/XP, so **no tool is disabled by
-default**: what is dead weight on one platform is core workflow on the other.
+A comma-separated list of documented preset denylists. `DISABLED_TOOLS` entries are unioned
+on top, and so is every profile you name. This server targets SitecoreAI (SAI) **and**
+XM/XP, so **no tool is disabled by default**: what is dead weight on one platform is core
+workflow on the other.
 
-The profile table lives in [`src/tool-profiles.ts`](../src/tool-profiles.ts).
+The profile table lives in [`src/tool-profiles.ts`](../src/tool-profiles.ts). There are two
+kinds of entry, and they compose:
 
-| Profile         | Hides                                 | Why                                                                                                                                                                                                                                                                                                                   |
-| --------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `xp` (or unset) | nothing                               | Publishing, application restart and CM-side identity management are all real operations on XM/XP.                                                                                                                                                                                                                     |
-| `sai`           | the `powershell.security` and `powershell.logging` groups | Users, roles and domains are managed in the Sitecore Cloud Portal, not on the CM, so the CM-side identity tools are misleading at best. Note that this also hides the item ACL, lock and protect tools, which _do_ work on a SitecoreAI CM — if you need those, use `TOOL_PROFILE=xp` with `DISABLED_TOOLS` instead. `powershell.logging` holds only `logging-get-logs`, which reads log files from the CM's data folder: on SitecoreAI the platform collects logs instead, and on a local Docker CM they are already on a mounted volume. |
+- **Platform presets** — `xp` and `sai` — answer _which platform is this?_ Pick one.
+- **Surface presets** — the `no-*` entries — answer _which of the four APIs does this
+  instance actually serve?_ Set as many as apply.
+
+| Profile            | Hides                                 | Why                                                                                                                                                                                                                                                                                                                   |
+| ------------------ | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `xp` (or unset)    | nothing                               | Publishing, application restart and CM-side identity management are all real operations on XM/XP.                                                                                                                                                                                                                     |
+| `sai`              | the `powershell.security` and `powershell.logging` groups | Users, roles and domains are managed in the Sitecore Cloud Portal, not on the CM, so the CM-side identity tools are misleading at best. Note that this also hides the item ACL, lock and protect tools, which _do_ work on a SitecoreAI CM — if you need those, use `TOOL_PROFILE=xp` with `DISABLED_TOOLS` instead. `powershell.logging` holds only `logging-get-logs`, which reads log files from the CM's data folder: on SitecoreAI the platform collects logs instead, and on a local Docker CM they are already on a mounted volume. |
+| `no-spe`           | all nine `powershell.*` groups        | SPE is not installed, or the `remoting` service is left disabled — the state SPE ships in. Every tool in those groups reaches Sitecore through `POST /-/script/script/`, so without it each one fails at the request with a 404 or a 403. This is the largest single saving available: roughly three quarters of the tool surface. |
+| `no-item-service`  | the `item-service` group              | The Item Service REST API under `/sitecore/api/ssc/item/` is not served. Items stay readable and writable through the `authoring-*` tools and through SPE's `provider-*` and `common-*` tools, so this one is safe to set on its own. |
+| `no-edge-graphql`  | the `graphql` group                   | No Edge or preview endpoint under `/sitecore/api/graph/`, or no `sc_apikey` for one. Delivery-side only — this does **not** touch the Authoring and Management API, which is a different endpoint with different credentials. What it hides is sized by `GRAPHQL_SCHEMAS`: a query tool and an introspection tool per schema. |
+| `no-authoring-api` | all three `authoring.*` groups        | The Authoring and Management API at `/sitecore/api/authoring/graphql/v1/` is not exposed, or no OAuth credentials are configured for it. Worth setting deliberately: with nothing configured those tools stay registered and fail per call, because the server cannot tell at startup whether you meant to use them. |
+
+Combine them for an instance that is missing more than one surface — a headless CM with
+neither SPE remoting nor the Item Service:
+
+```
+TOOL_PROFILE=no-spe,no-item-service
+```
+
+Naming the surfaces that are absent is preferable to the equivalent `TOOL_GROUPS`
+allowlist, which has to enumerate every group you _do_ want and needs revisiting each time
+a group is added.
+
+Nothing here probes Sitecore. These are statements you make about your instance: a startup
+probe that misread a transient network failure would silently delete most of the tool
+surface, and an operator who already knows the answer should not pay a round trip for it.
 
 `common-publish-item` and `common-restart-application` stay available under `sai`: on
 SitecoreAI, content publishes to Edge, which lives on Sitecore's cloud servers only (there

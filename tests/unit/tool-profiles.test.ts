@@ -94,6 +94,73 @@ describe("resolveToolGating", () => {
     it("is case-insensitive about the profile name", () => {
         expect(resolveToolGating({ TOOL_PROFILE: "SAI" }).disabledGroups.size).toBeGreaterThan(0);
     });
+
+    it("hides every powershell group under no-spe, and nothing else", () => {
+        const gating = resolveToolGating({ TOOL_PROFILE: "no-spe" });
+        for (const group of TOOL_GROUPS) {
+            expect(isGroupEnabled(group, gating)).toBe(group.startsWith("powershell.") === false);
+        }
+        // The point of the profile: the tools that cannot run without the remoting service
+        // are gone, and the three surfaces that do not touch SPE are untouched.
+        expect(isGroupEnabled("powershell.core", gating)).toBe(false);
+        expect(isGroupEnabled("item-service", gating)).toBe(true);
+        expect(isGroupEnabled("graphql", gating)).toBe(true);
+        expect(isGroupEnabled("authoring.content", gating)).toBe(true);
+    });
+
+    it("hides only the item-service group under no-item-service", () => {
+        const gating = resolveToolGating({ TOOL_PROFILE: "no-item-service" });
+        expect(isGroupEnabled("item-service", gating)).toBe(false);
+        // Items stay reachable by the other two routes, which is why this profile is safe
+        // to set on its own.
+        expect(isGroupEnabled("authoring.content", gating)).toBe(true);
+        expect(isGroupEnabled("powershell.provider", gating)).toBe(true);
+    });
+
+    it("hides only the delivery-side graphql group under no-edge-graphql", () => {
+        const gating = resolveToolGating({ TOOL_PROFILE: "no-edge-graphql" });
+        expect(isGroupEnabled("graphql", gating)).toBe(false);
+        // The Authoring and Management API is a different endpoint with different
+        // credentials, so it must survive a profile aimed at Edge.
+        expect(isGroupEnabled("authoring.core", gating)).toBe(true);
+        expect(isGroupEnabled("authoring.content", gating)).toBe(true);
+        expect(isGroupEnabled("authoring.management", gating)).toBe(true);
+    });
+
+    it("hides all three authoring groups under no-authoring-api", () => {
+        const gating = resolveToolGating({ TOOL_PROFILE: "no-authoring-api" });
+        expect(isGroupEnabled("authoring.core", gating)).toBe(false);
+        expect(isGroupEnabled("authoring.content", gating)).toBe(false);
+        expect(isGroupEnabled("authoring.management", gating)).toBe(false);
+        // And not the Edge endpoints, which share nothing with it.
+        expect(isGroupEnabled("graphql", gating)).toBe(true);
+    });
+
+    it("unions a comma-separated list of profiles", () => {
+        // The headless case: no SPE remoting and no Item Service on the same instance.
+        const gating = resolveToolGating({ TOOL_PROFILE: "no-spe, no-item-service" });
+        expect(isGroupEnabled("powershell.common", gating)).toBe(false);
+        expect(isGroupEnabled("item-service", gating)).toBe(false);
+        expect(isGroupEnabled("graphql", gating)).toBe(true);
+        expect(isGroupEnabled("authoring.content", gating)).toBe(true);
+    });
+
+    it("keeps the recognised profiles when one name in the list is a typo", () => {
+        const gating = resolveToolGating({ TOOL_PROFILE: "no-spe,no-item-services" });
+        expect(isGroupEnabled("powershell.common", gating)).toBe(false);
+        // The typo hides nothing rather than taking the whole list down with it.
+        expect(isGroupEnabled("item-service", gating)).toBe(true);
+    });
+
+    it("composes a platform profile with a surface profile", () => {
+        const gating = resolveToolGating({ TOOL_PROFILE: "sai,no-spe" });
+        // sai's own entries are a subset of no-spe's here, and hiding a group twice is
+        // still just hiding it.
+        expect(isGroupEnabled("powershell.security", gating)).toBe(false);
+        expect(isGroupEnabled("powershell.logging", gating)).toBe(false);
+        expect(isGroupEnabled("powershell.media", gating)).toBe(false);
+        expect(isGroupEnabled("authoring.content", gating)).toBe(true);
+    });
 });
 
 describe("TOOL_PROFILES", () => {

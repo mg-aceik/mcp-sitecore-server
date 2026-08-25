@@ -73,7 +73,8 @@ Identity Server instead of the Sitecore Cloud defaults.
 
 If nothing is configured, the `authoring-*` tools stay registered but every call fails with
 a message naming both options — the server has no way to know at startup whether you
-intended to use this API. Trim them with `TOOL_GROUPS` or `DISABLED_TOOLS` if you do not.
+intended to use this API. Set `TOOL_PROFILE=no-authoring-api` if you do not, and they stay
+unregistered instead of failing one call at a time.
 
 ## Tool surface
 
@@ -84,7 +85,7 @@ All three are unset by default, which registers every tool. See
 | ---------------- | ------- | -------------------------------------------------------------------------------------- |
 | `TOOL_GROUPS`    | —       | Comma-separated allowlist of tool groups to register. Unset registers every group.     |
 | `DISABLED_TOOLS` | —       | Comma-separated list of exact tool names to leave unregistered. Always wins on conflict. |
-| `TOOL_PROFILE`   | `xp`    | A documented preset denylist for a platform: `xp` disables nothing, `sai` hides the CM-identity set. |
+| `TOOL_PROFILE`   | —       | Comma-separated list of preset denylists. `xp` disables nothing and `sai` hides the CM-identity set; `no-spe`, `no-item-service`, `no-edge-graphql` and `no-authoring-api` each hide one API surface your instance does not serve. Everything named is unioned. |
 
 ## Limits and behaviour
 

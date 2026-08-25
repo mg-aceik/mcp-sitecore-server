@@ -31,7 +31,10 @@ export function authoringSearchTool(server: McpServer, config: Config) {
                 + "'_path' (matches items under an ancestor, given that ancestor's ID with no braces "
                 + "or dashes), '_template' and '_templatename'. IDs in index values are lowercase and "
                 + "unpunctuated, e.g. '110d559fdea542ea9c1c8a5df7e70ef9'. Returns 10 results unless "
-                + "pageSize says otherwise.",
+                + "pageSize says otherwise. A '_path' criterion is the cheap way to read a whole "
+                + "subtree at any depth — one query where item-service-get-item-descendants makes "
+                + "one request per node — at the cost of returning identity fields rather than "
+                + "field values, from the index rather than the database.",
             inputSchema: z.object({
                 index: z.string().optional().default("sitecore_master_index")
                     .describe("The index to search. Defaults to sitecore_master_index (the authoring content)."),

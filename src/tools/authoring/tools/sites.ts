@@ -9,8 +9,8 @@ import { runAuthoringOperation } from "../logic/run.js";
  *
  * `authoring-list-sites` is the usual first call of a session: it hands back each site's
  * root path and root item ID, which is what every later path or `_path` search criterion is
- * built from. The SPE equivalent (`composition-list-sites`) reads the same definitions
- * through a script; this route needs no SPE Remoting.
+ * built from. The SPE equivalent (`list-sites`) reads the same definitions through a
+ * script; this route needs no SPE Remoting.
  */
 
 export function authoringListSitesTool(server: McpServer, config: Config) {

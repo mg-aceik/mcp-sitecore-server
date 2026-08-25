@@ -13,7 +13,10 @@ import type { McpServer } from "@modelcontextprotocol/server";
  *
  * - `TOOL_GROUPS`   — allowlist of groups to register (the directory layout, see below).
  * - `DISABLED_TOOLS`— denylist of exact tool names.
- * - `TOOL_PROFILE`  — a documented preset denylist for a platform.
+ * - `TOOL_PROFILE`  — a comma-separated list of documented preset denylists: `xp`/`sai`
+ *                     name a platform, and `no-spe`, `no-item-service`, `no-edge-graphql` and
+ *                     `no-authoring-api` each name one API surface this instance does not
+ *                     serve. What every named profile hides is unioned.
  *
  * Unset means register everything, so none of this is a breaking change, and the
  * denylist always wins on conflict.
@@ -81,6 +84,22 @@ export type ToolProfile = {
 };
 
 /**
+ * One reason, shared by the nine `powershell.*` entries of `no-spe`, and one shared by
+ * the three `authoring.*` entries of `no-authoring-api`. Every group in each set fails
+ * for the same reason, and writing nine variations of one sentence would imply nine
+ * causes to whoever reads the table looking for theirs.
+ */
+const SPE_ABSENT =
+    "Every tool in this group runs a script over the SPE `remoting` service at "
+    + "`POST /-/script/script/`. Without SPE installed and remoting enabled, each one fails "
+    + "at the request with a 404 or a 403 rather than doing anything.";
+
+const AUTHORING_ABSENT =
+    "The Authoring and Management API at `/sitecore/api/authoring/graphql/v1/` is not served "
+    + "by this instance, or no OAuth credentials for it are configured, so every call fails "
+    + "before it reaches a resolver.";
+
+/**
  * The preset denylists. Keep every profile in this table — `register.ts` must stay a
  * list of registrars, so that a platform team can read what a profile hides, and why,
  * in one place.
@@ -113,6 +132,85 @@ export const TOOL_PROFILES: Record<string, ToolProfile> = {
                 + "read through the Cloud Portal or your log sink, not from a path on disk. On a "
                 + "local Docker CM the files are right there on the mounted volume, so reading "
                 + "them over SPE is the long way round. The group holds only that one tool.",
+        },
+        disabledTools: {},
+    },
+    /*
+     * The `no-*` profiles below are subtractive rather than platform presets: each one
+     * names a single API surface that is not there to be called, on the instance this
+     * server is pointed at. `xp` and `sai` answer "which platform is this?" and are
+     * mutually exclusive; these answer "which of the four surfaces does this instance
+     * actually serve?", and an instance can be missing more than one at once — which is
+     * why `TOOL_PROFILE` takes a list and unions what each entry hides.
+     *
+     * They exist because the alternative is saying the same thing as a `TOOL_GROUPS`
+     * allowlist, which means enumerating every group you *do* want and revisiting that
+     * list every time a group is added. Naming the one surface that is absent stays
+     * correct as the server grows.
+     *
+     * Nothing here probes Sitecore. This is a statement the operator makes about their
+     * instance, not something the server infers: a probe that misjudged a transient
+     * network failure would silently delete most of the tool surface, and an operator who
+     * knows the answer should not have to pay a round trip at startup for it.
+     */
+    "no-spe": {
+        description:
+            "An instance with no Sitecore PowerShell Extensions, or with the `remoting` service "
+            + "left disabled — the state SPE ships in. Hides every `powershell.*` group, which is "
+            + "roughly three quarters of this server's tools, because all of them reach Sitecore "
+            + "through that one endpoint.",
+        disabledGroups: {
+            "powershell.core": SPE_ABSENT,
+            "powershell.composition": SPE_ABSENT,
+            "powershell.security": SPE_ABSENT,
+            "powershell.common": SPE_ABSENT,
+            "powershell.presentation": SPE_ABSENT,
+            "powershell.logging": SPE_ABSENT,
+            "powershell.provider": SPE_ABSENT,
+            "powershell.indexing": SPE_ABSENT,
+            "powershell.media": SPE_ABSENT,
+        },
+        disabledTools: {},
+    },
+    "no-item-service": {
+        description:
+            "An instance that does not serve the Item Service REST API. Hides the `item-service` "
+            + "group only — items stay readable and writable through the `authoring-*` tools and "
+            + "through SPE.",
+        disabledGroups: {
+            "item-service":
+                "The Item Service REST API under `/sitecore/api/ssc/item/` is not served, so every "
+                + "tool in this group fails at the request. Item reads and writes remain available "
+                + "through `authoring-*` (GraphQL) and the SPE `provider-*` and `common-*` tools.",
+        },
+        disabledTools: {},
+    },
+    "no-edge-graphql": {
+        description:
+            "An instance with no Edge or preview GraphQL endpoint, or no API key for one. Hides "
+            + "the `graphql` group. This is the delivery-side surface only: it shares nothing with "
+            + "the Authoring and Management API, which is a different endpoint with different "
+            + "credentials and is hidden by `no-authoring-api` instead.",
+        disabledGroups: {
+            graphql:
+                "The Edge and preview endpoints under `/sitecore/api/graph/` need an `sc_apikey` "
+                + "that this instance either does not accept or has not been given. The group is "
+                + "sized by `GRAPHQL_SCHEMAS` — a query tool and an introspection tool per schema "
+                + "— so what it hides grows with that list.",
+        },
+        disabledTools: {},
+    },
+    "no-authoring-api": {
+        description:
+            "An instance that does not expose the Authoring and Management GraphQL API, or a "
+            + "deployment with no credentials for it. Hides all three `authoring.*` groups. Worth "
+            + "setting deliberately: with nothing configured those tools stay registered and fail "
+            + "per call, because the server cannot tell at startup whether you intended to use "
+            + "them.",
+        disabledGroups: {
+            "authoring.core": AUTHORING_ABSENT,
+            "authoring.content": AUTHORING_ABSENT,
+            "authoring.management": AUTHORING_ABSENT,
         },
         disabledTools: {},
     },
@@ -166,20 +264,34 @@ export function resolveToolGating(env: NodeJS.ProcessEnv = process.env): ToolGat
         );
     }
 
-    const profileName = (env.TOOL_PROFILE ?? "").trim().toLowerCase();
-    const profile = profileName ? TOOL_PROFILES[profileName] : undefined;
-    if (profileName && !profile) {
-        console.error(
-            `TOOL_PROFILE: unknown profile '${profileName}'. Known profiles: `
-            + `${Object.keys(TOOL_PROFILES).join(", ")}. No profile applied.`
-        );
+    // `TOOL_PROFILE` takes a list, not one name. The `no-*` profiles are subtractive and
+    // an instance can be missing more than one surface at once -- a headless CM with
+    // neither SPE remoting nor the Item Service is an ordinary shape, not a corner case,
+    // and forcing that operator to fall back to spelling out a `TOOL_GROUPS` allowlist
+    // would defeat the point of having the profiles. A single name is this same code path
+    // with one entry, so every existing value keeps behaving as it did.
+    const requestedProfiles = splitList(env.TOOL_PROFILE).map((name) => name.toLowerCase());
+    const profiles: ToolProfile[] = [];
+    for (const name of requestedProfiles) {
+        const profile = TOOL_PROFILES[name];
+        if (profile) {
+            profiles.push(profile);
+        } else {
+            console.error(
+                `TOOL_PROFILE: unknown profile '${name}'. Known profiles: `
+                + `${Object.keys(TOOL_PROFILES).join(", ")}. Ignoring '${name}'.`
+            );
+        }
     }
 
     return {
         enabledGroups: recognisedGroups.length > 0 ? new Set(recognisedGroups) : null,
-        disabledGroups: new Set(Object.keys(profile?.disabledGroups ?? {})),
+        // Unioned across the profiles: two profiles naming the same group is not a
+        // conflict, it is two reasons the group is unusable, and hiding it once is the
+        // right answer to both.
+        disabledGroups: new Set(profiles.flatMap((profile) => Object.keys(profile.disabledGroups))),
         disabledTools: new Set([
-            ...Object.keys(profile?.disabledTools ?? {}),
+            ...profiles.flatMap((profile) => Object.keys(profile.disabledTools)),
             ...splitList(env.DISABLED_TOOLS),
         ]),
         matchedTools: new Set<string>(),

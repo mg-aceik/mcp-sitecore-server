@@ -8,7 +8,17 @@ export function getItemDescendantsTool(server: McpServer, config: Config) {
     server.registerTool(
         'item-service-get-item-descendants',
         {
-            description: "Get descendants of a Sitecore item by its ID.",
+            // The cost is the thing a caller needs to know here and cannot see: this is a
+            // client-side walk, not a server-side query, so it scales with the size of the
+            // subtree in round trips rather than in bytes. Saying so at the point of choice
+            // is worth more than any amount of documentation elsewhere.
+            description:
+                "Gets every descendant of a Sitecore item by ID, with all their fields. Walks the "
+                + "tree client-side: one request per node, issued sequentially, so a large subtree "
+                + "costs seconds to minutes and returns an unpaged result. For structure only "
+                + "(paths, names, templates) at any depth, authoring-search with a '_path' "
+                + "criterion is one indexed query instead. Truncates at DESCENDANTS_MAX_ITEMS "
+                + "(5000) and says so. See the guide://tool-selection resource.",
             inputSchema: z.object({
                 id: z.string(),
                 options: z.object({

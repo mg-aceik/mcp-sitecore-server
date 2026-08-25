@@ -60,15 +60,26 @@ most other clients, `servers` in VS Code — and fill in your own endpoints and 
 }
 ```
 
-`TOOL_PROFILE` picks a preset for your platform: **`xp`** (the default) disables nothing,
-and **`sai`** hides the CM-side identity tools that SitecoreAI manages in the Cloud Portal
-instead. Those are the only two valid values; an unknown name is reported on stderr and
-ignored.
+`TOOL_PROFILE` takes a comma-separated list of presets, and unions what each one hides.
+Two name a platform: **`xp`** (the default) disables nothing, and **`sai`** hides the
+CM-side identity tools that SitecoreAI manages in the Cloud Portal instead. Four more name
+an API surface your instance does not serve — **`no-spe`**, **`no-item-service`**,
+**`no-edge-graphql`** and **`no-authoring-api`** — so an instance missing two of them can
+say so:
+
+```
+TOOL_PROFILE=no-spe,no-item-service
+```
+
+`no-spe` is the big one: without SPE installed and its `remoting` service enabled, roughly
+three quarters of this server's tools cannot run, and hiding them is schema an agent no
+longer pays for on every turn. An unknown name is reported on stderr and ignored, leaving
+the rest of the list in force.
 
 Every setting is documented in [Configuration](docs/configuration.md). Agents have a limit
 on how many tools they can hold, so before you get far, read
-[Tool selection](docs/tool-selection.md) and trim the surface with `TOOL_GROUPS` and
-`DISABLED_TOOLS`.
+[Tool selection](docs/tool-selection.md) and trim the surface with `TOOL_PROFILE`,
+`TOOL_GROUPS` and `DISABLED_TOOLS`.
 
 To run the server in a container or from source instead, see
 [Running the server](docs/running.md).

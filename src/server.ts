@@ -5,6 +5,7 @@ import path from 'path';
 import { registerAll } from "./register.js";
 import { withInferredAnnotations } from "./tool-annotations.js";
 import { resolveToolGating, withToolGating } from "./tool-profiles.js";
+import { ROUTING_INSTRUCTIONS, TOOL_SELECTION_GUIDE } from "./tool-guide.js";
 
 
 
@@ -23,9 +24,17 @@ export async function getServer(config: Config): Promise<McpServer> {
         // agent connected to several MCP servers at once can tell which one these tools
         // came from -- the `serverInfo.name` above is metadata a model never necessarily
         // sees.
+        //
+        // The routing block after it is the only channel that can steer a choice *between*
+        // tool families, because it arrives before any tool has been picked. A tool's own
+        // description cannot say "use the other family instead" until the model is already
+        // reading that tool. It is kept short deliberately: this is paid once per session
+        // whether or not a single Sitecore tool is called, and the long form is one
+        // resource read away.
         instructions:
             `This server is named "${serverName}". Refer to it by that name when reporting `
-            + `which server a tool or result came from.`,
+            + `which server a tool or result came from.\n\n`
+            + ROUTING_INSTRUCTIONS,
     });
 
     // Automatically attach inferred read-only/destructive annotations to every tool
@@ -43,6 +52,34 @@ export async function getServer(config: Config): Promise<McpServer> {
     // API key and the server's own bearer token are masked. Everything an agent needs from
     // them -- which endpoint, which account, which schemas -- survives redaction.
     const visibleConfig = redactConfig(config);
+
+    // The guidance an agent needs *after* it has chosen a family: the measured costs, the
+    // subtree alternatives, the depth cap and the rest. A resource rather than a tool,
+    // because a tool's schema is paid for on every turn while a resource costs nothing
+    // until it is read, and the instructions above name this URI so the agent knows it is
+    // there. `docs/tool-selection.md` is the human counterpart and covers the environment
+    // variables instead; this is not a copy of it.
+    server.registerResource(
+        "tool-selection",
+        "guide://tool-selection",
+        {
+            title: "Choosing a Sitecore tool",
+            description:
+                "Which Sitecore surface answers which question, and what each costs: measured "
+                + "read latencies, the cheap ways to read a subtree, and the limits (query depth, "
+                + "index lag, result caps) worth knowing before writing a query.",
+            mimeType: "text/markdown",
+        },
+        async (uri) => {
+            return {
+                contents: [{
+                    uri: uri.href,
+                    mimeType: "text/markdown",
+                    text: TOOL_SELECTION_GUIDE,
+                }]
+            };
+        }
+    );
 
     server.registerResource("config", "config://main", {}, async (uri) => {
                     return {
