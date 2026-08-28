@@ -7,7 +7,7 @@ open-source [Model Context Protocol](https://modelcontextprotocol.io) server tha
 agents direct read/write access to Sitecore, so you stop copy-pasting between your agent
 and the Content Editor.
 
-- **138 tools** across search, query, create, read, update, delete, media, PowerShell, logging, security and presentation (134 fixed, plus two per entry in `GRAPHQL_SCHEMAS` — 138 with the default `edge,master`)
+- **121 tools** across search, query, create, read, update, delete, media, PowerShell, logging, security and presentation
 - Covers four Sitecore API surfaces: the **Authoring and Management GraphQL API**, the **Item Service**, **GraphQL Edge** and **Sitecore PowerShell Extensions**
 - Works with **SitecoreAI** and **Sitecore XM/XP** (all versions), from any MCP-compatible client
 - Implements **MCP protocol revision 2026-07-28**, and answers the 2025 `initialize` handshake from the same tool registrations
@@ -90,14 +90,14 @@ Sitecore's own [Marketer MCP](https://doc.sitecore.com/sai/en/users/sitecoreai/s
 at marketers on SitecoreAI. This server is the developer-grade counterpart, and on that
 ground it is the stronger tool:
 
-|                       | Sitecore Community MCP                                                                                             | Sitecore Marketer MCP                                                              |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
-| **Platforms**         | SitecoreAI **and** XM/XP, all versions — including your local Docker CM                                             | SitecoreAI only                                                                     |
-| **Hosting**           | Self-hosted (npm, Docker, source); credentials never leave your infrastructure                                      | Hosted by Sitecore; OAuth through the cloud                                         |
-| **Surface**           | 138 tools across the full developer surface: items, templates, presentation, media, security, indexing, logs, publishing, GraphQL, raw PowerShell | Marketer operations: pages, components, briefs, brand kits, personalization, A/B tests |
-| **Escape hatch**      | `run-powershell-script`, raw Edge GraphQL and raw Authoring GraphQL — if a tool doesn't exist, the capability still does | Closed tool set                                                              |
-| **Layout safety**     | `add-rendering-to-placeholder` *refuses* components the placeholder settings forbid, naming the allow-list          | Writes are not validated against placeholder settings                               |
-| **Tool gating**       | `TOOL_GROUPS` / `DISABLED_TOOLS` / `TOOL_PROFILE` trim the schema cost per turn                                     | Fixed tool list                                                                     |
+|                   | Sitecore Community MCP                                                                                                                            | Sitecore Marketer MCP                                                                  |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| **Platforms**     | SitecoreAI **and** XM/XP, all versions — including your local Docker CM                                                                           | SitecoreAI only                                                                        |
+| **Hosting**       | Self-hosted (npm, Docker, source); credentials never leave your infrastructure                                                                    | Hosted by Sitecore; OAuth through the cloud                                            |
+| **Surface**       | 121 tools across the full developer surface: items, templates, presentation, media, security, indexing, logs, publishing, GraphQL, raw PowerShell | Marketer operations: pages, components, briefs, brand kits, personalization, A/B tests |
+| **Escape hatch**  | `run-powershell-script`, raw Edge GraphQL and raw Authoring GraphQL — if a tool doesn't exist, the capability still does                          | Closed tool set                                                                        |
+| **Layout safety** | `add-rendering-to-placeholder` _refuses_ components the placeholder settings forbid, naming the allow-list                                        | Writes are not validated against placeholder settings                                  |
+| **Tool gating**   | `TOOL_GROUPS` / `DISABLED_TOOLS` / `TOOL_PROFILE` trim the schema cost per turn                                                                   | Fixed tool list                                                                        |
 
 They are complementary rather than exclusive: the Marketer MCP carries the cloud marketing
 features this server has no API for (briefs, brand kits, personalization variants, A/B

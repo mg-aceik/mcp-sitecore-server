@@ -188,20 +188,42 @@ MCP SDK and MCP protocol revision 2026-07-28._
 
 #### Performance and token cost
 
-- **`tools/list` drops from 162 tools / 150,038 characters to 111 tools / 100,091
-  characters** — 51 fewer tools and a third less schema on every turn, measured against the
-  same SitecoreAI CM before and after. The `-by-id` / `-by-path` merge accounts for the tool
-  count and most of the reduction; zod 4's tighter JSON Schema takes the remaining
-  106,822 → 100,091. 426 of 472 parameters still carry their description — the same 426 as
-  before, the other 46 being parameters that never had one.
+- **`tools/list` serves 121 tools / 135,270 characters, down from 162 tools / 150,038 in
+  1.4.2** — 41 fewer tools and about 3,700 fewer tokens on every turn, while the release
+  *adds* the composition set, the two media tools, the four security serialization tools and
+  the 22 Authoring and Management tools (less the three removed: `sitecore-cli-documentation`,
+  `item-service-run-stored-query` and `item-service-run-stored-search`). Measured against the
+  same SitecoreAI CM throughout. Three passes paid for the additions:
+  - **The `-by-id` / `-by-path` merge, and the twelve families merged after it.** In isolation
+    this took 1.4.2's 162 tools / 150,038 characters to 111 / 100,091 — the whole tool-count
+    reduction and most of the schema — with zod 4's tighter JSON Schema taking the remaining
+    106,822 → 100,091. 426 of 472 parameters still carried a description at that point, the
+    same 426 as before, the other 46 being parameters that never had one. Everything this
+    release adds lands on top of that figure.
+  - **Inferred `annotations.title` is gone.** `toTitle` only title-cased the tool name, so 134
+    of 136 titles restated a field the client already had, at ~4,800 characters per
+    `tools/list`. The two tools whose title says more than the name set it explicitly and keep
+    it.
+  - **The most-repeated parameter descriptions were cut to one line each:** the `full` flag's
+    (246 → 93 characters, spread across 33 tools), the `fields` flag's (132 → 81, across 15),
+    `finalLayout`'s (224 → 99, across 7), and three wordings of the `database` parameter
+    collapsed into one 51-character constant across 28 files.
 
-  That measurement isolates the merge. Everything else this release adds lands on top of it:
-  the composition set, the two media tools, the four security serialization tools and the 22
-  Authoring and Management tools, less the three removed (`sitecore-cli-documentation`,
-  `item-service-run-stored-query` and `item-service-run-stored-search`). The registered total
-  is **138** — 134 fixed, plus two per entry in `GRAPHQL_SCHEMAS`, so 138 with the default
-  `edge,master`. `TOOL_GROUPS` and `TOOL_PROFILE` are how a deployment gets back below the
-  post-merge figure: `TOOL_PROFILE=sai` alone hides 36 of them.
+  A `$schema`-stripping pass was written, measured at a further ~7,600 characters, and then
+  **reverted**: re-wrapping the converted schema with the SDK's `fromJsonSchema` validates
+  arguments but does not *apply* JSON Schema `default` values the way zod's `.default()` does.
+  32 defaults across 20 tool files rely on that, and the round trip silently dropped every one
+  — `authoring-get-item` began failing live with "Variable `ownFields` of type `Boolean!`
+  must not be null". `tool-profiles.ts` records why, so the next attempt starts from the
+  constraint rather than rediscovering it.
+
+  **121 is the tool surface.** The `graphql` group registers a query tool and an introspection
+  tool per entry in `GRAPHQL_SCHEMAS`, so the default `edge,master` puts 123 on the wire and
+  every further schema adds two; every figure here is measured at one schema. For a much
+  larger saving than any pass above, set `TOOL_PROFILE` or `TOOL_GROUPS` for the instance you
+  actually run against: `TOOL_PROFILE=sai` serves 94 tools / 114,406 characters,
+  `TOOL_PROFILE=no-spe` 33 tools / 41,168, and `TOOL_GROUPS=authoring.core,authoring.content`
+  18 tools / 26,954 — an 80% reduction. See [Tool selection](docs/tool-selection.md).
 
 - **Response projection for the item-returning PowerShell tools.** `fields` names the fields
   to return and `full` opts back into the whole set, so a call that needs three fields no
@@ -485,28 +507,11 @@ MCP SDK and MCP protocol revision 2026-07-28._
   by hand reappears on the next crawl, so it fixed nothing that
   `indexing-rebuild-search-index` does not fix properly, and it invited an agent to
   "clean up" an index in a way that does not hold.
-- `[server]` **`tools/list` drops to 121 tools / 135,270 characters**, from 136 tools /
-  154,840 before this pass — about 4,200 fewer tokens on every turn, with no capability
-  removed. Three changes account for it beyond the merges:
-  - Inferred `annotations.title` is gone. `toTitle` only title-cased the tool name, so 134 of
-    136 titles restated a field the client already had, at ~4,800 characters per `tools/list`.
-    The two tools whose title says more than the name set it explicitly and keep it.
-  - The most-repeated parameter descriptions were cut to one line each: the `full` flag's
-    (246 → 93 characters, spread across 33 tools), the `fields` flag's (132 → 81, across 15),
-    `finalLayout`'s (224 → 99, across 7), and three wordings of the `database` parameter
-    collapsed into one 51-character constant across 28 files.
-  - A `$schema`-stripping pass was written, measured at a further ~7,600 characters, and then
-    **reverted**: re-wrapping the converted schema with the SDK's `fromJsonSchema` validates
-    arguments but does not *apply* JSON Schema `default` values the way zod's `.default()`
-    does. 32 defaults across 20 tool files rely on that, and the round trip silently dropped
-    every one — `authoring-get-item` began failing live with "Variable `ownFields` of type
-    `Boolean!` must not be null". `tool-profiles.ts` records why, so the next attempt starts
-    from the constraint rather than rediscovering it.
-- `[docs]` For a much larger saving than any of the above, set `TOOL_PROFILE` or
-  `TOOL_GROUPS` for the instance you actually run against. Measured on the same build:
-  `TOOL_PROFILE=sai` serves 100 tools / 111,379 characters, `TOOL_PROFILE=no-spe` 33 tools /
-  39,401, and `TOOL_GROUPS=authoring.core,authoring.content` 18 tools / 25,985 — a 81%
-  reduction against the default. See [Tool selection](docs/tool-selection.md).
+- `[server]` **Inferred `annotations.title` is gone from all but two tools.** A client that
+  displayed the title now displays the tool name — the same words, since `toTitle` only
+  title-cased the name — and the two tools whose title says more than their name keep theirs.
+  What this saved, and the rest of the `tools/list` budget, is under
+  [Performance and token cost](#performance-and-token-cost).
 
 
 ### 🔒 Security

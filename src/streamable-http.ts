@@ -47,7 +47,7 @@ export function startStreamableHTTP() {
     // which is what a stateless endpoint has always answered.
     //
     // Building a server per request is affordable because registration is pure
-    // in-memory work (~23ms for all 119 tools) and every tool call behind it is a
+    // in-memory work (~23ms for the whole tool surface) and every tool call behind it is a
     // Sitecore round trip an order of magnitude slower. The PowerShell and
     // ItemService clients are constructed per call from config and hold no session,
     // so nothing in the tool layer notices.
