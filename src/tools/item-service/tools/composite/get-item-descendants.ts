@@ -27,7 +27,8 @@ export function getItemDescendantsTool(server: McpServer, config: Config) {
                     version: z.string().optional(),
                     includeStandardTemplateFields: z.boolean().optional(),
                     includeMetadata: z.boolean().optional(),
-                    fields: z.array(z.string()).optional(),
+                    fields: z.array(z.string()).optional()
+                        .describe("Return only these fields on each item. Set it whenever you know what you need — a full item carries every field of its template, roughly 1.9KB each."),
                 }).optional(),
             }),
         },

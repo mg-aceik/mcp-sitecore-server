@@ -23,9 +23,8 @@ This folder contains implementations of MCP tools that interact with Sitecore Po
 
 ### User Management
 
-- `security-get-user-by-identity`: Get a user by identity
+- `security-get-user`: Get users by exact identity or wildcard filter
 - `security-get-current-user`: Get the current user
-- `security-get-user-by-filter`: Get users by filter
 - `security-new-user`: Create a new user
 - `security-remove-user`: Remove a user
 - `security-disable-user`: Disable a user
@@ -35,8 +34,7 @@ This folder contains implementations of MCP tools that interact with Sitecore Po
 
 ### Role Management
 
-- `security-get-role-by-identity`: Get a role by identity
-- `security-get-role-by-filter`: Get roles by filter
+- `security-get-role`: Get roles by exact identity or wildcard filter
 - `security-new-role`: Create a new role
 - `security-remove-role`: Remove a role
 - `security-get-role-member`: Get role members
@@ -46,19 +44,17 @@ This folder contains implementations of MCP tools that interact with Sitecore Po
 ### Domain Management
 
 - `security-get-domain`: Get all domains
-- `security-get-domain-by-name`: Get a domain by name
+- `security-get-domain`: Get domains; omit name for all
 - `security-new-domain`: Create a new domain
 - `security-remove-domain`: Remove a domain
 
 ### Item Security
 
 - `security-get-item-acl`: Get ACL for an item
-- `security-add-item-acl`: Add ACL entry to an item
+- `security-set-item-acl`: Add, replace or clear an item's access rules
 - `security-test-item-acl`: Test ACL for an item
-- `security-lock-item`: Lock an item
-- `security-unlock-item`: Unlock an item
-- `security-protect-item`: Protect an item
-- `security-unprotect-item`: Unprotect an item
+- `security-set-item-lock`: Lock or unlock an item
+- `security-set-item-protection`: Protect or unprotect an item
 
 ## Logging Tools
 
@@ -70,23 +66,19 @@ This folder contains implementations of MCP tools that interact with Sitecore Po
 
 ### Simple Indexing Tools
 
-- `indexing-initialize-search-index`: Initialize one or more Sitecore search indexes
+- `indexing-rebuild-search-index`: Rebuild search indexes, optionally scoped to one item's subtree
 - `indexing-get-search-index`: Get information about Sitecore search indexes
 - `indexing-find-item`: Find items using the Sitecore Content Search API
-- `indexing-suspend-search-index`: Suspend one or more running Sitecore search indexes
-- `indexing-stop-search-index`: Stop one or more running Sitecore search indexes
-- `indexing-resume-search-index`: Resume one or more paused Sitecore search indexes
+- `indexing-set-search-index-state`: Suspend, stop or resume Sitecore search indexes
 
 ### Composite Indexing Tools
 
-- `indexing-initialize-search-index-item`: Rebuild the index for a given tree with the specified root item
-- `indexing-remove-search-index-item`: Remove the item with the specified ID from the search index
 
 ## Common Tools
 
 ### Simple Common Tools
 
-- `common-add-base-template`: Add a base template to a template item
+- `common-set-base-template`: Add or remove a base template on a template item
 - `common-add-item-version`: Create a version of the item in a new language based on an existing language version
 - `common-convert-from-item-clone`: Convert an item from a clone to a fully independent item
 - `common-get-cache`: Get information about Sitecore caches
@@ -101,7 +93,6 @@ This folder contains implementations of MCP tools that interact with Sitecore Po
 - `common-invoke-workflow`: Execute workflow action for a Sitecore item
 - `common-new-item-workflow-event`: Create a new entry in the workflow history for a Sitecore item
 - `common-publish-item`: Publish a Sitecore item
-- `common-remove-base-template`: Remove a base template from a template item
 - `common-remove-item-version`: Remove a version of a Sitecore item
 - `common-reset-item-field`: Reset item fields, specified as either names, fields or template fields
 - `common-restart-application`: Restart the Sitecore Application pool

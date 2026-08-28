@@ -2,12 +2,13 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import type { CallToolResult } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
-import { buildClientSchema, printSchema, parse } from "graphql";
+import { buildClientSchema, parse } from "graphql";
 import { type IntrospectionQuery } from "graphql";
 import { safeMcpResponse } from "@/helper.js";
 import { executeAuthoringGraphQL } from "../client.js";
 import { authoringIntrospectionQuery } from "../logic/introspection-query.js";
 import { runAuthoringOperation } from "../logic/run.js";
+import { schemaSliceInputSchema, sliceSchema } from "@/tools/graphql/schema-slice.js";
 
 /**
  * The two tools that make the whole Authoring and Management surface reachable: the SDL,
@@ -24,21 +25,33 @@ export function authoringIntrospectionTool(server: McpServer, config: Config) {
         "authoring-introspect-schema",
         {
             description:
-                "Returns the full SDL of the Sitecore Authoring and Management GraphQL schema "
-                + "(items, templates, media, sites, search, publishing, jobs, indexing, workflow, "
-                + "security). Call it once before writing a document for an operation no typed "
-                + "authoring-* tool covers — the SDL is large (100,000+ characters), so do not "
-                + "re-fetch it per query. This is the authoring/management schema on the CM, not "
-                + "the Edge schema that introspection-graphql-* returns.",
+                "Explores the Sitecore Authoring and Management GraphQL schema (items, templates, "
+                + "media, sites, search, publishing, jobs, indexing, workflow, security, identity). "
+                + "With no arguments it returns the operation index: 127 queries and mutations, one "
+                + "line each. Use type: \"<name>\" for one operation or type in full — for an "
+                + "operation the input types its arguments need are included, so one call is enough "
+                + "to write the document — search: \"<keyword>\" to find an operation by what it "
+                + "does, and full: true for the entire SDL (117,188 characters on a live CM). Most "
+                + "of this schema has no typed authoring-* tool, so this is how you find the rest: "
+                + "createUser, createSite, executeWorkflowCommand, addLanguage, archiveItem, "
+                + "cancelPublishing and around a hundred more. Not the Edge schema — that is "
+                + "introspection-graphql-*.",
+            inputSchema: z.object({ ...schemaSliceInputSchema }),
         },
-        () => {
+        (params) => {
             return safeMcpResponse((async (): Promise<CallToolResult> => {
                 // Not graphql-js's getIntrospectionQuery(): it nests deeper than this
                 // endpoint's depth cap allows. See logic/introspection-query.ts.
                 const data = await executeAuthoringGraphQL(config, authoringIntrospectionQuery());
                 const schema = buildClientSchema(data as unknown as IntrospectionQuery);
                 return {
-                    content: [{ type: "text", text: printSchema(schema) }],
+                    content: [{
+                        type: "text",
+                        text: sliceSchema(schema, params, {
+                            label: "Sitecore Authoring and Management GraphQL schema",
+                            toolName: "authoring-introspect-schema",
+                        }),
+                    }],
                     isError: false,
                 };
             })());

@@ -4,7 +4,7 @@ import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
 import { requireOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../generic.js";
-import { EFFECTIVE_FINAL_LAYOUT_DESCRIPTION, getFinalLayoutSwitchValue } from "../../utils.js";
+import { EFFECTIVE_FINAL_LAYOUT_DESCRIPTION, ITEM_DATABASE_DESCRIPTION, getFinalLayoutSwitchValue } from "../../utils.js";
 
 export function getRenderingPowershellTool(server: McpServer, config: Config) {
     server.registerTool(
@@ -17,7 +17,7 @@ export function getRenderingPowershellTool(server: McpServer, config: Config) {
                 path: z.string().optional()
                     .describe("The path of the item to retrieve rendering for. Supply this or id."),
                 database: z.string()
-                    .describe("The context database. Only sent when addressing by id -- a path carries its own database prefix (e.g. master:/sitecore/content/Home).")
+                    .describe(ITEM_DATABASE_DESCRIPTION)
                     .optional(),
                 dataSource: z.string().describe("The rendering data source filter.").optional(),
                 placeholder: z.string().describe("The rendering datasource filter.").optional(),

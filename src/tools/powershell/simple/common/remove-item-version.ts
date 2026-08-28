@@ -4,7 +4,7 @@ import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
 import { hasTarget, requireOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../generic.js";
-import { getSwitchParameterValue } from "../../utils.js";
+import { ITEM_DATABASE_DESCRIPTION, getSwitchParameterValue } from "../../utils.js";
 
 export function removeItemVersionPowerShellTool(server: McpServer, config: Config) {
     server.registerTool(
@@ -25,7 +25,7 @@ export function removeItemVersionPowerShellTool(server: McpServer, config: Confi
                 maxRecentVersions: z.number().optional()
                     .describe("Trims the selected language to value specified by this parameter."),
                 database: z.string().optional()
-                    .describe("The database containing the item (defaults to the context database)."),
+                    .describe(ITEM_DATABASE_DESCRIPTION),
                 archive: z.boolean().optional()
                     .describe("Moves the items to the archive rather than recycle bin."),
             }),

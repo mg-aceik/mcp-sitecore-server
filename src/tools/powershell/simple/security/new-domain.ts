@@ -5,6 +5,7 @@ import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
 import { runGenericPowershellCommand } from "../generic.js";
+import { DOMAIN_PROJECTION, fixedProjectionPipeline, fullOnlyInputSchema } from "../../projection.js";
 
 export function newDomainPowerShellTool(server: McpServer, config: Config) {
     server.registerTool(
@@ -12,6 +13,7 @@ export function newDomainPowerShellTool(server: McpServer, config: Config) {
         {
             description: "Creates a new Sitecore domain.",
             inputSchema: z.object({
+                ...fullOnlyInputSchema,
                 name: z.string().describe("The name of the domain to create"),
             }),
         },
@@ -21,7 +23,14 @@ export function newDomainPowerShellTool(server: McpServer, config: Config) {
                 "Name": params.name,
             };
 
-            return safeMcpResponse(runGenericPowershellCommand(config, command, options));
+            const pipeline = fixedProjectionPipeline(DOMAIN_PROJECTION, params);
+
+            return safeMcpResponse(
+                runGenericPowershellCommand(config, command, options, undefined, {
+                    pipeline,
+                    full: params.full,
+                })
+            );
         }
     );
 }

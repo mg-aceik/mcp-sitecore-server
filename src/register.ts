@@ -15,27 +15,17 @@ import { deleteItemTool } from "./tools/item-service/tools/simple/delete-item.js
 import { searchItemsTool } from "./tools/item-service/tools/simple/search-items.js";
 import { getItemDescendantsTool } from "./tools/item-service/tools/composite/get-item-descendants.js";
 import { getLanguagesTool } from "./tools/item-service/tools/composite/get-languages.js";
-import { getUserByIdentityPowerShellTool } from "./tools/powershell/simple/security/get-user-by-identity.js";
 import { getCurrentUserPowerShellTool } from "./tools/powershell/simple/security/get-current-user.js";
-import { getUserByFilterPowerShellTool } from "./tools/powershell/simple/security/get-user-by-filter.js";
 import { newUserPowerShellTool } from "./tools/powershell/simple/security/new-user.js";
 import { removeUserPowerShellTool } from "./tools/powershell/simple/security/remove-user.js";
 import { disableUserPowerShellTool } from "./tools/powershell/simple/security/disable-user.js";
 import { enableUserPowerShellTool } from "./tools/powershell/simple/security/enable-user.js";
 import { unlockUserPowerShellTool } from "./tools/powershell/simple/security/unlock-user.js";
-import { exportUserPowerShellTool } from "./tools/powershell/simple/security/export-user.js";
-import { importUserPowerShellTool } from "./tools/powershell/simple/security/import-user.js";
-import { exportRolePowerShellTool } from "./tools/powershell/simple/security/export-role.js";
-import { importRolePowerShellTool } from "./tools/powershell/simple/security/import-role.js";
 import { setUserPowerShellTool } from "./tools/powershell/simple/security/set-user.js";
 import { setUserPasswordPowerShellTool } from "./tools/powershell/simple/security/set-user-password.js";
-import { getRoleByIdentityPowerShellTool } from "./tools/powershell/simple/security/get-role-by-identity.js";
-import { getRoleByFilterPowerShellTool } from "./tools/powershell/simple/security/get-role-by-filter.js";
 import { getRoleMemberPowerShellTool } from "./tools/powershell/simple/security/get-role-member.js";
 import { addRoleMemberPowerShellTool } from "./tools/powershell/simple/security/add-role-member.js";
 import { removeRoleMemberPowerShellTool } from "./tools/powershell/simple/security/remove-role-member.js";
-import { unlockItemPowerShellTool } from "./tools/powershell/simple/security/unlock-item.js";
-import { protectItemPowerShellTool } from "./tools/powershell/simple/security/protect-item.js";
 import { newRolePowerShellTool } from "./tools/powershell/simple/security/new-role.js";
 import { removeRolePowerShellTool } from "./tools/powershell/simple/security/remove-role.js";
 import { newDomainPowerShellTool } from "./tools/powershell/simple/security/new-domain.js";
@@ -43,30 +33,25 @@ import { removeDomainPowerShellTool } from "./tools/powershell/simple/security/r
 import { testAccountPowerShellTool } from "./tools/powershell/simple/security/test-account.js";
 import { getItemAclPowerShellTool } from "./tools/powershell/simple/security/get-item-acl.js";
 import { testItemAclPowerShellTool } from "./tools/powershell/simple/security/test-item-acl.js";
-import { addItemAclPowerShellTool } from "./tools/powershell/simple/security/add-item-acl.js";
-import { clearItemAclPowerShellTool } from "./tools/powershell/simple/security/clear-item-acl.js";
 import { getItemPowerShellTool } from "./tools/powershell/simple/provider/get-item.js";
-import { initializeSearchIndexPowerShellTool } from "./tools/powershell/simple/indexing/initialize-search-index.js";
 import { getSearchIndexPowerShellTool } from "./tools/powershell/simple/indexing/get-search-index.js";
 import { findItemPowerShellTool } from "./tools/powershell/simple/indexing/find-item.js";
-import { resumeSearchIndexPowerShellTool } from "./tools/powershell/simple/indexing/resume-search-index.js";
-import { suspendSearchIndexPowerShellTool } from "./tools/powershell/simple/indexing/suspend-search-index.js";
-import { stopSearchIndexPowerShellTool } from "./tools/powershell/simple/indexing/stop-search-index.js";
 import { setItemAclPowerShellTool } from "./tools/powershell/composite/security/set-item-acl.js";
-import { initializeSearchIndexingItemPowerShellTool } from "./tools/powershell/composite/indexing/initialialize-search-indexing-item.js";
-import { removeSearchIndexItemPowerShellTool } from "./tools/powershell/composite/indexing/remove-search-index-item.js";
-import { lockItemPowerShellTool } from "./tools/powershell/simple/security/lock-item.js";
-import { unprotectItemPowerShellTool } from "./tools/powershell/simple/security/unprotect-item.js";
-import { getDomainByNamePowerShellTool } from "./tools/powershell/simple/security/get-domain-by-name.js";
 import { getAllDomainsPowerShellTool } from "./tools/powershell/simple/security/get-all-domains.js";
+import { getUserPowerShellTool } from "./tools/powershell/simple/security/get-user.js";
+import { getRolePowerShellTool } from "./tools/powershell/simple/security/get-role.js";
+import { setItemLockPowerShellTool } from "./tools/powershell/simple/security/set-item-lock.js";
+import { setItemProtectionPowerShellTool } from "./tools/powershell/simple/security/set-item-protection.js";
+import { exportAccountPowerShellTool, importAccountPowerShellTool } from "./tools/powershell/simple/security/export-account.js";
+import { setSearchIndexStatePowerShellTool } from "./tools/powershell/simple/indexing/set-search-index-state.js";
+import { rebuildSearchIndexPowerShellTool } from "./tools/powershell/simple/indexing/rebuild-search-index.js";
+import { setBaseTemplatePowerShellTool } from "./tools/powershell/simple/common/set-base-template.js";
 import { getArchivePowerShellTool } from "./tools/powershell/composite/common/get-archive.js";
 import { getArchiveItemPowerShellTool } from "./tools/powershell/composite/common/get-archive-item.js";
 import { getDatabasePowerShellTool } from "./tools/powershell/simple/common/get-database.js";
 import { getCachePowerShellTool } from "./tools/powershell/simple/common/get-cache.js";
 import { getItemTemplatePowerShellTool } from "./tools/powershell/simple/common/get-item-template.js";
 import { setItemTemplatePowerShellTool } from "./tools/powershell/simple/common/set-item-template.js";
-import { addBaseTemplatePowerShellTool } from "./tools/powershell/simple/common/add-base-template.js";
-import { removeBaseTemplatePowerShellTool } from "./tools/powershell/simple/common/remove-base-template.js";
 import { getItemFieldPowerShellTool } from "./tools/powershell/simple/common/get-item-field.js";
 import { getItemReferencePowerShellTool } from "./tools/powershell/simple/common/get-item-reference.js";
 import { getItemReferrerPowerShellTool } from "./tools/powershell/simple/common/get-item-referrer.js";
@@ -94,7 +79,6 @@ import { setLayoutPowershellTool } from "./tools/powershell/composite/presentati
 import { resetLayoutPowershellTool } from "./tools/powershell/simple/presentation/reset-layout.js";
 import { mergeLayoutPowershellTool } from "./tools/powershell/simple/presentation/merge-layout.js";
 import { getLayoutDevicePowershellTool } from "./tools/powershell/simple/presentation/get-layout-device.js";
-import { getDefaultLayoutDevicePowershellTool } from "./tools/powershell/simple/presentation/get-default-layout-device.js";
 import { getRenderingPowershellTool } from "./tools/powershell/simple/presentation/get-rendering.js";
 import { removeRenderingPowershellTool } from "./tools/powershell/simple/presentation/remove-rendering.js";
 import { addRenderingPowershellTool } from "./tools/powershell/composite/presentation/add-rendering.js";
@@ -184,9 +168,7 @@ export const TOOL_GROUP_REGISTRARS: Record<ToolGroup, ToolRegistrar[]> = {
 
     "powershell.security": [
         //Simple Security PowerShell Tools
-        getUserByIdentityPowerShellTool,
         getCurrentUserPowerShellTool,
-        getUserByFilterPowerShellTool,
         newUserPowerShellTool,
         removeUserPowerShellTool,
         disableUserPowerShellTool,
@@ -194,21 +176,16 @@ export const TOOL_GROUP_REGISTRARS: Record<ToolGroup, ToolRegistrar[]> = {
         unlockUserPowerShellTool,
         setUserPowerShellTool,
         setUserPasswordPowerShellTool,
-        exportUserPowerShellTool,
-        importUserPowerShellTool,
-        exportRolePowerShellTool,
-        importRolePowerShellTool,
-        getDomainByNamePowerShellTool,
         getAllDomainsPowerShellTool,
-        getRoleByIdentityPowerShellTool,
-        getRoleByFilterPowerShellTool,
+        getUserPowerShellTool,
+        getRolePowerShellTool,
+        setItemLockPowerShellTool,
+        setItemProtectionPowerShellTool,
+        exportAccountPowerShellTool,
+        importAccountPowerShellTool,
         getRoleMemberPowerShellTool,
         addRoleMemberPowerShellTool,
         removeRoleMemberPowerShellTool,
-        lockItemPowerShellTool,
-        unlockItemPowerShellTool,
-        protectItemPowerShellTool,
-        unprotectItemPowerShellTool,
         newRolePowerShellTool,
         removeRolePowerShellTool,
         newDomainPowerShellTool,
@@ -216,8 +193,6 @@ export const TOOL_GROUP_REGISTRARS: Record<ToolGroup, ToolRegistrar[]> = {
         testAccountPowerShellTool,
         getItemAclPowerShellTool,
         testItemAclPowerShellTool,
-        addItemAclPowerShellTool,
-        clearItemAclPowerShellTool,
 
         //Composite Security PowerShell Tools
         setItemAclPowerShellTool,
@@ -225,7 +200,7 @@ export const TOOL_GROUP_REGISTRARS: Record<ToolGroup, ToolRegistrar[]> = {
 
     "powershell.common": [
         //Simple Common PowerShell Tools
-        addBaseTemplatePowerShellTool,
+        setBaseTemplatePowerShellTool,
         addItemVersionPowerShellTool,
         convertFromItemClonePowerShellTool,
         getCachePowerShellTool,
@@ -240,7 +215,6 @@ export const TOOL_GROUP_REGISTRARS: Record<ToolGroup, ToolRegistrar[]> = {
         invokeWorkflowPowerShellTool,
         newItemWorkflowEventPowerShellTool,
         publishItemPowerShellTool,
-        removeBaseTemplatePowerShellTool,
         removeItemVersionPowerShellTool,
         resetItemFieldPowerShellTool,
         restartApplicationPowerShellTool,
@@ -262,7 +236,6 @@ export const TOOL_GROUP_REGISTRARS: Record<ToolGroup, ToolRegistrar[]> = {
         resetLayoutPowershellTool,
         mergeLayoutPowershellTool,
         getLayoutDevicePowershellTool,
-        getDefaultLayoutDevicePowershellTool,
         getRenderingPowershellTool,
         removeRenderingPowershellTool,
         getPlaceholderSettingPowershellTool,
@@ -290,16 +263,12 @@ export const TOOL_GROUP_REGISTRARS: Record<ToolGroup, ToolRegistrar[]> = {
 
     "powershell.indexing": [
         //Simple Indexing PowerShell Tools
-        initializeSearchIndexPowerShellTool,
+        rebuildSearchIndexPowerShellTool,
+        setSearchIndexStatePowerShellTool,
         getSearchIndexPowerShellTool,
         findItemPowerShellTool,
-        resumeSearchIndexPowerShellTool,
-        suspendSearchIndexPowerShellTool,
-        stopSearchIndexPowerShellTool,
 
         //Composite Indexing PowerShell Tools
-        initializeSearchIndexingItemPowerShellTool,
-        removeSearchIndexItemPowerShellTool,
     ],
 
     "powershell.media": [

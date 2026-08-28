@@ -45,13 +45,6 @@ const WRITE_TOKENS = new Set([
     "upload",
 ]);
 
-function toTitle(name: string): string {
-    return name
-        .split("-")
-        .map((part) => (part ? part[0].toUpperCase() + part.slice(1) : part))
-        .join(" ");
-}
-
 /**
  * Infers MCP tool annotations from a tool name using its hyphen-delimited tokens.
  *
@@ -59,29 +52,36 @@ function toTitle(name: string): string {
  * verb reliably indicates intent (get-* reads, delete-/remove-* destroy, set-/add-*
  * write). Matching on whole tokens (not substrings) avoids false positives such as
  * "unlock" matching "lock" or "unprotect" matching "protect".
+ *
+ * No `title` is inferred, deliberately. A title derived from the tool name only restates a
+ * field the client already has: 134 of this server's 136 titles were exactly that, costing
+ * roughly 4,800 characters of every `tools/list` — paid on every turn — to say that
+ * `common-get-item-field` displays as "Common Get Item Field". Any client that wants it can
+ * derive it. The two tools whose title says something the name does not ("Authoring
+ * GraphQL", "Query GraphQL edge") set it explicitly in their own config, and
+ * `withInferredAnnotations` leaves an explicit `annotations` object alone.
  */
 export function inferToolAnnotations(name: string): ToolAnnotations {
-    const title = toTitle(name);
     const normalized = name.toLowerCase();
 
     // run-powershell-script executes arbitrary PowerShell — treat it as the most
     // dangerous, open-world tool.
     if (normalized === "run-powershell-script") {
-        return { title, readOnlyHint: false, destructiveHint: true, openWorldHint: true };
+        return { readOnlyHint: false, destructiveHint: true, openWorldHint: true };
     }
 
     const tokens = normalized.split("-");
     const isDestructive = tokens.some((t) => DESTRUCTIVE_TOKENS.has(t));
     if (isDestructive) {
-        return { title, readOnlyHint: false, destructiveHint: true };
+        return { readOnlyHint: false, destructiveHint: true };
     }
 
     const isWrite = tokens.some((t) => WRITE_TOKENS.has(t));
     if (isWrite) {
-        return { title, readOnlyHint: false, destructiveHint: false };
+        return { readOnlyHint: false, destructiveHint: false };
     }
 
-    return { title, readOnlyHint: true };
+    return { readOnlyHint: true };
 }
 
 /**

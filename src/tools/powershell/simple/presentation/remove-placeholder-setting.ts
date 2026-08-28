@@ -4,7 +4,7 @@ import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
 import { requireOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../generic.js";
-import { getSwitchParameterValue } from "../../utils.js";
+import { ITEM_DATABASE_DESCRIPTION, getSwitchParameterValue } from "../../utils.js";
 
 export function removePlaceholderSettingPowershellTool(server: McpServer, config: Config) {
     server.registerTool(
@@ -17,7 +17,7 @@ export function removePlaceholderSettingPowershellTool(server: McpServer, config
                 path: z.string().optional()
                     .describe("The path of the item to remove placeholder settings from. Supply this or id."),
                 database: z.string()
-                    .describe("The context database. Only sent when addressing by id -- a path carries its own database prefix (e.g. master:/sitecore/content/Home).")
+                    .describe(ITEM_DATABASE_DESCRIPTION)
                     .optional().default("master"),
                 uniqueId: z.string().describe("The placeholder setting unique id to remove.").optional(),
                 key: z.string().describe("The placeholder setting key to remove.").optional(),

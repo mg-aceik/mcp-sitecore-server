@@ -4,6 +4,7 @@ import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
 import { hasTarget, requireOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../generic.js";
+import { ITEM_DATABASE_DESCRIPTION } from "../../utils.js";
 
 export function setItemTemplatePowerShellTool(server: McpServer, config: Config) {
     server.registerTool(
@@ -20,7 +21,7 @@ export function setItemTemplatePowerShellTool(server: McpServer, config: Config)
                 fieldsToCopy: z.record(z.string(), z.string()).optional()
                     .describe("The key-value pairs map the old template fields to the new template fields. The key represents the old template field, and the value represents the new template field."),
                 database: z.string().optional()
-                    .describe("The database containing the item (defaults to the context database).")
+                    .describe(ITEM_DATABASE_DESCRIPTION)
             }),
         },
         async (params) => {

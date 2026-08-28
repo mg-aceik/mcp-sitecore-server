@@ -4,6 +4,7 @@ import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
 import { hasTarget, requireOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../generic.js";
+import { ITEM_DATABASE_DESCRIPTION } from "../../utils.js";
 
 export function testBaseTemplatePowerShellTool(server: McpServer, config: Config) {
     server.registerTool(
@@ -18,7 +19,7 @@ export function testBaseTemplatePowerShellTool(server: McpServer, config: Config
                 template: z.string()
                     .describe("The ID or path of the template to be analyzed."),
                 database: z.string().optional()
-                    .describe("The database containing the item (defaults to the context database).")
+                    .describe(ITEM_DATABASE_DESCRIPTION)
             }),
         },
         async (params) => {

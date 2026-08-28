@@ -4,7 +4,7 @@ import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
 import { hasTarget, requireOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../generic.js";
-import { getSwitchParameterValue } from "../../utils.js";
+import { ITEM_DATABASE_DESCRIPTION, getSwitchParameterValue } from "../../utils.js";
 
 export function publishItemPowerShellTool(server: McpServer, config: Config) {
     server.registerTool(
@@ -35,7 +35,7 @@ export function publishItemPowerShellTool(server: McpServer, config: Config) {
                 language: z.string().optional()
                     .describe("The language of the item that should be published. Supports globbing/wildcards."),
                 database: z.string().optional()
-                    .describe("The database containing the item (defaults to the context database).")
+                    .describe(ITEM_DATABASE_DESCRIPTION)
             }),
         },
         async (params) => {

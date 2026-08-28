@@ -4,7 +4,8 @@ import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
 import { hasTarget, requireOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../generic.js";
-import { getSwitchParameterValue } from "../../utils.js";
+import { ITEM_DATABASE_DESCRIPTION, getSwitchParameterValue } from "../../utils.js";
+import { itemProjectionPipeline, itemProjectionInputSchema } from "../../projection.js";
 
 export function addItemVersionPowerShellTool(server: McpServer, config: Config) {
     server.registerTool(
@@ -29,7 +30,8 @@ export function addItemVersionPowerShellTool(server: McpServer, config: Config) 
                 ignoredFields: z.array(z.string()).optional()
                     .describe("List of fields that should not be copied over from original item."),
                 database: z.string().optional()
-                    .describe("The database containing the item (defaults to the context database)."),
+                    .describe(ITEM_DATABASE_DESCRIPTION),
+                ...itemProjectionInputSchema,
             }),
         },
         async (params) => {
@@ -75,7 +77,17 @@ export function addItemVersionPowerShellTool(server: McpServer, config: Config) 
                 options["Database"] = params.database;
             }
 
-            return safeMcpResponse(runGenericPowershellCommand(config, command, options));
+            // Add-ItemVersion returns the item it versioned. Unprojected that measured
+            // 47,459 characters -- the projection here is the same one the common-get-*
+            // read tools already apply; this write tool had simply been missed.
+            const pipeline = itemProjectionPipeline(params);
+
+            return safeMcpResponse(
+                runGenericPowershellCommand(config, command, options, undefined, {
+                    pipeline,
+                    full: params.full,
+                })
+            );
         }
     );
 }

@@ -161,6 +161,20 @@ export function mediaUploadTool(server: McpServer, config: Config) {
 
                     $item = ${lookup};
                     if ($null -eq $item) { Write-Error "The upload returned success but no media item was found for '$destination'. The bytes were accepted by the CM; read the media library to locate the item."; return; }
+
+                    # A destination whose leaf names an item that already exists and is not a
+                    # media item -- most often a folder, because 'Project/MySite' resolves to
+                    # the MySite folder itself -- used to be reported as a successful upload:
+                    # the folder came back with UploadedBytes set, Size 0 and no error, while
+                    # the bytes had gone nowhere. Verified live against a media folder. Check
+                    # the resolved item actually carries the blob before claiming success, and
+                    # do it *before* the Alt edit so a wrong item is never modified.
+                    $probe = New-Object Sitecore.Data.Items.MediaItem $item;
+                    if (${bytes.length} -gt 0 -and $probe.Size -eq 0) {
+                        Write-Error "The destination '$destination' resolved to the existing item '$($item.Paths.Path)' (template '$($item.TemplateName)'), which holds no media blob, so the ${bytes.length} uploaded bytes were not stored. Include the file name with its extension in 'destination' -- 'Project/MySite/hero.png', not 'Project/MySite' -- or pass the GUID of the media item to overwrite.";
+                        return;
+                    }
+
                     ${params.alt !== undefined ? `$item.Editing.BeginEdit(); $item["Alt"] = ${quotePowerShellString(params.alt)}; [void]$item.Editing.EndEdit();` : ""}
                     $media = New-Object Sitecore.Data.Items.MediaItem $item;
                     [PSCustomObject]@{

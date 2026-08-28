@@ -21,11 +21,9 @@ import { getItemTemplatePowerShellTool } from "../../src/tools/powershell/simple
 import { getItemReferencePowerShellTool } from "../../src/tools/powershell/simple/common/get-item-reference";
 import { removeItemVersionPowerShellTool } from "../../src/tools/powershell/simple/common/remove-item-version";
 import { newItemClonePowerShellTool } from "../../src/tools/powershell/composite/common/new-item-clone";
-import { clearItemAclPowerShellTool } from "../../src/tools/powershell/simple/security/clear-item-acl";
 import { testItemAclPowerShellTool } from "../../src/tools/powershell/simple/security/test-item-acl";
-import { lockItemPowerShellTool } from "../../src/tools/powershell/simple/security/lock-item";
+import { setItemLockPowerShellTool } from "../../src/tools/powershell/simple/security/set-item-lock";
 import { setItemAclPowerShellTool } from "../../src/tools/powershell/composite/security/set-item-acl";
-import { removeSearchIndexItemPowerShellTool } from "../../src/tools/powershell/composite/indexing/remove-search-index-item";
 import { getLayoutPowershellTool } from "../../src/tools/powershell/simple/presentation/get-layout";
 import { removeRenderingPowershellTool } from "../../src/tools/powershell/simple/presentation/remove-rendering";
 import { mergeLayoutPowershellTool } from "../../src/tools/powershell/simple/presentation/merge-layout";
@@ -80,10 +78,8 @@ describe("addressing validation", () => {
     const cases: Array<{ tool: string; registrar: Registrar; inputs: string[]; extra?: Record<string, unknown> }> = [
         { tool: "common-publish-item", registrar: publishItemPowerShellTool, inputs: ["id", "path"] },
         { tool: "common-remove-item-version", registrar: removeItemVersionPowerShellTool, inputs: ["id", "path"], extra: { language: "en" } },
-        { tool: "security-clear-item-acl", registrar: clearItemAclPowerShellTool, inputs: ["id", "path"] },
-        { tool: "security-lock-item", registrar: lockItemPowerShellTool, inputs: ["id", "path"] },
+        { tool: "security-set-item-lock", registrar: setItemLockPowerShellTool, inputs: ["id", "path"], extra: { action: "lock" } },
         { tool: "security-set-item-acl", registrar: setItemAclPowerShellTool, inputs: ["id", "path"], extra: { identity: "sitecore\\admin", accessRight: "item:read", propagationType: "Entity", securityPermission: "AllowAccess", database: "master" } },
-        { tool: "indexing-remove-search-index-item", registrar: removeSearchIndexItemPowerShellTool, inputs: ["id", "path"], extra: { database: "master", indexName: "sitecore_master_index" } },
         { tool: "presentation-remove-rendering", registrar: removeRenderingPowershellTool, inputs: ["id", "path"], extra: { uniqueId: "{A}" } },
         { tool: "presentation-list-renderings", registrar: listRenderingsPowershellTool, inputs: ["id", "path"] },
         { tool: "provider-get-item", registrar: getItemPowerShellTool, inputs: ["path", "id", "query", "uri"] },
@@ -192,16 +188,6 @@ describe("option construction per branch", () => {
         expect(byPath.call!.command).toContain("-Path '/sitecore/content/Home' -UniqueId '{U}'");
         expect(byPath.call!.command).toContain("the item at path ''/sitecore/content/Home''");
         expect(byPath.call!.command).not.toContain("-Database");
-    });
-
-    it("indexing-remove-search-index-item resolves an ID against the database drive", async () => {
-        const tool = mount(removeSearchIndexItemPowerShellTool);
-
-        const byId = await tool.call("indexing-remove-search-index-item", { id: "{ABC}", database: "master", indexName: "sitecore_master_index" });
-        expect(byId.call!.command).toContain("Get-Item -Id '{ABC}' -Path 'master:'");
-
-        const byPath = await tool.call("indexing-remove-search-index-item", { path: "master:/sitecore/content/Home", indexName: "sitecore_master_index" });
-        expect(byPath.call!.command).toContain("Get-Item -Path 'master:/sitecore/content/Home'");
     });
 
     it("security-set-item-acl pipes the addressed item into Set-ItemAcl", async () => {

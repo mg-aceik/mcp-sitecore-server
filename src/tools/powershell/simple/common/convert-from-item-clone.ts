@@ -4,7 +4,8 @@ import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
 import { hasTarget, requireOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../generic.js";
-import { getSwitchParameterValue } from "../../utils.js";
+import { itemProjectionPipeline, itemProjectionInputSchema } from "../../projection.js";
+import { ITEM_DATABASE_DESCRIPTION, getSwitchParameterValue } from "../../utils.js";
 
 export function convertFromItemClonePowerShellTool(server: McpServer, config: Config) {
     server.registerTool(
@@ -21,7 +22,8 @@ export function convertFromItemClonePowerShellTool(server: McpServer, config: Co
                 passThru : z.boolean().optional()
                     .describe("Returns the item that was converted from a clone."),
                 database: z.string().optional()
-                    .describe("The database containing the item (defaults to the context database).")
+                    .describe(ITEM_DATABASE_DESCRIPTION),
+                ...itemProjectionInputSchema
             }),
         },
         async (params) => {
@@ -47,7 +49,16 @@ export function convertFromItemClonePowerShellTool(server: McpServer, config: Co
                 options["Database"] = params.database;
             }
 
-            return safeMcpResponse(runGenericPowershellCommand(config, command, options));
+            // PassThru returns a Sitecore Item, whose unprojected graph measured over
+            // 50,000 characters for a single content page.
+            const pipeline = params.passThru ? itemProjectionPipeline(params) : undefined;
+
+            return safeMcpResponse(
+                runGenericPowershellCommand(config, command, options, undefined, {
+                    pipeline,
+                    full: params.full,
+                })
+            );
         }
     );
 }

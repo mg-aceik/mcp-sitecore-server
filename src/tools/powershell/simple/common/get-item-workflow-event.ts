@@ -4,6 +4,7 @@ import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
 import { hasTarget, requireOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../generic.js";
+import { ITEM_DATABASE_DESCRIPTION } from "../../utils.js";
 
 export function getItemWorkflowEventPowerShellTool(server: McpServer, config: Config) {
     server.registerTool(
@@ -20,7 +21,7 @@ export function getItemWorkflowEventPowerShellTool(server: McpServer, config: Co
                 language: z.string().optional()
                     .describe("The language that will be used as source language."),
                 database: z.string().optional()
-                    .describe("The database containing the item (defaults to the context database).")
+                    .describe(ITEM_DATABASE_DESCRIPTION)
             }),
         },
         async (params) => {

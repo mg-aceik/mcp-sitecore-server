@@ -40,7 +40,18 @@ describe("inferToolAnnotations", () => {
         expect(a.openWorldHint).toBe(true);
     });
 
-    it("always includes a human-readable title", () => {
-        expect(inferToolAnnotations("common-get-archive").title).toBe("Common Get Archive");
+    // The inverse of what this test used to assert. A title derived from the tool name
+    // restates a field the client already has, and it was costing ~4,800 characters of
+    // every tools/list -- paid on every turn -- across 134 tools. Tools whose title is
+    // genuinely more than the name set it explicitly in their own config, which
+    // withInferredAnnotations does not overwrite.
+    it("infers no title, leaving it to the client or an explicit config", () => {
+        expect(inferToolAnnotations("common-get-archive").title).toBeUndefined();
+    });
+
+    it("still infers the hints every tool needs", () => {
+        const a = inferToolAnnotations("common-get-archive");
+        expect(a.readOnlyHint).toBe(true);
+        expect(Object.keys(a)).toEqual(["readOnlyHint"]);
     });
 });

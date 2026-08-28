@@ -376,3 +376,19 @@ export function withToolGating(server: McpServer, gating: ToolGating): McpServer
 
     return server;
 }
+
+/*
+ * A `$schema`-stripping pass used to live here. zod emits
+ * `"$schema": "https://json-schema.org/draft/2020-12/schema"` on every converted schema,
+ * which is ~7,600 characters of `tools/list` -- about 1,900 tokens per turn -- restating a
+ * dialect MCP already fixes. Converting the schema here and re-wrapping it with the SDK's
+ * `fromJsonSchema` removed it and measured exactly that saving.
+ *
+ * It is deliberately not here any more. `fromJsonSchema` validates arguments but does not
+ * *apply* JSON Schema `default` values, where zod's `.default()` does apply them on parse.
+ * 32 defaults across 20 tool files rely on that, and the round trip silently dropped every
+ * one: `authoring-get-item` started failing live with "Variable `ownFields` of type
+ * `Boolean!` must not be null" because the default never reached the query. Any future
+ * attempt at this has to apply defaults itself, and 1,900 tokens is not worth that risk.
+ */
+

@@ -27,8 +27,7 @@ import { getItemTool } from "../../src/tools/item-service/tools/simple/get-item"
 import { mediaUploadTool } from "../../src/tools/powershell/media/media-upload";
 import { newItemClonePowerShellTool } from "../../src/tools/powershell/composite/common/new-item-clone";
 import { updateItemReferrerPowerShellTool } from "../../src/tools/powershell/composite/common/update-item-referrer";
-import { initializeSearchIndexingItemPowerShellTool } from "../../src/tools/powershell/composite/indexing/initialialize-search-indexing-item";
-import { removeSearchIndexItemPowerShellTool } from "../../src/tools/powershell/composite/indexing/remove-search-index-item";
+import { rebuildSearchIndexPowerShellTool } from "../../src/tools/powershell/simple/indexing/rebuild-search-index";
 import { addPlaceholderSettingPowershellTool } from "../../src/tools/powershell/composite/presentation/add-placeholder-setting";
 import { addRenderingPowershellTool } from "../../src/tools/powershell/composite/presentation/add-rendering";
 import { getRenderingParameterPowershellTool } from "../../src/tools/powershell/composite/presentation/get-rendering-parameter";
@@ -39,7 +38,8 @@ import { setRenderingParameterPowershellTool } from "../../src/tools/powershell/
 import { setRenderingPowershellTool } from "../../src/tools/powershell/composite/presentation/set-rendering";
 import { switchRenderingPowershellTool } from "../../src/tools/powershell/composite/presentation/switch-rendering";
 import { setItemAclPowerShellTool } from "../../src/tools/powershell/composite/security/set-item-acl";
-import { addBaseTemplatePowerShellTool } from "../../src/tools/powershell/simple/common/add-base-template";
+import { getLayoutDevicePowershellTool } from "../../src/tools/powershell/simple/presentation/get-layout-device";
+import { setBaseTemplatePowerShellTool } from "../../src/tools/powershell/simple/common/set-base-template";
 import { addItemVersionPowerShellTool } from "../../src/tools/powershell/simple/common/add-item-version";
 import { convertFromItemClonePowerShellTool } from "../../src/tools/powershell/simple/common/convert-from-item-clone";
 import { getItemClonePowerShellTool } from "../../src/tools/powershell/simple/common/get-item-clone";
@@ -51,7 +51,6 @@ import { getItemWorkflowEventPowerShellTool } from "../../src/tools/powershell/s
 import { invokeWorkflowPowerShellTool } from "../../src/tools/powershell/simple/common/invoke-workflow";
 import { newItemWorkflowEventPowerShellTool } from "../../src/tools/powershell/simple/common/new-item-workflow-event";
 import { publishItemPowerShellTool } from "../../src/tools/powershell/simple/common/publish-item";
-import { removeBaseTemplatePowerShellTool } from "../../src/tools/powershell/simple/common/remove-base-template";
 import { removeItemVersionPowerShellTool } from "../../src/tools/powershell/simple/common/remove-item-version";
 import { resetItemFieldPowerShellTool } from "../../src/tools/powershell/simple/common/reset-item-field";
 import { setItemTemplatePowerShellTool } from "../../src/tools/powershell/simple/common/set-item-template";
@@ -64,14 +63,12 @@ import { removePlaceholderSettingPowershellTool } from "../../src/tools/powershe
 import { removeRenderingPowershellTool } from "../../src/tools/powershell/simple/presentation/remove-rendering";
 import { resetLayoutPowershellTool } from "../../src/tools/powershell/simple/presentation/reset-layout";
 import { getItemPowerShellTool } from "../../src/tools/powershell/simple/provider/get-item";
-import { addItemAclPowerShellTool } from "../../src/tools/powershell/simple/security/add-item-acl";
-import { clearItemAclPowerShellTool } from "../../src/tools/powershell/simple/security/clear-item-acl";
 import { getItemAclPowerShellTool } from "../../src/tools/powershell/simple/security/get-item-acl";
-import { lockItemPowerShellTool } from "../../src/tools/powershell/simple/security/lock-item";
-import { protectItemPowerShellTool } from "../../src/tools/powershell/simple/security/protect-item";
+import { setItemLockPowerShellTool } from "../../src/tools/powershell/simple/security/set-item-lock";
+import { getUserPowerShellTool } from "../../src/tools/powershell/simple/security/get-user";
+import { getRolePowerShellTool } from "../../src/tools/powershell/simple/security/get-role";
+import { setItemProtectionPowerShellTool } from "../../src/tools/powershell/simple/security/set-item-protection";
 import { testItemAclPowerShellTool } from "../../src/tools/powershell/simple/security/test-item-acl";
-import { unlockItemPowerShellTool } from "../../src/tools/powershell/simple/security/unlock-item";
-import { unprotectItemPowerShellTool } from "../../src/tools/powershell/simple/security/unprotect-item";
 
 type Registrar = (server: any, config: any) => void;
 
@@ -87,7 +84,7 @@ const SWITCH = { uniqueId: "{66666666-6666-6666-6666-666666666666}", newRenderin
 // Every merged tool, its registrar, and any extra arguments it needs before the addressing
 // inputs are the only thing under test.
 const MERGED: Array<[string, Registrar, Record<string, unknown>?]> = [
-    ["common-add-base-template", addBaseTemplatePowerShellTool],
+    ["common-set-base-template", setBaseTemplatePowerShellTool, { action: "add", template: "/sitecore/templates/Sample/Sample Item" }],
     ["common-add-item-version", addItemVersionPowerShellTool],
     ["common-convert-from-item-clone", convertFromItemClonePowerShellTool],
     ["common-get-item-clone", getItemClonePowerShellTool],
@@ -100,14 +97,11 @@ const MERGED: Array<[string, Registrar, Record<string, unknown>?]> = [
     ["common-new-item-clone", newItemClonePowerShellTool],
     ["common-new-item-workflow-event", newItemWorkflowEventPowerShellTool],
     ["common-publish-item", publishItemPowerShellTool],
-    ["common-remove-base-template", removeBaseTemplatePowerShellTool],
     ["common-remove-item-version", removeItemVersionPowerShellTool],
     ["common-reset-item-field", resetItemFieldPowerShellTool],
     ["common-set-item-template", setItemTemplatePowerShellTool],
     ["common-test-base-template", testBaseTemplatePowerShellTool],
     ["common-update-item-referrer", updateItemReferrerPowerShellTool],
-    ["indexing-initialize-search-index-item", initializeSearchIndexingItemPowerShellTool, { database: "master" }],
-    ["indexing-remove-search-index-item", removeSearchIndexItemPowerShellTool, { database: "master" }],
     ["presentation-add-placeholder-setting", addPlaceholderSettingPowershellTool, { ...SETTING, database: "master" }],
     ["presentation-add-rendering", addRenderingPowershellTool, { ...RENDERING, database: "master" }],
     ["presentation-get-layout", getLayoutPowershellTool],
@@ -125,15 +119,11 @@ const MERGED: Array<[string, Registrar, Record<string, unknown>?]> = [
     ["presentation-set-rendering-parameter", setRenderingParameterPowershellTool, { database: "master" }],
     ["presentation-switch-rendering", switchRenderingPowershellTool, { ...SWITCH, database: "master" }],
     ["provider-get-item", getItemPowerShellTool],
-    ["security-add-item-acl", addItemAclPowerShellTool],
-    ["security-clear-item-acl", clearItemAclPowerShellTool],
     ["security-get-item-acl", getItemAclPowerShellTool],
-    ["security-lock-item", lockItemPowerShellTool],
-    ["security-protect-item", protectItemPowerShellTool],
-    ["security-set-item-acl", setItemAclPowerShellTool, { database: "master" }],
+    ["security-set-item-lock", setItemLockPowerShellTool, { action: "lock" }],
+    ["security-set-item-protection", setItemProtectionPowerShellTool, { action: "protect" }],
+    ["security-set-item-acl", setItemAclPowerShellTool, { database: "master", action: "add", identity: "sitecore\admin", accessRight: "item:read" }],
     ["security-test-item-acl", testItemAclPowerShellTool],
-    ["security-unlock-item", unlockItemPowerShellTool],
-    ["security-unprotect-item", unprotectItemPowerShellTool],
 ];
 
 function mount(registrar: Registrar, name: string) {
@@ -239,7 +229,16 @@ describe("every merged tool", () => {
             .flatMap((file) => [...readFileSync(file, "utf8").matchAll(/registerTool\(\s*["']([a-z0-9-]+)["']/g)]
                 .map((m) => m[1]));
 
-        const covered = new Set([...MERGED.map(([name]) => name), "item-service-get-item", "media-upload"]);
+        // security-get-user and security-get-role validate 'identity' / 'filter' rather than
+        // 'id' / 'path', so they cannot join the table above -- it supplies id and path. They
+        // get their own sweep in "the account lookups" below.
+        const covered = new Set([
+            ...MERGED.map(([name]) => name),
+            "item-service-get-item",
+            "media-upload",
+            "security-get-user",
+            "security-get-role",
+        ]);
 
         // The authoring tools validate addressing the same way but reach Sitecore over
         // HTTP rather than through the PowerShell layer this file mocks, so their sweep
@@ -251,5 +250,171 @@ describe("every merged tool", () => {
         expect([...new Set(registered)]
             .filter((name) => !covered.has(name) && !coveredByAuthoringSweep(name))
         ).toEqual([]);
+    });
+});
+
+describe("the account lookups", () => {
+    // security-get-user and security-get-role merged the old -by-identity / -by-filter
+    // pairs. They validate the same way every other merged tool does, but over
+    // 'identity' / 'filter' rather than 'id' / 'path', so they need their own sweep.
+    const LOOKUPS: Array<[string, Registrar, string, string]> = [
+        ["security-get-user", getUserPowerShellTool, "Get-User", "sitecore\admin"],
+        ["security-get-role", getRolePowerShellTool, "Get-Role", "sitecore\Author"],
+    ];
+
+    for (const [name, registrar, cmdlet, identity] of LOOKUPS) {
+        it(`${name} requires exactly one of identity and filter`, async () => {
+            const handler = mount(registrar, name);
+
+            const none = await handler({});
+            expect(none.isError, "no lookup input").toBe(true);
+            expect(none.content[0].text).toContain("Supply exactly one of");
+            expect(runGeneric).not.toHaveBeenCalled();
+
+            const both = await handler({ identity, filter: "sitecore\*" });
+            expect(both.isError, "two lookup inputs").toBe(true);
+            expect(runGeneric).not.toHaveBeenCalled();
+        });
+
+        it(`${name} sends -Identity for identity and -Filter for filter`, async () => {
+            const handler = mount(registrar, name);
+
+            await handler({ identity });
+            expect(runGeneric.mock.calls[0][1]).toBe(cmdlet);
+            expect(runGeneric.mock.calls[0][2]).toEqual({ Identity: identity });
+
+            runGeneric.mockClear();
+            await handler({ filter: "sitecore\*" });
+            expect(runGeneric.mock.calls[0][2]).toEqual({ Filter: "sitecore\*" });
+        });
+    }
+});
+
+describe("indexing-rebuild-search-index", () => {
+    // The merged tool replaced indexing-initialize-search-index (whole index) and
+    // indexing-initialize-search-index-item (one subtree). Supplying no item is valid here --
+    // it is the whole-index mode -- so it uses requireAtMostOneTarget and cannot join the
+    // exactly-one sweep above.
+    const mountRebuild = () => mount(rebuildSearchIndexPowerShellTool, "indexing-rebuild-search-index");
+
+    it("rebuilds whole indexes when neither id nor path is supplied", async () => {
+        const handler = mountRebuild();
+
+        await handler({ database: "master" });
+        expect(runGeneric.mock.calls[0][1]).toBe("Initialize-SearchIndex");
+        expect(runGeneric.mock.calls[0][2]).toEqual({});
+
+        runGeneric.mockClear();
+        await handler({ database: "master", name: "sitecore_master_index", includeRemoteIndex: true, asJob: true });
+        expect(runGeneric.mock.calls[0][2]).toEqual({
+            Name: "sitecore_master_index",
+            IncludeRemoteIndex: "",
+            AsJob: "",
+        });
+    });
+
+    it("scopes to a subtree when id or path is supplied", async () => {
+        const handler = mountRebuild();
+
+        await handler({ database: "master", path: PATH });
+        let script = runGeneric.mock.calls[0][1] as string;
+        expect(script).toContain("Initialize-SearchIndexItem");
+        expect(script).toContain(PATH);
+        // The per-branch fallback, not a zod default: omitting name means "every index" for a
+        // whole-index rebuild and this wildcard for a subtree.
+        expect(script).toContain("sitecore_*_index");
+
+        runGeneric.mockClear();
+        await handler({ database: "master", id: ID, name: "sitecore_master_index", asJob: true });
+        script = runGeneric.mock.calls[0][1] as string;
+        expect(script).toContain(ID);
+        expect(script).toContain("master:");
+        expect(script).toContain("sitecore_master_index");
+        expect(script).toContain("-AsJob");
+    });
+
+    it("rejects two items, and includeRemoteIndex with an item", async () => {
+        const handler = mountRebuild();
+
+        const both = await handler({ database: "master", id: ID, path: PATH });
+        expect(both.isError).toBe(true);
+        expect(both.content[0].text).toContain("at most one");
+        expect(runGeneric).not.toHaveBeenCalled();
+
+        const remote = await handler({ database: "master", path: PATH, includeRemoteIndex: true });
+        expect(remote.isError).toBe(true);
+        expect(remote.content[0].text).toContain("includeRemoteIndex");
+        expect(runGeneric).not.toHaveBeenCalled();
+    });
+});
+
+describe("security-set-item-acl", () => {
+    // Merged from security-add-item-acl, security-set-item-acl and security-clear-item-acl.
+    // Each action reaches a different cmdlet, and the rule inputs are required for two of
+    // them and rejected for the third, so the dispatch and the validation are both tested.
+    const mountAcl = () => mount(setItemAclPowerShellTool, "security-set-item-acl");
+    const RULE = { identity: "sitecore\Author", accessRight: "item:read" as const };
+
+    it("add appends one rule via Add-ItemAcl", async () => {
+        const handler = mountAcl();
+        await handler({ path: PATH, action: "add", ...RULE, propagationType: "Entity", securityPermission: "AllowAccess" });
+
+        expect(runGeneric.mock.calls[0][1]).toBe("Add-ItemAcl");
+        expect(runGeneric.mock.calls[0][2]).toMatchObject({
+            Path: PATH,
+            Identity: RULE.identity,
+            AccessRight: RULE.accessRight,
+        });
+    });
+
+    it("replace pipes the item into Set-ItemAcl, discarding the existing rules", async () => {
+        const handler = mountAcl();
+        await handler({ path: PATH, action: "replace", ...RULE, propagationType: "Entity", securityPermission: "AllowAccess", database: "master" });
+
+        const script = runGeneric.mock.calls[0][1] as string;
+        expect(script).toContain("New-ItemAcl");
+        expect(script).toContain("Set-ItemAcl -AccessRules $acl");
+    });
+
+    it("clear removes every rule via Clear-ItemAcl", async () => {
+        const handler = mountAcl();
+        await handler({ path: PATH, action: "clear" });
+
+        expect(runGeneric.mock.calls[0][1]).toBe("Clear-ItemAcl");
+        expect(runGeneric.mock.calls[0][2]).toMatchObject({ Path: PATH });
+    });
+
+    it("refuses a rule on clear, and a missing rule on add or replace", async () => {
+        const handler = mountAcl();
+
+        // A clear that also named an identity was most likely meant to be a replace.
+        const clearWithRule = await handler({ path: PATH, action: "clear", ...RULE });
+        expect(clearWithRule.isError).toBe(true);
+        expect(clearWithRule.content[0].text).toContain("action 'replace'");
+        expect(runGeneric).not.toHaveBeenCalled();
+
+        for (const action of ["add", "replace"] as const) {
+            const noRule = await handler({ path: PATH, action });
+            expect(noRule.isError, action).toBe(true);
+            expect(noRule.content[0].text).toContain("'accessRight'");
+            expect(runGeneric).not.toHaveBeenCalled();
+        }
+    });
+});
+
+describe("presentation-get-layout-device", () => {
+    // Merged with presentation-get-default-layout-device: Get-LayoutDevice has only
+    // [-Name] and [-Default], so omitting name asks for the default device.
+    it("sends -Name when named and -Default when not", async () => {
+        const handler = mount(getLayoutDevicePowershellTool, "presentation-get-layout-device");
+
+        await handler({ name: "Default" });
+        expect(runGeneric.mock.calls[0][1]).toBe("Get-LayoutDevice");
+        expect(runGeneric.mock.calls[0][2]).toEqual({ Name: "Default" });
+
+        runGeneric.mockClear();
+        await handler({});
+        expect(runGeneric.mock.calls[0][1]).toBe("Get-LayoutDevice -Default");
+        expect(runGeneric.mock.calls[0][2]).toEqual({});
     });
 });

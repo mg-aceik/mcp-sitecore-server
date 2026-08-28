@@ -4,8 +4,9 @@ import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
 import { requireOneTarget } from "@/tools/target-input.js";
 import { PowershellCommandBuilder, quotePowerShellString } from "../../command-builder.js";
-import { getSwitchParameterValue } from "../../utils.js";
+import { ITEM_DATABASE_DESCRIPTION, getSwitchParameterValue } from "../../utils.js";
 import { runGenericPowershellCommand } from "../../simple/generic.js";
+import { itemProjectionPipeline, itemProjectionInputSchema } from "../../projection.js";
 
 export function newItemClonePowerShellTool(server: McpServer, config: Config) {
     server.registerTool(
@@ -24,7 +25,8 @@ export function newItemClonePowerShellTool(server: McpServer, config: Config) {
                 recurse: z.boolean().optional()
                     .describe("Adds the parameter to clone the whole branch rather than a single item."),
                 database: z.string().optional()
-                    .describe("The database containing the item (defaults to the context database).")
+                    .describe(ITEM_DATABASE_DESCRIPTION),
+                ...itemProjectionInputSchema,
             }),
         },
         async (params) => {
@@ -52,12 +54,20 @@ export function newItemClonePowerShellTool(server: McpServer, config: Config) {
                 addParameters["Database"] = params.database;
             }
 
+            // New-ItemClone returns the clone it created. Unprojected that measured 59,587
+            // characters for one content page. The projection is appended inside the script
+            // rather than passed as a shaping option, because this is a multi-statement
+            // script and the pipeline has to attach to the clone, not to the script.
+            const projection = itemProjectionPipeline(params) ?? "";
+
             const command = `
                 $destinationItem = Get-Item -Path ${quotePowerShellString(params.destination)};
-                New-ItemClone ${commandBuilder.buildParametersString(addParameters)} -destination $destinationItem;
+                New-ItemClone ${commandBuilder.buildParametersString(addParameters)} -destination $destinationItem${projection};
             `;
 
-            return safeMcpResponse(runGenericPowershellCommand(config, command, {}));
+            return safeMcpResponse(
+                runGenericPowershellCommand(config, command, {}, undefined, { full: params.full })
+            );
         }
     );
 }

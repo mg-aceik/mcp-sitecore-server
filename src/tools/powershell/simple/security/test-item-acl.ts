@@ -5,6 +5,7 @@ import { safeMcpResponse } from "@/helper.js";
 import { hasTarget, requireOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../generic.js";
 import { AccessRights } from "./access-rights.js";
+import { ITEM_DATABASE_DESCRIPTION } from "../../utils.js";
 
 export function testItemAclPowerShellTool(server: McpServer, config: Config) {
     server.registerTool(
@@ -23,7 +24,7 @@ export function testItemAclPowerShellTool(server: McpServer, config: Config) {
                 propType: z.enum(["Descendants", "Children", "Entity"]).optional()
                     .describe("The propagation type for the access right"),
                 database: z.string().optional()
-                    .describe("The database containing the item (defaults to the context database)")
+                    .describe(ITEM_DATABASE_DESCRIPTION)
             }),
         },
         async (params) => {

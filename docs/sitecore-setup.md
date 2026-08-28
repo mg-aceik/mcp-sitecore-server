@@ -22,8 +22,8 @@ common, logging) runs through SPE, so install it first if it isn't already there
   and install it through the Installation Wizard, or add the `Spe` NuGet package to your
   platform project.
 - SPE **8.0 or later** is recommended. The four security serialization tools
-  (`security-export-user`, `security-import-user`, `security-export-role`,
-  `security-import-role`) need 8.0 — the export cmdlets were broken before it.
+  (`security-export-account`, `security-import-account`) need 8.0 — the export cmdlets were
+  broken before it.
 
 Confirm it loaded by opening `/sitecore/shell/client/Applications/PowerShell/PowerShellIse`
 in the Sitecore client.

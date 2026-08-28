@@ -5,6 +5,7 @@ import { safeMcpResponse } from "@/helper.js";
 import { hasTarget, requireOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../generic.js";
 import { itemProjectionInputSchema, itemProjectionPipeline } from "../../projection.js";
+import { ITEM_DATABASE_DESCRIPTION } from "../../utils.js";
 
 export function getItemReferrerPowerShellTool(server: McpServer, config: Config) {
     server.registerTool(
@@ -18,7 +19,7 @@ export function getItemReferrerPowerShellTool(server: McpServer, config: Config)
                 path: z.string().optional()
                     .describe("The path of the item to retrieve referrers for (e.g. /sitecore/content/Home). Supply this or id."),
                 database: z.string().optional()
-                    .describe("The database containing the item (defaults to the context database)"),
+                    .describe(ITEM_DATABASE_DESCRIPTION),
                 language: z.string().optional()
                     .describe("The language of the item to check referrers for"),
                 version: z.string().optional()

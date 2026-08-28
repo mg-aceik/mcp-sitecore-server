@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "../../config.js";
 import { safeMcpResponse } from "../../helper.js";
 import { introspection } from "./generic/introspection.js";
+import { schemaSliceInputSchema } from "./schema-slice.js";
 import { z } from "zod";
 import { query } from "./generic/query.js";
 
@@ -11,13 +12,19 @@ function registerIntrospectionTool(server: McpServer, config: Config, schema: st
         `introspection-graphql-${schema}`,
         {
             description:
-                `Returns the full SDL of the Sitecore GraphQL '${schema}' schema. Call it once `
-                + `before writing queries against a schema you have not seen — the SDL is large `
-                + `(often 100,000+ characters), so do not re-fetch it per query, and prefer the `
-                + `typed item/presentation tools when one already answers the question.`,
+                `Explores the Sitecore GraphQL '${schema}' schema. With no arguments it returns `
+                + `the root operations plus the Item interface — the whole contract for querying `
+                + `this endpoint, a couple of KB. Use type: "<name>" for one type in full, `
+                + `search: "<keyword>" to find one, and full: true only when you genuinely need `
+                + `every definition: a delivery schema's full SDL measured 777,501 characters `
+                + `(~194,000 tokens) on a live CM, two thirds of it repeated descriptions. Prefer `
+                + `the typed item/presentation tools when one already answers the question, and `
+                + `authoring-get-item-template or common-get-item-field to read a template's `
+                + `fields — both are far cheaper than the generated per-template types here.`,
+            inputSchema: z.object({ ...schemaSliceInputSchema }),
         },
-        () => {
-            return safeMcpResponse(introspection(config, schema))
+        (params) => {
+            return safeMcpResponse(introspection(config, schema, params))
         }
     )
 }

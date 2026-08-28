@@ -239,6 +239,52 @@ MCP SDK and MCP protocol revision 2026-07-28._
   this: a startup probe that misread a transient network failure would silently delete most
   of the tool surface.
 
+- `[graphql]` **The two GraphQL introspection tools are progressively disclosed instead of
+  returning the whole SDL.** Both previously took no arguments at all, so there was no way to
+  ask for less. `introspection-graphql-{schema}` returned **777,501 characters** against a live Edge
+  endpoint — roughly 194,000 tokens, more than most context windows hold, so no agent could
+  call it and survive. Both now accept `type`, `search`, `full` and `includeDescriptions` —
+  the same shape `get-powershell-documentation` uses (see below).
+  - With no arguments, `introspection-graphql-{schema}` returns the root operations plus the
+    `Item` and `ItemField` interfaces: **3,950 characters**, down from 777,501. That is the
+    whole contract — the schema has four root fields, and every field of every item is
+    reachable through `field(name:)` on `Item`. What is no longer returned was 66%
+    descriptions of which only 14% were distinct (one sentence appeared 597 times), plus 36
+    GUID-suffixed duplicate types, 26 of them near-identical to a friendly-named twin.
+  - With no arguments, `authoring-introspect-schema` returns the operation index: 127 queries
+    and mutations, one line each, **10,332 characters** down from 117,188. That schema is
+    dense rather than repetitive — 324 definitions averaging 362 characters, descriptions 74%
+    distinct — so it is sliced, not replaced. Roughly 107 of its 127 operations have no typed
+    `authoring-*` tool, which makes this the only way to discover the rest of the surface.
+  - `type: "<name>"` returns one type or root operation in full, and for an operation it
+    closes over the input and enum types its arguments reference, so a single call is enough
+    to write the document: `type: "createUser"` returns the mutation and `CreateUserInput`
+    together in 1,083 characters.
+  - `includeDescriptions: false` cuts the full Edge SDL from 777,501 to 234,980 characters.
+- `[powershell]` **Sixteen further tools project their responses.** The projection described above
+  reached the item-returning *read* tools first and initially missed the writes and the
+  infrastructure reads; a live sweep of every tool found them. Every figure below is measured on the same live CM, before → after:
+  - `common-get-cache` with no arguments, the form its own description invites: 110,299 → 26,332
+  - `common-get-sitecore-job`, which takes no arguments at all: 42,018 → 8,920
+  - `common-get-database` for all databases: 21,761 → 642
+  - `common-get-archive`: 8,265 → 84, and it now reports each archive's entry count
+  - `common-add-item-version`: 47,459 → 260
+  - `common-new-item-clone`: 59,587 → 270
+  - `security-lock-item` and `security-unlock-item` with `passThru`: ~51,000 → 260.
+    `security-protect-item`, `security-unprotect-item` and `common-convert-from-item-clone`
+    get the same projection on their `passThru`.
+  - `security-get-current-user`: 4,466 → 253. `security-get-user-by-identity` and
+    `security-get-user-by-filter`: 3,385 → 233. `security-get-role-member`: 4,919 → 233.
+    `security-get-role-by-identity` / `-by-filter` and `security-new-role`: → 173.
+    `security-get-domain`: 2,051 → 745. `security-get-item-acl`: 756 per rule → ~120.
+  - Each of these takes `full: true` to return the unprojected object graph, like every
+    other projected tool.
+- `[item-service]` **`item-service-search-items` no longer returns the facet breakdown unless
+  asked.** The endpoint returns it on every search whether or not the caller wants it, and it
+  dominated the response: 62,277 characters for a `pageSize: 5` search, of which `Facets` was
+  46,014 and `Results` 1,720. Pass `includeFacets: true` to get it back, with the per-value
+  `Link` callbacks dropped.
+
 #### Existing tools
 
 - `[powershell]` **`get-powershell-documentation` reveals the SPE reference progressively
@@ -379,6 +425,90 @@ MCP SDK and MCP protocol revision 2026-07-28._
   the config had drifted, exposing none of the tool-gating settings. Install with
   `npx @antonytm/mcp-sitecore-server@latest` or one of the Docker images instead.
 
+- `[powershell]` **Twelve more tool families merged, on the same principle as the `-by-id` /
+  `-by-path` merge above: where two tools differed only in a value, the value became an
+  input.** 26 tools become 13, and each merged tool validates its discriminator rather than
+  guessing.
+  - `security-get-user-by-identity` + `security-get-user-by-filter` → **`security-get-user`**,
+    and `security-get-role-by-*` → **`security-get-role`**. Both take `identity` or `filter`
+    and reject zero or two, exactly as the addressing merges do.
+  - `security-get-domain-by-name` folded into **`security-get-domain`**: `Get-Domain` already
+    treats a missing `-Name` as "every domain", so the two tools were one call apart.
+  - `security-lock-item` + `security-unlock-item` → **`security-set-item-lock`**, and
+    `security-protect-item` + `security-unprotect-item` →
+    **`security-set-item-protection`**, each with an `action`. These stay *two* tools rather
+    than one: an editing lock and delete protection are independent flags — an item can be
+    locked, protected, both or neither — so a single `state` enum would claim they are
+    alternatives and make "protect this locked item" unexpressible. `force` lives on the lock
+    tool only, and is refused for `action: "unlock"`, because SPE's `Unlock-Item` has no
+    `-Force`.
+  - `security-export-user` + `-export-role` → **`security-export-account`**, and
+    `security-import-user` + `-import-role` → **`security-import-account`**, with an
+    `accountType`. Direction stays two tools: export writes a file, import overwrites the
+    live account, and one tool covering both would have to declare `destructiveHint: true`
+    for the export case too — a safety annotation that is wrong half the time is worse than
+    two tools.
+  - `indexing-suspend-search-index` + `-stop-search-index` + `-resume-search-index` →
+    **`indexing-set-search-index-state`** with an `action`. The rebuild is deliberately *not*
+    folded in: it reads like a fourth state but is a different operation, with item scoping and
+    an `includeRemoteIndex` parameter that would be meaningless for the other three values.
+  - `indexing-initialize-search-index` + `indexing-initialize-search-index-item` →
+    **`indexing-rebuild-search-index`**, with the item optional. These were one question —
+    "rebuild what?" — split across two tools whose names differed by a suffix, and the narrower
+    one was the harder to find precisely because `-search-index-item` reads like a variant of
+    the other rather than the scoped form of it. Omit `id` and `path` to rebuild whole indexes;
+    supply either to rebuild just that subtree. They are two different cmdlets underneath
+    (`Initialize-SearchIndex` and `Initialize-SearchIndexItem`), so the tool dispatches rather
+    than passing a flag through: `asJob` is on both, while `includeRemoteIndex` exists only on
+    the whole-index cmdlet and is refused with an item rather than silently dropped. The index
+    name's default differs by mode — every index for a whole rebuild, `sitecore_*_index` for a
+    subtree — so it is applied per branch rather than as a schema default that would silently
+    change the other mode's meaning. "Rebuild" is SPE's own verb here:
+    `Rebuild-SearchIndexItem` is the documented alias for the item cmdlet.
+  - `security-add-item-acl` + `security-set-item-acl` + `security-clear-item-acl` →
+    **`security-set-item-acl`** with `action: add | replace | clear`. The split actively
+    misled: `add` and `set` differed in whether the existing rules survive — the single most
+    important thing about the call — and that was discoverable only by reading two
+    descriptions side by side. `identity` and `accessRight` are required for `add` and
+    `replace` and refused for `clear`, since a `clear` that also named an identity was most
+    likely meant to be a `replace`. Three cmdlets underneath (`Add-ItemAcl`, `New-ItemAcl`
+    piped into `Set-ItemAcl`, `Clear-ItemAcl`), so it dispatches rather than passing a flag.
+  - `presentation-get-layout-device` + `presentation-get-default-layout-device` →
+    **`presentation-get-layout-device`**, with `name` optional. `Get-LayoutDevice` has exactly
+    two parameter sets, `[-Name]` and `[-Default]`, so the two tools were one switch apart.
+  - `common-add-base-template` + `common-remove-base-template` →
+    **`common-set-base-template`** with an `action`. The merged tool declares
+    `destructiveHint: true` unconditionally: removing a base template strips its fields from
+    every item built on the template, and with one tool the annotation has to cover the worse
+    case.
+- `[powershell]` **`indexing-remove-search-index-item` is removed.** An index entry deleted
+  by hand reappears on the next crawl, so it fixed nothing that
+  `indexing-rebuild-search-index` does not fix properly, and it invited an agent to
+  "clean up" an index in a way that does not hold.
+- `[server]` **`tools/list` drops to 121 tools / 135,270 characters**, from 136 tools /
+  154,840 before this pass — about 4,200 fewer tokens on every turn, with no capability
+  removed. Three changes account for it beyond the merges:
+  - Inferred `annotations.title` is gone. `toTitle` only title-cased the tool name, so 134 of
+    136 titles restated a field the client already had, at ~4,800 characters per `tools/list`.
+    The two tools whose title says more than the name set it explicitly and keep it.
+  - The most-repeated parameter descriptions were cut to one line each: the `full` flag's
+    (246 → 93 characters, spread across 33 tools), the `fields` flag's (132 → 81, across 15),
+    `finalLayout`'s (224 → 99, across 7), and three wordings of the `database` parameter
+    collapsed into one 51-character constant across 28 files.
+  - A `$schema`-stripping pass was written, measured at a further ~7,600 characters, and then
+    **reverted**: re-wrapping the converted schema with the SDK's `fromJsonSchema` validates
+    arguments but does not *apply* JSON Schema `default` values the way zod's `.default()`
+    does. 32 defaults across 20 tool files rely on that, and the round trip silently dropped
+    every one — `authoring-get-item` began failing live with "Variable `ownFields` of type
+    `Boolean!` must not be null". `tool-profiles.ts` records why, so the next attempt starts
+    from the constraint rather than rediscovering it.
+- `[docs]` For a much larger saving than any of the above, set `TOOL_PROFILE` or
+  `TOOL_GROUPS` for the instance you actually run against. Measured on the same build:
+  `TOOL_PROFILE=sai` serves 100 tools / 111,379 characters, `TOOL_PROFILE=no-spe` 33 tools /
+  39,401, and `TOOL_GROUPS=authoring.core,authoring.content` 18 tools / 25,985 — a 81%
+  reduction against the default. See [Tool selection](docs/tool-selection.md).
+
+
 ### 🔒 Security
 
 - `[media]` **`filePath` and `saveTo` are refused over the HTTP transport by default.**
@@ -517,6 +647,56 @@ build` did not copy the markdown at all, so the loose build only worked if some 
   threw a bare `HTTP error! status: <n>`; all of them now include the status text and a body
   excerpt, which is where the Item Service puts the reason.
 
+- `[powershell]` **Five tools passed parameters that SPE's cmdlets do not define, so any call
+  setting one failed outright** with "A parameter cannot be found that matches parameter
+  name ...". Each was verified live before and after the fix.
+  - `security-get-role-member`: `userOnly` / `roleOnly` sent `-UserOnly` / `-RoleOnly`; the
+    cmdlet takes `-UsersOnly` / `-RolesOnly`. Two of its three parameter sets were
+    unreachable. The repository's own bundled reference, `documentation/security/get-rolemember.md`,
+    had the correct spelling all along.
+  - `indexing-get-search-index`: `database`, `running` and `corrupted` are not parameters of
+    `Get-SearchIndex`, which has only `[-Name <string>]`. They are removed, and the response
+    now reports `IndexingState` and the `Summary` health flags so the same filtering can be
+    done on the result instead.
+  - `security-get-item-acl`: `includeInherited` and `includeSystem` are not parameters of
+    `Get-ItemAcl`. They are replaced by the cmdlet's real filters, `identity` and `filter`.
+  - `security-unlock-item`: `force` is not a parameter of `Unlock-Item`, which unlocks
+    regardless of owner anyway. Removed. `security-lock-item` does take `-Force` and keeps it.
+  - `common-get-cache`: `database` is not a parameter of `Get-Cache`. Removed.
+- `[powershell]` **`common-get-cache` could not find a cache by the name it had just
+  reported.** Every Sitecore cache name contains square brackets (`master[items]`), and
+  `Get-Cache -Name` matches its argument as a wildcard pattern in which `[...]` is a
+  character class — so the obvious call returned an empty result with no error to explain it.
+  The name is now matched literally unless it contains `*` or `?`.
+- `[powershell]` **`common-get-archive-item` returned the entire archive when `itemId`
+  matched nothing.** This is SPE's own behaviour — the raw `Get-ArchiveItem -ItemId` answered
+  with all 12,657 entries for a GUID that is not in the archive, against 1 for a GUID that
+  is — so a mistyped GUID silently became a full archive dump that read like a match. The
+  filter is now re-applied after the cmdlet returns.
+- `[powershell]` **`media-upload` reported success when it had stored nothing.** A
+  `destination` whose leaf named an existing non-media item — most often a folder, since
+  `Project/MySite` resolves to the MySite folder itself — came back with `UploadedBytes` set,
+  `Size: 0` and no error. It now checks that the resolved item actually carries the blob
+  before claiming success, and says how to address the destination correctly.
+- `[powershell]` **`security-set-user-password` failed whenever it was called the way its own
+  schema described.** `oldPassword` was documented as optional, but `Set-UserPassword` has two
+  parameter sets and both are gated: one requires `-OldPassword`, the other `-Reset`. A call
+  with only `newPassword` satisfied neither and failed with a message that named no remedy.
+  The tool now requires one of the two and refuses before sending.
+- `[powershell]` **`security-*-item-acl` offered a propagation type that does not exist.**
+  `propagationType` listed `Descendants | Children | Entity`, but
+  `Sitecore.Security.AccessControl.PropagationType` is `Unknown | Descendants | Entity | Any`
+  — passing `Children` failed with "Unable to match the identifier name Children to a valid
+  enumerator name". It was the obvious choice for "just the immediate children", and it never
+  worked; Sitecore has no children-only propagation. The value is gone, and
+  `securityPermission` gains the `AllowInheritance` / `DenyInheritance` values Sitecore's own
+  rules use — reading the ACL of `/sitecore/content` returns `AllowInheritance` rules these
+  tools could not have written.
+- `[authoring]` **`authoring-publish-item` sent callers to the wrong value for
+  `targetDatabases`.** Its description pointed at `publishingTargets { name }`, which returns
+  `Edge` on SitecoreAI — and publishing with `Edge` fails, because the field wants the
+  target's *database* name, `experienceedge`. The description now says which is which.
+
 ### 📝 Documentation
 
 - [Configuration](docs/configuration.md) gains an [Authoring and Management
@@ -537,6 +717,11 @@ build` did not copy the markdown at all, so the loose build only worked if some 
   addresses seeded fixture content by hard-coded GUID, so it fails in bulk against any other
   instance — and maps each failure signature to its cause, so a wall of red is diagnosable
   at a glance.
+
+- `[docs]` `docs/tools.md` listed `security-test-acccount` (three c's) for
+  `security-test-account`, and omitted `security-set-user` and `security-get-item-acl`
+  entirely. Fixed, and the entries for the tools changed above now say what their parameters
+  actually do.
 
 ### ✨ Chores
 

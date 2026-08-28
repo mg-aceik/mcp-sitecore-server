@@ -57,10 +57,23 @@ export function getArchiveItemPowerShellTool(server: McpServer, config: Config) 
             // pipeline has to attach to the entries, not to the script.
             const projection = fixedProjectionPipeline(ARCHIVE_ENTRY_PROJECTION, params) ?? "";
 
+            // Guard against SPE's own behaviour on a non-matching ItemId: `Get-ArchiveItem
+            // -ItemId {11111111-...}` does not return nothing, it returns *every* entry in
+            // the archive. Verified against a live CM -- the raw cmdlet answered 12,657 for
+            // a GUID that is not in the archive and 1 for one that is. Left unguarded a
+            // mistyped GUID silently becomes a full archive dump that reads like a match,
+            // so the filter is re-applied here after the fact. Braces and case are
+            // normalised on both sides because the archive reports `{GUID}` upper-case
+            // while callers pass either form.
+            const itemIdGuard = params.itemId
+                ? `\n                $wanted = ${quotePowerShellString(params.itemId)}.Trim('{','}').ToLowerInvariant();`
+                + `\n                $entries = @($entries | Where-Object { $_.ItemId.ToString().Trim('{','}').ToLowerInvariant() -eq $wanted });`
+                : "";
+
             const command = `
                 $database = Get-Database -Name ${quotePowerShellString(params.database)};
                 $archive = Get-Archive -Database $database -Name ${quotePowerShellString(params.archive)};
-                $entries = @(Get-ArchiveItem ${commandBuilder.buildParametersString(parameters)} -Archive $archive);
+                $entries = @(Get-ArchiveItem ${commandBuilder.buildParametersString(parameters)} -Archive $archive);${itemIdGuard}
                 $page = @($entries | Select-Object -Skip ${params.skip} -First ${params.first}${projection});
                 [PSCustomObject]@{
                     Archive = ${quotePowerShellString(params.archive)};

@@ -5,6 +5,7 @@ import { safeMcpResponse } from "@/helper.js";
 import { requireOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../../simple/generic.js";
 import { PowershellCommandBuilder, quotePowerShellString } from "../../command-builder.js";
+import { ITEM_DATABASE_DESCRIPTION } from "../../utils.js";
 
 export function updateItemReferrerPowerShellTool(server: McpServer, config: Config) {
     server.registerTool(
@@ -21,7 +22,7 @@ export function updateItemReferrerPowerShellTool(server: McpServer, config: Conf
                 removeLink: z.boolean().optional()
                     .describe("Removes all links to the current target item."),
                 database: z.string().optional()
-                    .describe("The database containing the item (defaults to the context database)"),
+                    .describe(ITEM_DATABASE_DESCRIPTION),
                 language: z.string().optional()
                     .describe("The language of the item."),
             }),

@@ -36,7 +36,13 @@ export function authoringPublishItemTool(server: McpServer, config: Config) {
                 languages: z.array(z.string()).min(1)
                     .describe("The languages to publish, e.g. ['en']. Required."),
                 targetDatabases: z.array(z.string()).min(1)
-                    .describe("The publishing targets, e.g. ['experienceedge'] on SitecoreAI or ['web'] on XM/XP. Required. Use authoring-graphql with 'query { publishingTargets { name } }' if unsure."),
+                    .describe(
+                        "The publishing targets, e.g. ['experienceedge'] on SitecoreAI or ['web'] on "
+                        + "XM/XP. Required. This is the target's *database* name, not the publishing "
+                        + "target item's name: on SitecoreAI the item is 'Edge' but the database is "
+                        + "'experienceedge', and 'Edge' is rejected. Read the right values from the "
+                        + "'Target database' field of /sitecore/system/Publishing targets."
+                    ),
                 publishItemMode: z.enum(["FULL", "SMART"]).optional().default("SMART")
                     .describe("SMART publishes only what changed; FULL republishes everything under the root regardless. SMART is the default and is what you normally want."),
                 publishSubItems: z.boolean().optional()
