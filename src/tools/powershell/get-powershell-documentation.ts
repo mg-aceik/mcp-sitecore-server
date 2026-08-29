@@ -13,7 +13,7 @@ import {
 /**
  * The Sitecore PowerShell Extensions command reference, revealed progressively.
  *
- * This tool used to concatenate all 148 command pages — roughly 570KB of markdown — into a
+ * This tool used to concatenate every command page — roughly 570KB of markdown — into a
  * single result. An agent that wanted the parameters of one cmdlet paid for the parameter
  * tables of the other 147, which on most models is a large fraction of the whole context
  * window spent to answer a small question, and often enough to make the answer worse rather
@@ -67,7 +67,7 @@ export function getPowershellDocumentationTool(server: McpServer) {
             description:
                 "The Sitecore PowerShell Extensions command reference, for writing "
                 + "run-powershell-script scripts. Reveals progressively rather than returning the "
-                + "whole ~570KB corpus: call it with NO arguments first for an index of all 148 "
+                + "whole ~510KB corpus: call it with NO arguments first for an index of all 129 "
                 + "commands with one-line summaries, then call it again with 'command' for the full "
                 + "page — syntax, every parameter, and examples — of the one or few you need. "
                 + "'search' matches names, summaries and page bodies when you know what you want to "

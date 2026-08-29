@@ -10,12 +10,12 @@ Service configuration these settings talk to.
 
 ## Transport
 
-| Variable    | Default | Description                                                                                                                                                                                                                    |
-| ----------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `TRANSPORT` | `stdio` | `stdio` or `streamable-http`. Streamable HTTP serves MCP at `/mcp`, with a `/health` liveness endpoint. An unrecognised value falls back to `stdio` and says so on stderr. `sse` is gone — see [SSE removal](#sse-removal) below. |
-| `PORT`      | `3001`  | Port the Streamable HTTP transport listens on. Ignored on stdio.                                                                                                                                                                 |
-| `HOST`      | all interfaces | Interface to bind. Set it to `127.0.0.1` to keep the port off the network.                                                                                                                                            |
-| `MCP_BODY_LIMIT` | `32mb` | Maximum request body the `/mcp` endpoint accepts. Express's own default of 100kb is smaller than a single base64 image, so `media-upload`'s inline `content` needs the headroom.                                       |
+| Variable         | Default        | Description                                                                                                                                                                                                                       |
+| ---------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TRANSPORT`      | `stdio`        | `stdio` or `streamable-http`. Streamable HTTP serves MCP at `/mcp`, with a `/health` liveness endpoint. An unrecognised value falls back to `stdio` and says so on stderr. `sse` is gone — see [SSE removal](#sse-removal) below. |
+| `PORT`           | `3001`         | Port the Streamable HTTP transport listens on. Ignored on stdio.                                                                                                                                                                  |
+| `HOST`           | all interfaces | Interface to bind. Set it to `127.0.0.1` to keep the port off the network.                                                                                                                                                        |
+| `MCP_BODY_LIMIT` | `32mb`         | Maximum request body the `/mcp` endpoint accepts. Express's own default of 100kb is smaller than a single base64 image, so `media-upload`'s inline `content` needs the headroom.                                                  |
 
 ### SSE removal
 
@@ -50,14 +50,14 @@ one talks to the Edge and preview endpoints under `/sitecore/api/graph/` using a
 `sc_apikey`; this one talks to the CM's authoring schema at
 `/sitecore/api/authoring/graphql/v1/` using an OAuth 2.0 bearer token.
 
-| Variable                  | Default                          | Description                                                                                                                                         |
-| ------------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Variable                  | Default                                                           | Description                                                                                                                                                 |
+| ------------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `AUTHORING_ENDPOINT`      | `ITEM_SERVICE_SERVER_URL` + `/sitecore/api/authoring/graphql/v1/` | The endpoint URL. Sitecore always serves it from that path, so this only needs setting when the authoring CM is a different host from the Item Service one. |
-| `AUTHORING_CLIENT_ID`     | —                                | Client ID for the client-credentials grant. On SitecoreAI this comes from an XM Cloud Deploy automation client with the `xmcloud.cm:admin` scope.    |
-| `AUTHORING_CLIENT_SECRET` | —                                | The matching client secret.                                                                                                                         |
-| `AUTHORING_TOKEN`         | —                                | A bearer token supplied directly, instead of the pair above. Wins when both are set.                                                                |
-| `AUTHORING_AUTHORITY`     | `https://auth.sitecorecloud.io`  | The token authority. `/oauth/token` is appended.                                                                                                     |
-| `AUTHORING_AUDIENCE`      | `https://api.sitecorecloud.io`   | The audience the token is requested for.                                                                                                            |
+| `AUTHORING_CLIENT_ID`     | —                                                                 | Client ID for the client-credentials grant. On SitecoreAI this comes from an XM Cloud Deploy automation client with the `xmcloud.cm:admin` scope.           |
+| `AUTHORING_CLIENT_SECRET` | —                                                                 | The matching client secret.                                                                                                                                 |
+| `AUTHORING_TOKEN`         | —                                                                 | A bearer token supplied directly, instead of the pair above. Wins when both are set.                                                                        |
+| `AUTHORING_AUTHORITY`     | `https://auth.sitecorecloud.io`                                   | The token authority. `/oauth/token` is appended.                                                                                                            |
+| `AUTHORING_AUDIENCE`      | `https://api.sitecorecloud.io`                                    | The audience the token is requested for.                                                                                                                    |
 
 Set **either** `AUTHORING_CLIENT_ID` + `AUTHORING_CLIENT_SECRET` **or** `AUTHORING_TOKEN`.
 Prefer the credentials pair: tokens carry an `expires_in`, and only that route can renew
@@ -81,29 +81,29 @@ unregistered instead of failing one call at a time.
 All three are unset by default, which registers every tool. See
 [Tool selection](./tool-selection.md) for the full treatment.
 
-| Variable         | Default | Description                                                                            |
-| ---------------- | ------- | -------------------------------------------------------------------------------------- |
-| `TOOL_GROUPS`    | —       | Comma-separated allowlist of tool groups to register. Unset registers every group.     |
-| `DISABLED_TOOLS` | —       | Comma-separated list of exact tool names to leave unregistered. Always wins on conflict. |
-| `TOOL_PROFILE`   | —       | Comma-separated list of preset denylists. `xp` disables nothing and `sai` hides the CM-identity set; `no-spe`, `no-item-service`, `no-edge-graphql` and `no-authoring-api` each hide one API surface your instance does not serve. Everything named is unioned. |
+| Variable         | Default | Description                                                                                                                                                                                                                                                                   |
+| ---------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TOOL_GROUPS`    | —       | Comma-separated allowlist of tool groups to register. Unset registers every group.                                                                                                                                                                                            |
+| `DISABLED_TOOLS` | —       | Comma-separated list of exact tool names to leave unregistered. Always wins on conflict.                                                                                                                                                                                      |
+| `TOOL_PROFILE`   | —       | Comma-separated list of preset denylists. `no-spe`, `no-item-service`, `no-edge-graphql` and `no-authoring-api` each hide one API surface your instance does not serve; `no-account-management` hides the twelve tools that create or edit a CM account, for a deployment that would rather an agent could not manage accounts. Everything named is unioned. |
 
 ## Limits and behaviour
 
-| Variable                 | Default              | Description                                                                                                                             |
-| ------------------------ | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `POWERSHELL_TIMEOUT_MS`  | `600000` (10 min)    | Timeout for a single PowerShell Remoting request.                                                                                       |
-| `POWERSHELL_FULL_ERRORS` | `false`              | `true` returns the complete .NET error record instead of the shaped summary when a command fails. Individual tools also accept `full: true` per call. |
-| `REQUEST_TIMEOUT_MS`     | `30000` (30 s)       | Timeout for Item Service and GraphQL requests.                                                                                          |
-| `DESCENDANTS_MAX_ITEMS`  | `5000`               | Node cap for `item-service-get-item-descendants`, which reports truncation rather than exhausting memory on a large or circular tree.   |
+| Variable                 | Default           | Description                                                                                                                                           |
+| ------------------------ | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POWERSHELL_TIMEOUT_MS`  | `600000` (10 min) | Timeout for a single PowerShell Remoting request.                                                                                                     |
+| `POWERSHELL_FULL_ERRORS` | `false`           | `true` returns the complete .NET error record instead of the shaped summary when a command fails. Individual tools also accept `full: true` per call. |
+| `REQUEST_TIMEOUT_MS`     | `30000` (30 s)    | Timeout for Item Service and GraphQL requests.                                                                                                        |
+| `DESCENDANTS_MAX_ITEMS`  | `5000`            | Node cap for `item-service-get-item-descendants`, which reports truncation rather than exhausting memory on a large or circular tree.                 |
 
 ## Security
 
-| Variable                       | Default | Description                                                                                                                                                                       |
-| ------------------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AUTHORIZATION_HEADER`         | —       | If set, the server expects an `authorization` header matching this value. If unset, no authorization check is performed. Set it whenever the HTTP port is reachable by anything other than your own machine. |
-| `NODE_TLS_REJECT_UNAUTHORIZED` | —       | Read by Node itself. `.env.template` ships it set to `0` so the server can talk to a local Sitecore instance with a self-signed certificate.                                      |
-| `MEDIA_LOCAL_FILE_ROOT`        | —       | Directory that `media-upload`'s `filePath` and `media-download`'s `saveTo` are confined to. Required to use those parameters at all under `TRANSPORT=streamable-http`; see [Media and the local filesystem](#media-and-the-local-filesystem). |
-| `MEDIA_ALLOW_PRIVATE_SOURCE_URL` | `false` | `true` lets `media-upload`'s `sourceUrl` reach private, loopback and link-local addresses. Leave it off unless you are deliberately importing from your own network.            |
+| Variable                         | Default | Description                                                                                                                                                                                                                                   |
+| -------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AUTHORIZATION_HEADER`           | —       | If set, the server expects an `authorization` header matching this value. If unset, no authorization check is performed. Set it whenever the HTTP port is reachable by anything other than your own machine.                                  |
+| `NODE_TLS_REJECT_UNAUTHORIZED`   | —       | Read by Node itself. `.env.template` ships it set to `0` so the server can talk to a local Sitecore instance with a self-signed certificate.                                                                                                  |
+| `MEDIA_LOCAL_FILE_ROOT`          | —       | Directory that `media-upload`'s `filePath` and `media-download`'s `saveTo` are confined to. Required to use those parameters at all under `TRANSPORT=streamable-http`; see [Media and the local filesystem](#media-and-the-local-filesystem). |
+| `MEDIA_ALLOW_PRIVATE_SOURCE_URL` | `false` | `true` lets `media-upload`'s `sourceUrl` reach private, loopback and link-local addresses. Leave it off unless you are deliberately importing from your own network.                                                                          |
 
 > **Warning:** `NODE_TLS_REJECT_UNAUTHORIZED=0` disables TLS certificate verification for
 > every outbound request. Set it to `1`, or remove it, in production or on an untrusted

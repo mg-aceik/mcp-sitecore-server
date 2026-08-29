@@ -23,9 +23,10 @@ describe("commandIndex", () => {
 
     it("indexes every bundled command page", () => {
         const index = commandIndex();
-        // 148 pages across the seven category folders: upstream's appendix minus
-        // packaging/import-item-1.md, which was a byte-identical duplicate of import-item.md.
-        expect(index.length).toBe(148);
+        // 129 pages across the seven category folders: upstream's appendix minus
+        // packaging/import-item-1.md, which was a byte-identical duplicate of import-item.md,
+        // and minus the 19 Sheer UI and console-host pages -- see documentation-index.ts.
+        expect(index.length).toBe(129);
     });
 
     it("gives every command a name and a category", () => {
@@ -36,14 +37,13 @@ describe("commandIndex", () => {
     });
 
     it("summarises every command upstream describes, and only those lack one", () => {
-        // These seven pages go straight from the heading to `## Syntax`, and their
+        // These six pages go straight from the heading to `## Syntax`, and their
         // `## Detailed Description` section is empty too — the description is missing
         // upstream, not lost by the indexer. Pinned as a list so a *new* empty summary
         // fails here instead of quietly degrading the index.
         const undocumentedUpstream = [
             "Get-ItemCloneNotification",
             "Initialize-SearchIndexItem",
-            "Invoke-JavaScript",
             "Receive-ItemCloneNotification",
             "Remove-SearchIndexItem",
             "Test-BaseTemplate",

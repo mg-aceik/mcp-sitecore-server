@@ -17,6 +17,36 @@ import { quotePowerShellString } from "./command-builder.js";
  * object is ever serialized. The default set is the identity an agent needs in order
  * to make its next call; `fields` adds named Sitecore fields on top, and `full`
  * disables projection entirely for the diagnostics that genuinely want the graph.
+ *
+ * Every projection below exists because a live call was measured and found to be
+ * unusable, not because a graph looked large. No cmdlet is projected speculatively: the
+ * measurements are on a live SitecoreAI CM, before → after, and each is recorded on the
+ * projection it justifies.
+ *
+ *   provider-get-item-by-path              252,351 →   247
+ *   common-get-cache (no arguments)        110,299 → 26,332
+ *   common-get-item-template-by-path       106,602 →   277
+ *   provider-get-item-by-id                 65,215 →   238
+ *   common-new-item-clone                   59,587 →   270
+ *   security-lock-item (passThru)          ~51,000 →   260
+ *   common-add-item-version                 47,459 →   260
+ *   common-get-sitecore-job (no arguments)  42,018 → 8,920
+ *   presentation-get-layout-by-path         35,573 →   285
+ *   common-get-database (all databases)     21,761 →   642
+ *   common-get-archive                       8,265 →    84
+ *   presentation-get-default-layout-device   6,125 →   246
+ *   security-get-role-member                 4,919 →   233
+ *   security-get-current-user                4,466 →   253
+ *   security-get-user-by-identity            3,385 →   233
+ *   security-get-domain                      2,051 →   745
+ *   security-get-item-acl                  756/rule → ~120/rule
+ *
+ * The three at the bottom of that list — domain, and the account reads — are the marginal
+ * ones, and they are projected for consistency rather than for the saving: a caller that
+ * has learned `full: true` on one account tool should not find the next one behaves
+ * differently. `cache` and `job` are the opposite case: both take no useful arguments, so
+ * before this there was no way for a caller to ask either for less than a fifth of a
+ * 128k context window.
  */
 export type ProjectedProperty = {
     /** Property name in the projected output. */

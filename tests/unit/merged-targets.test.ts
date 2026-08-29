@@ -22,7 +22,7 @@ import { getItemReferencePowerShellTool } from "../../src/tools/powershell/simpl
 import { removeItemVersionPowerShellTool } from "../../src/tools/powershell/simple/common/remove-item-version";
 import { newItemClonePowerShellTool } from "../../src/tools/powershell/composite/common/new-item-clone";
 import { testItemAclPowerShellTool } from "../../src/tools/powershell/simple/security/test-item-acl";
-import { setItemLockPowerShellTool } from "../../src/tools/powershell/simple/security/set-item-lock";
+import { setItemLockPowerShellTool } from "../../src/tools/powershell/composite/security/set-item-lock";
 import { setItemAclPowerShellTool } from "../../src/tools/powershell/composite/security/set-item-acl";
 import { getLayoutPowershellTool } from "../../src/tools/powershell/simple/presentation/get-layout";
 import { removeRenderingPowershellTool } from "../../src/tools/powershell/simple/presentation/remove-rendering";

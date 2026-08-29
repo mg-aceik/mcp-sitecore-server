@@ -36,22 +36,47 @@ describe("resolveToolGating", () => {
         expect(gating.enabledGroups).toBeNull();
     });
 
-    it("applies the sai profile", () => {
-        const gating = resolveToolGating({ TOOL_PROFILE: "sai" });
-        expect(isGroupEnabled("powershell.security", gating)).toBe(false);
-        // logging-get-logs reads log files from the CM's data folder, which a deployed
-        // SitecoreAI environment does not serve — the platform collects the logs instead.
-        expect(isGroupEnabled("powershell.logging", gating)).toBe(false);
-        // Everything else stays — publishing targets Edge on SitecoreAI, so
-        // common-publish-item and common-restart-application remain available.
+    it("applies the no-account-management profile", () => {
+        const gating = resolveToolGating({ TOOL_PROFILE: "no-account-management" });
+        // A policy profile, not a capability one: these tools work on any CM, and the
+        // deployment is declining to put them within an agent's reach.
+        expect(isToolEnabled("security-new-user", gating)).toBe(false);
+        expect(isToolEnabled("security-set-user-password", gating)).toBe(false);
+        expect(isToolEnabled("security-new-domain", gating)).toBe(false);
+        expect(isToolEnabled("security-export-account", gating)).toBe(false);
+        // The group itself is *not* hidden: item security is set from the CM on every
+        // platform, and reading an account changes nothing and is needed to name an
+        // identity in an access rule.
+        expect(isGroupEnabled("powershell.security", gating)).toBe(true);
+        expect(isToolEnabled("security-set-item-acl", gating)).toBe(true);
+        expect(isToolEnabled("security-get-item-acl", gating)).toBe(true);
+        expect(isToolEnabled("security-test-item-acl", gating)).toBe(true);
+        expect(isToolEnabled("security-set-item-lock", gating)).toBe(true);
+        expect(isToolEnabled("security-set-item-protection", gating)).toBe(true);
+        expect(isToolEnabled("security-get-user", gating)).toBe(true);
+        expect(isToolEnabled("security-get-role", gating)).toBe(true);
+        // This profile is about accounts and nothing else: every other group is untouched.
+        expect(isGroupEnabled("powershell.logging", gating)).toBe(true);
+        expect(isToolEnabled("logging-get-logs", gating)).toBe(true);
         expect(isToolEnabled("common-publish-item", gating)).toBe(true);
         expect(isToolEnabled("common-restart-application", gating)).toBe(true);
         expect(isGroupEnabled("powershell.common", gating)).toBe(true);
         expect(isToolEnabled("provider-get-item", gating)).toBe(true);
-        // The authoring surface is the preferred one on SitecoreAI, so none of it is hidden.
         expect(isGroupEnabled("authoring.core", gating)).toBe(true);
         expect(isGroupEnabled("authoring.content", gating)).toBe(true);
         expect(isGroupEnabled("authoring.management", gating)).toBe(true);
+        // It hides exactly the twelve tools it documents, and no group at all.
+        expect(gating.disabledGroups.size).toBe(0);
+        expect(gating.disabledTools.size).toBe(12);
+    });
+
+    it("names only absences and withheld operations, never a platform", () => {
+        // Every profile is a `no-*` entry: a preset keyed to a Sitecore product would have
+        // to guess which tools that product's operators do not want, and this is the guard
+        // against one being added on the quiet.
+        for (const name of Object.keys(TOOL_PROFILES)) {
+            expect(name.startsWith("no-")).toBe(true);
+        }
     });
 
     it("no longer accepts the removed sitecore-cli group", () => {
@@ -64,16 +89,13 @@ describe("resolveToolGating", () => {
         expect(gating.enabledGroups).toBeNull();
     });
 
-    it("applies the xp profile as a no-op, matching the unset default", () => {
-        const gating = resolveToolGating({ TOOL_PROFILE: "xp" });
-        expect(gating.disabledGroups.size).toBe(0);
-        expect(gating.disabledTools.size).toBe(0);
-    });
-
     it("unions DISABLED_TOOLS on top of the profile", () => {
-        const gating = resolveToolGating({ TOOL_PROFILE: "sai", DISABLED_TOOLS: "indexing-find-item" });
+        const gating = resolveToolGating({
+            TOOL_PROFILE: "no-account-management",
+            DISABLED_TOOLS: "indexing-find-item",
+        });
         expect(isToolEnabled("indexing-find-item", gating)).toBe(false);
-        expect(isGroupEnabled("powershell.security", gating)).toBe(false);
+        expect(isToolEnabled("security-new-user", gating)).toBe(false);
     });
 
     it("lets the denylist win over the group allowlist", () => {
@@ -86,13 +108,14 @@ describe("resolveToolGating", () => {
     });
 
     it("ignores an unknown profile rather than failing to start", () => {
-        const gating = resolveToolGating({ TOOL_PROFILE: "sai-typo" });
+        const gating = resolveToolGating({ TOOL_PROFILE: "no-account-managment" });
         expect(gating.disabledTools.size).toBe(0);
         expect(gating.disabledGroups.size).toBe(0);
     });
 
     it("is case-insensitive about the profile name", () => {
-        expect(resolveToolGating({ TOOL_PROFILE: "SAI" }).disabledGroups.size).toBeGreaterThan(0);
+        expect(resolveToolGating({ TOOL_PROFILE: "NO-ACCOUNT-MANAGEMENT" }).disabledTools.size)
+            .toBeGreaterThan(0);
     });
 
     it("hides every powershell group under no-spe, and nothing else", () => {
@@ -152,11 +175,12 @@ describe("resolveToolGating", () => {
         expect(isGroupEnabled("item-service", gating)).toBe(true);
     });
 
-    it("composes a platform profile with a surface profile", () => {
-        const gating = resolveToolGating({ TOOL_PROFILE: "sai,no-spe" });
-        // sai's own entries are a subset of no-spe's here, and hiding a group twice is
-        // still just hiding it.
+    it("composes an operation profile with a surface profile", () => {
+        const gating = resolveToolGating({ TOOL_PROFILE: "no-account-management,no-spe" });
+        // no-account-management's tools all live in a group no-spe hides outright, and
+        // hiding a tool twice is still just hiding it.
         expect(isGroupEnabled("powershell.security", gating)).toBe(false);
+        expect(isToolEnabled("security-new-user", gating)).toBe(false);
         expect(isGroupEnabled("powershell.logging", gating)).toBe(false);
         expect(isGroupEnabled("powershell.media", gating)).toBe(false);
         expect(isGroupEnabled("authoring.content", gating)).toBe(true);

@@ -53,7 +53,7 @@ most other clients, `servers` in VS Code — and fill in your own endpoints and 
         "POWERSHELL_SERVER_URL": "https://xmcloudcm.localhost/",
         "AUTHORING_CLIENT_ID": "",
         "AUTHORING_CLIENT_SECRET": "",
-        "TOOL_PROFILE": "xp"
+        "TOOL_PROFILE": ""
       }
     }
   }
@@ -61,11 +61,13 @@ most other clients, `servers` in VS Code — and fill in your own endpoints and 
 ```
 
 `TOOL_PROFILE` takes a comma-separated list of presets, and unions what each one hides.
-Two name a platform: **`xp`** (the default) disables nothing, and **`sai`** hides the
-CM-side identity tools that SitecoreAI manages in the Cloud Portal instead. Four more name
-an API surface your instance does not serve — **`no-spe`**, **`no-item-service`**,
+Every preset names something absent or unwanted rather than a platform. Four name an API
+surface your instance does not serve — **`no-spe`**, **`no-item-service`**,
 **`no-edge-graphql`** and **`no-authoring-api`** — so an instance missing two of them can
-say so:
+say so. **`no-account-management`** is the one that is not about a missing surface: it
+hides the twelve tools that create or edit an account on the CM, for a deployment that
+would rather an agent could not do that at all (item security, and reading accounts and
+roles, are untouched):
 
 ```
 TOOL_PROFILE=no-spe,no-item-service

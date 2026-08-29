@@ -139,7 +139,7 @@
         },
         {
           "name": "TOOL_PROFILE",
-          "description": "Comma-separated list of preset denylists, unioned: 'xp' (or unset) disables nothing, 'sai' (SitecoreAI) hides the CM-identity set, and 'no-spe', 'no-item-service', 'no-edge-graphql' and 'no-authoring-api' each hide one API surface this instance does not serve",
+          "description": "Comma-separated list of preset denylists, unioned: 'no-spe', 'no-item-service', 'no-edge-graphql' and 'no-authoring-api' each hide one API surface this instance does not serve, and 'no-account-management' hides the tools that create or edit a CM account, for a deployment that would rather an agent could not manage accounts. Unset disables nothing",
           "is_required": false
         },
         {

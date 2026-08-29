@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
  * The bundled Sitecore PowerShell Extensions command reference, indexed for progressive
  * reveal.
  *
- * The whole corpus is 148 command pages and about 570KB of markdown. Returning all of it
+ * The corpus is 129 command pages and about 510KB of markdown. Returning all of it
  * in one tool result — which is what this tool used to do — spends an enormous amount of a
  * model's context to answer a question about one cmdlet, and most of it is parameter
  * tables for commands the caller will never touch. So the corpus is indexed once and
@@ -15,6 +15,18 @@ import { fileURLToPath } from "node:url";
  *
  * The pages are a vendored copy of the SPE Book (`SitecorePowerShell/Book`,
  * `appendix/<category>/*.md`), kept verbatim so they can be re-synced by comparing bytes.
+ *
+ * Two sets of upstream pages are deliberately not vendored:
+ *
+ * - `packaging/import-item-1.md`, a byte-identical duplicate of `import-item.md`.
+ * - The 19 pages for commands that only exist inside the SPE console's own UI. This server
+ *   runs every script over the `remoting` service, where there is no browser, no Sheer UI
+ *   and no interactive host: `Invoke-JavaScript`, `Send-SheerMessage`, `Read-Variable`,
+ *   `Close-Window`, `Get-UserAgent`, `Set-HostProperty`, `Out-Download`, `Send-File`,
+ *   `Receive-File`, `Update-ListView` and the nine `Show-*` dialog commands. A model that
+ *   reads a `Show-Confirm` page has been told it can ask the user a question, which it
+ *   cannot; carrying the pages would cost context in order to point the agent somewhere
+ *   that does not exist.
  */
 
 /** The category folders, which are SPE's own grouping of its commands. */

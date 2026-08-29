@@ -3,7 +3,7 @@ import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
 import { requireAtMostOneTarget } from "@/tools/target-input.js";
-import { runGenericPowershellCommand } from "../generic.js";
+import { runGenericPowershellCommand } from "../../simple/generic.js";
 
 /**
  * The four export/import tools collapsed along the axis that carried no behaviour.

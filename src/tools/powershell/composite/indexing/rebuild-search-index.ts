@@ -3,7 +3,7 @@ import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
 import { hasTarget, requireAtMostOneTarget } from "@/tools/target-input.js";
-import { runGenericPowershellCommand } from "../generic.js";
+import { runGenericPowershellCommand } from "../../simple/generic.js";
 import { quotePowerShellString } from "../../command-builder.js";
 import { ITEM_DATABASE_DESCRIPTION } from "../../utils.js";
 

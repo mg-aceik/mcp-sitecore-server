@@ -182,13 +182,12 @@ MCP SDK and MCP protocol revision 2026-07-28._
   `security-login-user` and `security-logout-user` will not be added: SPE 8.0 hollowed
   `Login-User` and `Logout-User` and marked them obsolete for removal
   ([#1367](https://github.com/SitecorePowerShell/Console/issues/1367),
-  [#1368](https://github.com/SitecorePowerShell/Console/issues/1368)). The whole security
-  group stays hidden under `TOOL_PROFILE=sai`, where identity is a Cloud Portal concern and
-  Sitecore CLI is the supported serialization route.
+  [#1368](https://github.com/SitecorePowerShell/Console/issues/1368)). Sitecore CLI is the
+  supported serialization route.
 
 #### Performance and token cost
 
-- **`tools/list` serves 121 tools / 135,270 characters, down from 162 tools / 150,038 in
+- **`tools/list` serves 121 tools / 135,573 characters, down from 162 tools / 150,038 in
   1.4.2** — 41 fewer tools and about 3,700 fewer tokens on every turn, while the release
   *adds* the composition set, the two media tools, the four security serialization tools and
   the 22 Authoring and Management tools (less the three removed: `sitecore-cli-documentation`,
@@ -221,7 +220,8 @@ MCP SDK and MCP protocol revision 2026-07-28._
   tool per entry in `GRAPHQL_SCHEMAS`, so the default `edge,master` puts 123 on the wire and
   every further schema adds two; every figure here is measured at one schema. For a much
   larger saving than any pass above, set `TOOL_PROFILE` or `TOOL_GROUPS` for the instance you
-  actually run against: `TOOL_PROFILE=sai` serves 94 tools / 114,406 characters,
+  actually run against: `TOOL_PROFILE=no-account-management` serves 109 tools / 128,140
+  characters,
   `TOOL_PROFILE=no-spe` 33 tools / 41,168, and `TOOL_GROUPS=authoring.core,authoring.content`
   18 tools / 26,954 — an 80% reduction. See [Tool selection](docs/tool-selection.md).
 
@@ -241,25 +241,42 @@ MCP SDK and MCP protocol revision 2026-07-28._
 
 - **Tool gating via `TOOL_GROUPS`, `DISABLED_TOOLS` and `TOOL_PROFILE`** lets a deployment
   register only the groups it uses, which is the largest single lever on `tools/list` cost.
-  The `sai` profile hides the whole `powershell.security` group for SitecoreAI, where
-  identity lives in the Cloud Portal, and `powershell.logging`, whose only tool
-  (`logging-get-logs`) reads log files off the CM's data folder: a deployed SitecoreAI
-  environment has the platform collect its logs, so the tool has nothing to read, and a local
-  Docker CM already exposes them on a mounted volume, so going through SPE is the long way
-  round. `common-publish-item` and `common-restart-application` _are_ available under `sai`,
-  since on SitecoreAI content publishes to Edge and a deployed environment does have a
-  publishing target (a local development CM does not).
+  **Every profile is a `no-*` entry; none names a platform.** A preset keyed to the product
+  would have to guess which tools that product's operators do not want, and the guess misses
+  in both directions: `powershell.security` holds account management _and_ item security,
+  only the first of which is ever unwanted, while an operator who does want account
+  management withheld may be on any platform. Which surface is absent, and which operation
+  you would rather an agent could not perform, are things an operator can state precisely —
+  so they are the only two things the table asks for.
 
-- **Four `TOOL_PROFILE` presets for a missing API surface**, and `TOOL_PROFILE` now takes a
-  comma-separated list so they compose. `no-spe`, `no-item-service`, `no-edge-graphql` and
+- **Five `TOOL_PROFILE` presets**, and `TOOL_PROFILE` takes a comma-separated list so they
+  compose. Four name an API surface: `no-spe`, `no-item-service`, `no-edge-graphql` and
   `no-authoring-api` each hide the groups belonging to one of the server's four surfaces,
   for an instance that does not serve it. `no-spe` is the significant one: SPE ships with
   `remoting` disabled, and without it roughly three quarters of this server's tools cannot
   run — schema an agent otherwise pays for on every turn. Saying which surface is absent
   beats the equivalent `TOOL_GROUPS` allowlist, which has to enumerate every group you _do_
-  want and needs revisiting whenever a group is added. Nothing probes Sitecore to infer
-  this: a startup probe that misread a transient network failure would silently delete most
-  of the tool surface.
+  want and needs revisiting whenever a group is added.
+
+  The fifth, **`no-account-management`**, is the one that is not about a missing surface.
+  Those four say _this instance cannot serve that_; this one says _I would rather an agent
+  could not do that_. The twelve tools it hides work on any CM — `security-new-user`,
+  `-remove-user`, `-set-user`, `-set-user-password`, `-disable-user`, `-enable-user`,
+  `-unlock-user`, `-test-account`, `-new-domain`, `-remove-domain`, `-export-account`,
+  `-import-account` — and that is the point: creating a user, resetting a password or
+  serializing an account out to disk are consequential, easy to do by accident, and rarely
+  what the agent was asked for. Not registering the tool is a stronger guarantee than a
+  prompt telling it not to, and it costs the schema too. Deployments that administer
+  accounts elsewhere anyway (the Cloud Portal on SitecoreAI, an external identity provider
+  on a federated XM/XP) are the obvious case, but the profile stands on its own anywhere.
+
+  It hides nothing else: item security is set from the CM on every platform, so
+  `security-set-item-acl`, `-get-item-acl`, `-test-item-acl`, `-set-item-lock` and
+  `-set-item-protection` stay, and so do the account and role _reads_ an agent needs in
+  order to name an identity in an access rule.
+
+  Nothing probes Sitecore to infer any of this: a startup probe that misread a transient
+  network failure would silently delete most of the tool surface.
 
 - `[graphql]` **The two GraphQL introspection tools are progressively disclosed instead of
   returning the whole SDL.** Both previously took no arguments at all, so there was no way to
@@ -321,6 +338,16 @@ MCP SDK and MCP protocol revision 2026-07-28._
   like `Get-ItemTemplates` is answered with `Get-ItemTemplate` first. There is deliberately no
   "return everything" mode.
 
+- `[powershell]` **The 19 SPE console-only command pages are no longer bundled.** Every
+  script this server runs goes over the `remoting` service, where there is no browser, no
+  Sheer UI and no interactive host, so the pages for commands that only exist inside the SPE
+  console described a capability the agent does not have: `Invoke-JavaScript`,
+  `Send-SheerMessage`, `Read-Variable`, `Close-Window`, `Get-UserAgent`, `Set-HostProperty`,
+  `Out-Download`, `Send-File`, `Receive-File`, `Update-ListView` and the nine `Show-*` dialog
+  commands. A model that reads the `Show-Confirm` page has been told it can ask the user a
+  question mid-script, which is worse than not finding a page at all. The corpus is 129 pages
+  / ~510KB, down from 148 / ~570KB, and the no-argument index is 11,454 characters.
+
 - `[powershell]` **The bundled SPE command reference is re-synced with upstream.** 145 of the
   149 pages were already byte-identical to `SitecorePowerShell/Book`; four had drifted, and
   `Find-Item` was the one that mattered — the bundled page documented neither `-Path`,
@@ -342,6 +369,17 @@ MCP SDK and MCP protocol revision 2026-07-28._
   throws its own error for an unknown id; the guard covers SPE paths that no-op instead).
 
 ### 🛠 Breaking Changes
+
+- `[powershell]` **Six tools move from `simple/` to `composite/`.** No tool name, schema or
+  behaviour changes — this is the source layout only, and it is worth recording because the
+  rule it follows decides where the next tool goes: a tool that always runs the same one
+  cmdlet is `simple`, and a tool that makes several calls, or picks its cmdlet from the
+  parameters it was given, is `composite`. The merged tools are all the second kind.
+  Moved: `indexing-set-search-index-state` (`Suspend-`/`Stop-`/`Resume-SearchIndex`),
+  `indexing-rebuild-search-index` (`Initialize-SearchIndex`/`Initialize-SearchIndexItem`),
+  `common-set-base-template` (`Add-`/`Remove-BaseTemplate`), `security-set-item-lock`
+  (`Lock-`/`Unlock-Item`), `security-set-item-protection` (`Protect-`/`Unprotect-Item`) and
+  `security-export-account` / `security-import-account` (`Export-`/`Import-User` or `-Role`).
 
 - `[item-service]` **`item-service-run-stored-query` and `item-service-run-stored-search`
   are removed.** Both ran a saved query or search _definition item_ by GUID — a Sitecore
@@ -642,7 +680,12 @@ build` did not copy the markdown at all, so the loose build only worked if some 
   real problem is that HTTP Basic credentials cannot satisfy a cloud CM. The error now
   carries the status, an excerpt of the body with HTML reduced to its visible text, and,
   when the response came from the identity provider rather than Sitecore, says so outright.
-  A `429` is named as rate limiting and a `404` still points at the remoting service.
+  A `404` still points at the remoting service, and a `429` says the one thing about it
+  that is actionable: SPE's remoting endpoint does no rate limiting of its own, so a 429
+  never came from Sitecore — on a cloud-federated CM it is the identity provider throttling
+  a burst of redirects set off by calls it will not authenticate. It is a symptom of bad
+  credentials, not of calling too fast, and the message says so rather than inviting the
+  reader to slow down.
 
 - `[item-service]` **`Login failed` now carries the status and the reason.** A `403` from
   the Item Service means one of two very different things — the account is not valid on this
@@ -709,11 +752,28 @@ build` did not copy the markdown at all, so the loose build only worked if some 
   and when to prefer each.
 - [Preparing your Sitecore instance](docs/sitecore-setup.md) gains step 5 — switching
   GraphQL on, getting credentials on SitecoreAI and on XM/XP, and the media-upload
-  encryption key — plus seven new troubleshooting rows. It also no longer claims that a
-  `403` from the Item Service proves `ServicesOffPolicy`: it can equally be a refused
-  account, and the page now gives the one-request test that tells the two apart.
+  encryption key — plus seven new troubleshooting rows, and links to Sitecore's own
+  documentation for the Authoring and Management API: the overview, the enabling and
+  authorizing walkthrough, the limitations page where the query-depth cap is written down,
+  and the authoring and management query examples. Its opening table now counts **four**
+  surfaces rather than three: Edge GraphQL and the Authoring and Management API were one
+  row, which reads as one thing to configure when they are two endpoints with two sets of
+  credentials. It also no longer claims that a `403` from the Item Service proves
+  `ServicesOffPolicy`: it can equally be a refused account, and the page now gives the
+  one-request test that tells the two apart.
 - [Tool selection](docs/tool-selection.md) explains what separates the three authoring
-  groups, and when to reach for the Authoring API over the Item Service or PowerShell.
+  groups, and when to reach for the Authoring API over the Item Service or PowerShell. Its
+  read-latency section gives the ranking of the three surfaces rather than millisecond
+  figures — the ranking is a property of the surfaces and held everywhere it was tried,
+  while the absolute numbers were a property of one CM's hardware and network and invited
+  being read as a promise. It also separates two things that are easy to
+  conflate: a `TOOL_GROUPS` name is a value for an environment variable and never reaches a
+  client, so its length costs nothing, while the tool names themselves do run into real
+  limits — the Claude API's `^[a-zA-Z0-9_-]{1,64}$`, against which Claude Code's
+  `mcp__{server}__{tool}` prefix counts, and Cursor's silent drop at a 60-character
+  `{server}{tool}`. With the README's `sitecore-mcp`, the longest name on the wire is
+  `mcp__sitecore-mcp__presentation-remove-rendering-parameter` at 58 of the API's 64, so
+  the page now records a margin of 6 rather than leaving it to be rediscovered.
 - [Tool reference](docs/tools.md) documents three endpoint path rules that are easy to trip
   over: template paths are relative to `/sitecore/templates` with no leading slash, a
   media `itemPath` carries no file extension, and template sections and fields are matched

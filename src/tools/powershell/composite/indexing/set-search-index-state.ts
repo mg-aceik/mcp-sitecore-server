@@ -2,7 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
-import { runGenericPowershellCommand } from "../generic.js";
+import { runGenericPowershellCommand } from "../../simple/generic.js";
 
 /**
  * `indexing-suspend-search-index`, `-stop-search-index` and `-resume-search-index` merged.

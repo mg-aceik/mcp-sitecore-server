@@ -38,6 +38,14 @@ taxonomy:
 means every group. Skipping a group also skips its registrars' startup work, not just
 their schemas.
 
+A group name is a configuration value only. It is not a prefix on any tool name and never
+reaches a client. The limit that _is_ real is on the tool names themselves. MCP's own
+schema does not constrain them (`name` is a plain string in the protocol types), but what
+sits above it does, and each layer composes the name differently: the Claude API requires
+`^[a-zA-Z0-9_-]{1,64}$`, and Claude Code namespaces an MCP tool as `mcp__{server}__{tool}`,
+so the prefix counts against those 64; Cursor composes `{server}{tool}` with no prefix and
+silently drops any tool where that reaches 60. All tools currently are under those limits.
+
 `powershell.media` (`media-upload` / `media-download`) needs the SPE `mediaUpload` /
 `mediaDownload` services enabled on the CM — see
 [Preparing your Sitecore instance](./sitecore-setup.md). The three `authoring.*` groups
@@ -49,7 +57,7 @@ need the Authoring and Management API's own credentials; see
 They split the Authoring and Management schema the way Sitecore's own documentation does.
 
 - `authoring.core` — `authoring-introspect-schema` and `authoring-graphql`. Two tools, and
-  between them they reach the *entire* schema: workflow, archiving, rules, security,
+  between them they reach the _entire_ schema: workflow, archiving, rules, security,
   languages, databases, site creation. Keep this group even when you trim the others, and
   it is the whole group to keep if you only want the escape hatch.
 - `authoring.content` — the authoring half: items, templates, media, sites and search.
@@ -79,21 +87,20 @@ If you are trimming for an authoring agent on SitecoreAI, `authoring.core` +
 
 #### Read latency
 
-The three surfaces also differ in speed. Measured against a SitecoreAI dev CM (same item,
-warm connections, auth excluded, five reads each):
+The three surfaces also differ in speed. Absolute numbers are a property of your hardware
+and your network, not of this server, so what follows is the ranking rather than a
+measurement to hold anyone to — it held on every instance it was tried against.
 
-| Surface                        | median | spread     |
-| ------------------------------ | ------ | ---------- |
-| Item Service (REST)            | 41 ms  | 39–41 ms   |
-| Edge GraphQL (the CM's schema) | 85 ms  | 82–106 ms  |
-| Authoring GraphQL              | 107 ms | 87–124 ms  |
+For a single-item read, the Item Service is the fastest: it is a thin REST read, and it
+came in at roughly half the latency of either GraphQL endpoint with almost no jitter. Edge
+GraphQL is next, and the Authoring and Management API is the slowest of the three and the
+most variable, which is what a schema of its size and a resolver layer over the CM cost.
 
-The Item Service is a thin REST read and roughly halves the latency of either GraphQL
-endpoint, with almost no jitter. That ranking holds for single-item reads only: one
-GraphQL query fetching many items or fields beats N Item Service round-trips, so the
-per-call advantage inverts as soon as a query can batch. Auth also lands differently on
-first use — the Item Service logs in once per session with a cookie, while the authoring
-tools pay an extra round-trip to mint the bearer token.
+That ranking holds for single-item reads only. One GraphQL query fetching many items or
+fields beats N Item Service round-trips, so the per-call advantage inverts as soon as a
+query can batch. Auth also lands differently on first use — the Item Service logs in once
+per session with a cookie, while the authoring tools pay an extra round-trip to mint the
+bearer token.
 
 So for a quick read of one item, prefer `item-service-get-item`; reach for GraphQL when
 one query replaces several calls, or when you need what only that schema can see
@@ -121,25 +128,35 @@ DISABLED_TOOLS=indexing-find-item,run-powershell-script
 ## `TOOL_PROFILE`
 
 A comma-separated list of documented preset denylists. `DISABLED_TOOLS` entries are unioned
-on top, and so is every profile you name. This server targets SitecoreAI (SAI) **and**
+on top, and so is every profile you name. This server targets SitecoreAI **and**
 XM/XP, so **no tool is disabled by default**: what is dead weight on one platform is core
 workflow on the other.
 
-The profile table lives in [`src/tool-profiles.ts`](../src/tool-profiles.ts). There are two
-kinds of entry, and they compose:
+The profile table lives in [`src/tool-profiles.ts`](../src/tool-profiles.ts). Every entry
+is subtractive and they all compose, but they come in two kinds:
 
-- **Platform presets** — `xp` and `sai` — answer _which platform is this?_ Pick one.
-- **Surface presets** — the `no-*` entries — answer _which of the four APIs does this
-  instance actually serve?_ Set as many as apply.
+- **Capability** — the four surface entries answer _which of the four APIs does this
+  instance actually serve?_ What they hide would fail if called.
+- **Policy** — `no-account-management` answers _what would you rather an agent could not
+  do?_ What it hides works perfectly well; you are choosing not to expose it.
 
-| Profile            | Hides                                 | Why                                                                                                                                                                                                                                                                                                                   |
-| ------------------ | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `xp` (or unset)    | nothing                               | Publishing, application restart and CM-side identity management are all real operations on XM/XP.                                                                                                                                                                                                                     |
-| `sai`              | the `powershell.security` and `powershell.logging` groups | Users, roles and domains are managed in the Sitecore Cloud Portal, not on the CM, so the CM-side identity tools are misleading at best. Note that this also hides the item ACL, lock and protect tools, which _do_ work on a SitecoreAI CM — if you need those, use `TOOL_PROFILE=xp` with `DISABLED_TOOLS` instead. `powershell.logging` holds only `logging-get-logs`, which reads log files from the CM's data folder: on SitecoreAI the platform collects logs instead, and on a local Docker CM they are already on a mounted volume. |
-| `no-spe`           | all nine `powershell.*` groups        | SPE is not installed, or the `remoting` service is left disabled — the state SPE ships in. Every tool in those groups reaches Sitecore through `POST /-/script/script/`, so without it each one fails at the request with a 404 or a 403. This is the largest single saving available: roughly three quarters of the tool surface. |
-| `no-item-service`  | the `item-service` group              | The Item Service REST API under `/sitecore/api/ssc/item/` is not served. Items stay readable and writable through the `authoring-*` tools and through SPE's `provider-*` and `common-*` tools, so this one is safe to set on its own. |
-| `no-edge-graphql`  | the `graphql` group                   | No Edge or preview endpoint under `/sitecore/api/graph/`, or no `sc_apikey` for one. Delivery-side only — this does **not** touch the Authoring and Management API, which is a different endpoint with different credentials. What it hides is sized by `GRAPHQL_SCHEMAS`: a query tool and an introspection tool per schema. |
-| `no-authoring-api` | all three `authoring.*` groups        | The Authoring and Management API at `/sitecore/api/authoring/graphql/v1/` is not exposed, or no OAuth credentials are configured for it. Worth setting deliberately: with nothing configured those tools stay registered and fail per call, because the server cannot tell at startup whether you meant to use them. |
+Set as many as apply.
+
+There is deliberately no preset that names a platform. One would have to guess which tools
+that product's operators do not want, and the guess misses in both directions:
+`powershell.security` holds account management _and_ item security, only the first of which
+is ever unwanted, while an operator who does want account management withheld may be on any
+platform. Which surface is absent, and which operation you would rather an agent could not
+perform, are things you can state precisely — so they are the only two things the table
+asks for.
+
+| Profile            | Hides                           | Why                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------ | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `no-spe`           | all nine `powershell.*` groups  | SPE is not installed, or the `remoting` service is left disabled — the state SPE ships in. Every tool in those groups reaches Sitecore through `POST /-/script/script/`, so without it each one fails at the request with a 404 or a 403. This is the largest single saving available: roughly three quarters of the tool surface.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `no-item-service`  | the `item-service` group        | The Item Service REST API under `/sitecore/api/ssc/item/` is not served. Items stay readable and writable through the `authoring-*` tools and through SPE's `provider-*` and `common-*` tools, so this one is safe to set on its own.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `no-edge-graphql`  | the `graphql` group             | No Edge or preview endpoint under `/sitecore/api/graph/`, or no `sc_apikey` for one. Delivery-side only — this does **not** touch the Authoring and Management API, which is a different endpoint with different credentials. What it hides is sized by `GRAPHQL_SCHEMAS`: a query tool and an introspection tool per schema.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `no-account-management` | twelve account-management tools | **Policy, not capability** — these tools work on any CM; this says you would rather an agent could not use them. Creating a user, resetting a password or serializing an account out to disk are consequential, easy to do by accident, and rarely what the agent was asked for, and withholding the tool is a stronger guarantee than a prompt telling it not to. Often set where accounts are administered elsewhere anyway (the Cloud Portal on SitecoreAI, an external IdP on a federated XM/XP), but it stands on its own anywhere. Hidden: `security-new-user`, `-remove-user`, `-set-user`, `-set-user-password`, `-disable-user`, `-enable-user`, `-unlock-user`, `-test-account`, `-new-domain`, `-remove-domain`, `-export-account`, `-import-account`. **Item security is not hidden** — granting a role a right on a subtree, locking and protecting an item are done on the CM on every platform, so `security-set-item-acl`, `-get-item-acl`, `-test-item-acl`, `-set-item-lock` and `-set-item-protection` stay, as do the account and role _reads_ an agent needs to name an identity in a rule. |
+| `no-authoring-api` | all three `authoring.*` groups  | The Authoring and Management API at `/sitecore/api/authoring/graphql/v1/` is not exposed, or no OAuth credentials are configured for it. Worth setting deliberately: with nothing configured those tools stay registered and fail per call, because the server cannot tell at startup whether you meant to use them.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 
 Combine them for an instance that is missing more than one surface — a headless CM with
 neither SPE remoting nor the Item Service:
@@ -156,7 +173,8 @@ Nothing here probes Sitecore. These are statements you make about your instance:
 probe that misread a transient network failure would silently delete most of the tool
 surface, and an operator who already knows the answer should not pay a round trip for it.
 
-`common-publish-item` and `common-restart-application` stay available under `sai`: on
-SitecoreAI, content publishes to Edge, which lives on Sitecore's cloud servers only (there
-is no `web` database), so publishing works on deployed environments — a local development
-CM simply has no publishing target. Hide either with `DISABLED_TOOLS` if you prefer.
+No profile hides `common-publish-item` or `common-restart-application`, including on
+SitecoreAI: there, content publishes to Edge, which lives on Sitecore's cloud servers only
+(there is no `web` database), so publishing works on deployed environments — a local
+development CM simply has no publishing target. Hide either with `DISABLED_TOOLS` if you
+prefer.

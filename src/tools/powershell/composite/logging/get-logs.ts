@@ -44,7 +44,12 @@ export function getLogsPowerShellTool(server: McpServer, config: Config) {
     server.registerTool(
         `logging-get-logs`,
         {
-            description: `Retrieves Sitecore logs from the log directory.`,
+            description:
+                "Retrieves Sitecore logs from the CM's data folder over SPE. On a local Docker "
+                + "CM the same files are on a mounted volume, so reading them from disk is "
+                + "cheaper and shows the whole file; use this when you have no filesystem access "
+                + "to the CM. On a deployed SitecoreAI environment the platform collects logs "
+                + "and the data folder may hold little or nothing.",
             inputSchema: z.object({
                 name: z.string()
                     // Restrict to a safe filename charset: this value is interpolated into a

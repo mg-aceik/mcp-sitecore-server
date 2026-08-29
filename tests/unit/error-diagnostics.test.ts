@@ -60,13 +60,15 @@ describe("describeFailedSpeResponse", () => {
         expect(message).not.toContain("color:red");
     });
 
-    it("explains a 429 as bounced-call rate limiting", async () => {
+    it("says a 429 did not come from SPE, which does no rate limiting of its own", async () => {
         const message = await describeFailedSpeResponse(
             html(AUTH0_PAGE, 429, { "x-auth0-requestid": "abc123" }),
             url
         );
         expect(message).toContain("429");
-        expect(message).toContain("rate limited");
+        expect(message).toContain("does not come from SPE");
+        // The actionable half: a 429 here is a credentials symptom, not a pacing one.
+        expect(message).toContain("credentials");
     });
 
     it("points a 404 at the remoting service, which is what 404 actually means here", async () => {

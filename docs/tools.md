@@ -99,7 +99,7 @@ existing section without its ID is rejected for creating a duplicate.
     - [x] `item-service-get-languages`: returns Sitecore languages in the instance
     - [x] `item-service-get-item-descendants`: returns the descendants of an item by ID
 - [x] Sitecore PowerShell
-  - [x] `get-powershell-documentation`: the SPE command reference, revealed progressively. No arguments returns an index of all 148 commands with one-line summaries (~13KB); `command` returns the full page for up to 5 named commands; `search` finds a command by what it does; `category` lists one group. It no longer returns the whole ~570KB corpus in one result.
+  - [x] `get-powershell-documentation`: the SPE command reference, revealed progressively. No arguments returns an index of all 129 commands with one-line summaries (~11KB); `command` returns the full page for up to 5 named commands; `search` finds a command by what it does; `category` lists one group. It no longer returns the whole corpus in one result, and the pages for commands that only work inside the SPE console's own UI (`Show-*`, `Invoke-JavaScript`, `Read-Variable`, …) are not bundled at all — nothing reachable over the `remoting` service can call them.
   - [x] `run-powershell-script`: runs a PowerShell script and returns the output
   - [x] Security
     - [x] `security-get-current-user`: returns the current user
@@ -230,7 +230,7 @@ existing section without its ID is rejected for creating a duplicate.
     - [x] `common-test-base-template`: checks if the item inherits from the specified template
     - [x] `common-update-item-referrer`: updates all references to the specified item to point to a new provided in the -NewTarget or removes links to the item
   - [x] Logging
-    - [x] `logging-get-logs`: retrieves Sitecore logs from the log directory with filtering options. Reads files off the CM's data folder, so it is disabled under `TOOL_PROFILE=sai` — a deployed SitecoreAI environment has the platform collect its logs, and a local Docker CM has them on a mounted volume already.
+    - [x] `logging-get-logs`: retrieves Sitecore logs from the log directory with filtering options. Reads files off the CM's data folder over SPE. On a local Docker CM the same files are on a mounted volume and reading them from disk is cheaper; on a deployed SitecoreAI environment the platform collects the logs, so the data folder may hold little.
 
 ## Resources
 

@@ -51,8 +51,8 @@ export async function describeFailedSpeResponse(
         : "";
 
     const rateLimited = response.status === 429
-        ? " The request was rate limited; on a cloud CM this usually means many "
-        + "unauthenticated calls are being bounced to the identity provider in a burst."
+        ? " A 429 does not come from SPE, which does not rate limit: instead this response "
+        + "is used when there is an authentication issue."
         : "";
 
     const hint = response.status === 404

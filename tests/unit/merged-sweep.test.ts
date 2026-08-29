@@ -27,7 +27,7 @@ import { getItemTool } from "../../src/tools/item-service/tools/simple/get-item"
 import { mediaUploadTool } from "../../src/tools/powershell/media/media-upload";
 import { newItemClonePowerShellTool } from "../../src/tools/powershell/composite/common/new-item-clone";
 import { updateItemReferrerPowerShellTool } from "../../src/tools/powershell/composite/common/update-item-referrer";
-import { rebuildSearchIndexPowerShellTool } from "../../src/tools/powershell/simple/indexing/rebuild-search-index";
+import { rebuildSearchIndexPowerShellTool } from "../../src/tools/powershell/composite/indexing/rebuild-search-index";
 import { addPlaceholderSettingPowershellTool } from "../../src/tools/powershell/composite/presentation/add-placeholder-setting";
 import { addRenderingPowershellTool } from "../../src/tools/powershell/composite/presentation/add-rendering";
 import { getRenderingParameterPowershellTool } from "../../src/tools/powershell/composite/presentation/get-rendering-parameter";
@@ -39,7 +39,7 @@ import { setRenderingPowershellTool } from "../../src/tools/powershell/composite
 import { switchRenderingPowershellTool } from "../../src/tools/powershell/composite/presentation/switch-rendering";
 import { setItemAclPowerShellTool } from "../../src/tools/powershell/composite/security/set-item-acl";
 import { getLayoutDevicePowershellTool } from "../../src/tools/powershell/simple/presentation/get-layout-device";
-import { setBaseTemplatePowerShellTool } from "../../src/tools/powershell/simple/common/set-base-template";
+import { setBaseTemplatePowerShellTool } from "../../src/tools/powershell/composite/common/set-base-template";
 import { addItemVersionPowerShellTool } from "../../src/tools/powershell/simple/common/add-item-version";
 import { convertFromItemClonePowerShellTool } from "../../src/tools/powershell/simple/common/convert-from-item-clone";
 import { getItemClonePowerShellTool } from "../../src/tools/powershell/simple/common/get-item-clone";
@@ -64,10 +64,10 @@ import { removeRenderingPowershellTool } from "../../src/tools/powershell/simple
 import { resetLayoutPowershellTool } from "../../src/tools/powershell/simple/presentation/reset-layout";
 import { getItemPowerShellTool } from "../../src/tools/powershell/simple/provider/get-item";
 import { getItemAclPowerShellTool } from "../../src/tools/powershell/simple/security/get-item-acl";
-import { setItemLockPowerShellTool } from "../../src/tools/powershell/simple/security/set-item-lock";
+import { setItemLockPowerShellTool } from "../../src/tools/powershell/composite/security/set-item-lock";
 import { getUserPowerShellTool } from "../../src/tools/powershell/simple/security/get-user";
 import { getRolePowerShellTool } from "../../src/tools/powershell/simple/security/get-role";
-import { setItemProtectionPowerShellTool } from "../../src/tools/powershell/simple/security/set-item-protection";
+import { setItemProtectionPowerShellTool } from "../../src/tools/powershell/composite/security/set-item-protection";
 import { testItemAclPowerShellTool } from "../../src/tools/powershell/simple/security/test-item-acl";
 
 type Registrar = (server: any, config: any) => void;

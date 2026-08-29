@@ -13,17 +13,20 @@ import type { McpServer } from "@modelcontextprotocol/server";
  *
  * - `TOOL_GROUPS`   — allowlist of groups to register (the directory layout, see below).
  * - `DISABLED_TOOLS`— denylist of exact tool names.
- * - `TOOL_PROFILE`  — a comma-separated list of documented preset denylists: `xp`/`sai`
- *                     name a platform, and `no-spe`, `no-item-service`, `no-edge-graphql` and
- *                     `no-authoring-api` each name one API surface this instance does not
- *                     serve. What every named profile hides is unioned.
+ * - `TOOL_PROFILE`  — a comma-separated list of documented preset denylists. Every one is
+ *                     a `no-*` entry naming something this instance does not serve, or does
+ *                     not want reached: `no-spe`, `no-item-service`, `no-edge-graphql` and
+ *                     `no-authoring-api` each name an API surface, and
+ *                     `no-account-management` withholds an operation the operator would
+ *                     rather an agent could not perform. What every named profile hides is
+ *                     unioned.
  *
  * Unset means register everything, so none of this is a breaking change, and the
  * denylist always wins on conflict.
  *
- * **No tool is denied by default.** This server targets SitecoreAI *and* XM/XP, and what
- * is dead weight on one is essential on the other: CM-side identity management is core
- * workflow on XP but lives in the Sitecore Cloud Portal on SitecoreAI.
+ * **No tool is denied by default,** and there is no platform preset. This server targets
+ * SitecoreAI *and* XM/XP, and what is dead weight on one is essential on the other — so an
+ * operator states what is absent from their instance rather than which product they bought.
  */
 
 /**
@@ -100,48 +103,47 @@ const AUTHORING_ABSENT =
     + "before it reaches a resolver.";
 
 /**
+ * The reason `no-account-management` gives for every tool it hides.
+ *
+ * Unlike the `no-*` surface profiles, this one is not a claim about what the instance can
+ * do — these tools work perfectly well on any CM. It is the operator declining to put
+ * account management within an agent's reach: creating a user, resetting a password or
+ * serializing an account out to disk are consequential, easy to do by accident, and rarely
+ * what the agent was asked for. Withholding the capability is a stronger guarantee than a
+ * prompt telling it not to.
+ *
+ * Reading accounts is deliberately left registered — `security-get-user`,
+ * `security-get-role`, `security-get-role-member` and `security-get-domain` change nothing
+ * and an agent needs them to name an identity in an access rule.
+ */
+const ACCOUNT_MANAGEMENT_WITHHELD =
+    "This deployment does not want an agent creating, editing, disabling or "
+    + "password-resetting accounts, so the tools that do are not registered at all rather "
+    + "than left available and discouraged. Reading accounts and roles still works, and so "
+    + "does every item-scoped security tool (security-set-item-acl, security-get-item-acl, "
+    + "security-test-item-acl, security-set-item-lock, security-set-item-protection).";
+
+/**
  * The preset denylists. Keep every profile in this table — `register.ts` must stay a
  * list of registrars, so that a platform team can read what a profile hides, and why,
  * in one place.
  */
 export const TOOL_PROFILES: Record<string, ToolProfile> = {
-    xp: {
-        description:
-            "Sitecore XM/XP on-premise or IaaS. Disables nothing: publishing, application "
-            + "restart and CM-side identity management are all real operations on XP.",
-        disabledGroups: {},
-        disabledTools: {},
-    },
-    sai: {
-        description:
-            "SitecoreAI (SAI). Hides the CM-side identity tools, which are misleading on a "
-            + "platform where users and roles live in the Sitecore Cloud Portal. Publishing "
-            + "and application restart stay available: on SitecoreAI content publishes to "
-            + "Edge, which lives on Sitecore's cloud servers only (there is no web database), "
-            + "so common-publish-item works on deployed environments even though a local "
-            + "development CM has no publishing target.",
-        disabledGroups: {
-            "powershell.security":
-                "Users, roles and domains are managed in the Sitecore Cloud Portal, not on the "
-                + "CM, so the CM-side identity tools are misleading at best. This also hides the "
-                + "item ACL, lock and protect tools, which do work on a SitecoreAI CM — use "
-                + "TOOL_PROFILE=xp with DISABLED_TOOLS if you need those.",
-            "powershell.logging":
-                "`logging-get-logs` reads log files off the CM's data folder, which does not work "
-                + "on SitecoreAI: a deployed environment's logs are collected by the platform and "
-                + "read through the Cloud Portal or your log sink, not from a path on disk. On a "
-                + "local Docker CM the files are right there on the mounted volume, so reading "
-                + "them over SPE is the long way round. The group holds only that one tool.",
-        },
-        disabledTools: {},
-    },
     /*
-     * The `no-*` profiles below are subtractive rather than platform presets: each one
-     * names a single API surface that is not there to be called, on the instance this
-     * server is pointed at. `xp` and `sai` answer "which platform is this?" and are
-     * mutually exclusive; these answer "which of the four surfaces does this instance
-     * actually serve?", and an instance can be missing more than one at once — which is
-     * why `TOOL_PROFILE` takes a list and unions what each entry hides.
+     * Every profile is subtractive, and they come in two kinds. Four are statements of
+     * *capability*: "this instance does not serve that API surface", so the tools behind it
+     * would fail anyway. One, `no-account-management`, is a statement of *policy*: those
+     * tools work fine, and the operator is choosing not to hand them to an agent. Both kinds
+     * compose, and an instance can name several at once, which is why `TOOL_PROFILE` takes a
+     * list and unions what each entry hides.
+     *
+     * There is deliberately no preset that names a platform. A profile keyed to the
+     * product would have to guess which tools that product's operators do not want, and the
+     * guess is wrong in both directions: `powershell.security` holds account management
+     * *and* item security, only the first of which is ever unwanted, while an operator who
+     * does want account management withheld may be on any platform at all. What an operator
+     * can state precisely is which surface is absent, and which operation they would rather
+     * an agent could not perform — so those are the only two things the table asks for.
      *
      * They exist because the alternative is saying the same thing as a `TOOL_GROUPS`
      * allowlist, which means enumerating every group you *do* want and revisiting that
@@ -199,6 +201,36 @@ export const TOOL_PROFILES: Record<string, ToolProfile> = {
                 + "— so what it hides grows with that list.",
         },
         disabledTools: {},
+    },
+    "no-account-management": {
+        description:
+            "For a deployment that does not want an agent managing Sitecore accounts. Unlike "
+            + "the other profiles this is a policy rather than a capability: the twelve tools "
+            + "it hides work on any CM, and the point is that creating a user, resetting a "
+            + "password or serializing an account to disk are consequential enough to keep out "
+            + "of an agent's reach entirely. Common where accounts are administered elsewhere "
+            + "anyway — the Sitecore Cloud Portal on SitecoreAI, or an external identity "
+            + "provider on a federated XM/XP — but it stands on its own on any platform. "
+            + "Nothing else is hidden: reading accounts and roles still works, and every "
+            + "item-scoped security tool stays, because access rules, locks and protection are "
+            + "held on the item and are set from the CM everywhere.",
+        disabledGroups: {},
+        disabledTools: Object.fromEntries(
+            [
+                "security-new-user",
+                "security-remove-user",
+                "security-set-user",
+                "security-set-user-password",
+                "security-disable-user",
+                "security-enable-user",
+                "security-unlock-user",
+                "security-test-account",
+                "security-new-domain",
+                "security-remove-domain",
+                "security-export-account",
+                "security-import-account",
+            ].map((tool) => [tool, ACCOUNT_MANAGEMENT_WITHHELD])
+        ),
     },
     "no-authoring-api": {
         description:

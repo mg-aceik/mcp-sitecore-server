@@ -4,6 +4,17 @@ This folder contains implementations of MCP tools that interact with Sitecore Po
 
 ## Folders structure
 
+The split between `simple` and `composite` is about how many SPE calls a tool makes, not
+about how complicated its schema is:
+
+- one cmdlet, always the same one → **simple**
+- several calls, or a different cmdlet chosen from the parameters → **composite**
+
+That is why the merged tools live under `composite` even though each one reads like a
+single operation: `indexing-set-search-index-state` dispatches to `Suspend-`, `Stop-` or
+`Resume-SearchIndex`, `common-set-base-template` to `Add-` or `Remove-BaseTemplate`, and so
+on. The cmdlet is chosen at call time from what the caller passed.
+
 - **simple**: contains simple implementations of Sitecore PowerShell commands
   - **security**: contains security-related PowerShell commands
     - User Management: create, get, modify, and remove users
@@ -50,11 +61,18 @@ This folder contains implementations of MCP tools that interact with Sitecore Po
 
 ### Item Security
 
+Read with the simple tools; the three that pick their cmdlet from an `action` are composite.
+
 - `security-get-item-acl`: Get ACL for an item
-- `security-set-item-acl`: Add, replace or clear an item's access rules
 - `security-test-item-acl`: Test ACL for an item
-- `security-set-item-lock`: Lock or unlock an item
-- `security-set-item-protection`: Protect or unprotect an item
+- `security-set-item-acl` (composite): Add, replace or clear an item's access rules (`Add-ItemAcl`, `New-ItemAcl` into `Set-ItemAcl`, or `Clear-ItemAcl`). This is where the old `security-clear-item-acl` went — call it with `action: "clear"`.
+- `security-set-item-lock` (composite): Lock or unlock an item (`Lock-Item` or `Unlock-Item`)
+- `security-set-item-protection` (composite): Protect or unprotect an item (`Protect-Item` or `Unprotect-Item`)
+
+### Account Serialization
+
+- `security-export-account` (composite): Serialize a user or role to a file (`Export-User` or `Export-Role`)
+- `security-import-account` (composite): Read a serialized user or role back in (`Import-User` or `Import-Role`)
 
 ## Logging Tools
 
@@ -66,19 +84,19 @@ This folder contains implementations of MCP tools that interact with Sitecore Po
 
 ### Simple Indexing Tools
 
-- `indexing-rebuild-search-index`: Rebuild search indexes, optionally scoped to one item's subtree
 - `indexing-get-search-index`: Get information about Sitecore search indexes
 - `indexing-find-item`: Find items using the Sitecore Content Search API
-- `indexing-set-search-index-state`: Suspend, stop or resume Sitecore search indexes
 
 ### Composite Indexing Tools
+
+- `indexing-rebuild-search-index`: Rebuild search indexes, optionally scoped to one item's subtree (`Initialize-SearchIndex` or `Initialize-SearchIndexItem`)
+- `indexing-set-search-index-state`: Suspend, stop or resume Sitecore search indexes (`Suspend-`, `Stop-` or `Resume-SearchIndex`)
 
 
 ## Common Tools
 
 ### Simple Common Tools
 
-- `common-set-base-template`: Add or remove a base template on a template item
 - `common-add-item-version`: Create a version of the item in a new language based on an existing language version
 - `common-convert-from-item-clone`: Convert an item from a clone to a fully independent item
 - `common-get-cache`: Get information about Sitecore caches
@@ -101,6 +119,7 @@ This folder contains implementations of MCP tools that interact with Sitecore Po
 
 ### Composite Common Tools
 
+- `common-set-base-template`: Add or remove a base template on a template item (`Add-` or `Remove-BaseTemplate`)
 - `common-get-archive`: Get Sitecore database archives
 - `common-get-archive-item`: Get a list of items found in the specified archive
 - `common-new-item-clone`: Create a new item clone based on the item provided
