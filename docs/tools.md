@@ -180,7 +180,7 @@ existing section without its ID is rejected for creating a duplicate.
     - [x] `indexing-get-search-index`: returns a search index by name, with its `IndexingState` and
       health flags. Takes no `database`, `running` or `corrupted` filter — SPE's `Get-SearchIndex`
       has only `-Name`, so those failed the call; filter the returned rows instead.
-    - [x] `indexing-find-item`: finds an item in a search index
+    - [x] `indexing-find-item`: finds items in a search index. `criteria` takes at least one `{filter, field, value}`; a range is either one `InclusiveRange`/`ExclusiveRange` criterion whose `value` is `'start | end'`, or two criteria on the same field. `first` defaults to 200 and is capped at 500. The response is an object carrying `Skip`, `First`, `Returned`, `HasMore` and `Items` — `HasMore` is how you know to page with `skip`, since the Content Search API returns no total.
     - [x] `indexing-set-search-index-state`: suspends, stops or resumes indexes (`action`).
       `indexing-rebuild-search-index` stays separate: it rebuilds rather than changing state, and
       carries its own item scoping and `includeRemoteIndex` parameter.

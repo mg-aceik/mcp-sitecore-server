@@ -584,6 +584,38 @@ MCP SDK and MCP protocol revision 2026-07-28._
 
 ### 🐛 Bug Fixes
 
+- `[indexing]` **`indexing-find-item` failed outright when two criteria named the same
+  field.** The tool projects one `Select-Object` column per criterion, so a range written
+  the ordinary way — `GreaterThan` and `LessThan` on one `_tdt` field — asked for that column
+  twice. `Select-Object` refuses a duplicate property name with a *non-terminating* error
+  raised once per result row ("The property cannot be processed because the property X
+  already exists"), and SPE serializes the error stream into the same object graph as the
+  results, so the shared error detection found it and returned the search as a failure with
+  every hit discarded. The projection is now deduplicated per distinct field —
+  case-insensitively, because PowerShell property names are, and seeded with the five fixed
+  identity columns so a criterion on `TemplateName` cannot collide with one of those either.
+  Both criteria still reach `Find-Item`; only the duplicated *column* is dropped.
+
+- `[indexing]` **`indexing-find-item` returns a paging envelope instead of a bare array.**
+  The response is now an object carrying `Skip`, `First`, `Returned`, `HasMore` and `Items`,
+  the shape `common-get-archive-item` already uses. `Find-Item` wraps the Content Search
+  API, which returns no total, so a caller could not tell a full page from the end of the
+  results — the tool's own notes list that, and "AI agents are bad at proceeding long
+  lists", as two of its four known problems. A total still is not available, but the
+  question an agent actually needs answered is "is there another page", and that costs one
+  extra row rather than a second query: the search asks Sitecore for `first + 1`, returns
+  `first`, and reports whether the extra row existed. `Items` is always a list, including
+  for a single result, which CLIXML would otherwise deliver as a bare object.
+
+- `[indexing]` **`indexing-find-item` documents its range syntax, and caps `first`.** The
+  `start | end` form that `InclusiveRange` and `ExclusiveRange` require was named nowhere
+  but inside the error thrown when you got it wrong — the schema said only "The value to
+  search for" — so an agent had to fail once to learn it, and the obvious thing to reach for
+  instead was two criteria on one field, which is precisely the case above. It is now in the
+  `value` description with a worked date example. `first` had no ceiling at all despite the
+  tool's own header comment opening with "Huge amount of data to return" as its first known
+  problem; it is capped at 500, with the description pointing at `skip` for anything beyond.
+
 - `[indexing]` **`indexing-find-item` reported a failed search as an empty one.** It bypassed
   the shared error shaping entirely, returning the full serialized .NET `ErrorRecord` with
   `isError` unset. It now shapes errors like every other PowerShell tool. Its `first`/`skip`
