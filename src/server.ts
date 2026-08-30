@@ -6,6 +6,7 @@ import { registerAll } from "./register.js";
 import { withInferredAnnotations } from "./tool-annotations.js";
 import { resolveToolGating, withToolGating } from "./tool-profiles.js";
 import { ROUTING_INSTRUCTIONS, TOOL_SELECTION_GUIDE } from "./tool-guide.js";
+import { registerPrompts } from "./prompts/register-prompts.js";
 
 
 
@@ -67,7 +68,9 @@ export async function getServer(config: Config): Promise<McpServer> {
             description:
                 "Which Sitecore surface answers which question, and what each costs: measured "
                 + "read latencies, the cheap ways to read a subtree, and the limits (query depth, "
-                + "index lag, result caps) worth knowing before writing a query.",
+                + "index lag, result caps) worth knowing before writing a query. Also names the "
+                + "two tasks this server ships a prompt for, which a client lists separately from "
+                + "its tools.",
             mimeType: "text/markdown",
         },
         async (uri) => {
@@ -109,6 +112,11 @@ export async function getServer(config: Config): Promise<McpServer> {
         }
     );
     await registerAll(server, config, gating);
+
+    // After the tools, so gating decides which workflows are worth offering. A prompt
+    // costs nothing until a user picks one, which is why the long-form procedures live
+    // here rather than in the instructions above.
+    registerPrompts(server, gating);
 
     return server;
 }

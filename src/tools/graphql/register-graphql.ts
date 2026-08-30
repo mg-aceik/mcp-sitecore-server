@@ -40,11 +40,14 @@ function registerQueryTool(server: McpServer, config: Config, schema: string) {
                 + `changes are invisible to it), while 'master' / preview schemas read the `
                 + `authoring database. Use introspection-graphql-${schema} for the schema SDL.`,
             // The document is only syntax-checked, so a mutation goes through as readily as
-            // a query. Claiming readOnlyHint here would be a promise this tool cannot keep.
+            // a query. Claiming readOnlyHint here would be a promise this tool cannot keep,
+            // and destructiveHint has to be true for the same reason: an arbitrary document
+            // can delete, so the host must prompt. authoring-graphql, which is the same tool
+            // against the authoring endpoint, says the same thing.
             annotations: {
                 title: `Query GraphQL ${schema}`,
                 readOnlyHint: false,
-                destructiveHint: false,
+                destructiveHint: true,
                 openWorldHint: true,
             },
             inputSchema: z.object({

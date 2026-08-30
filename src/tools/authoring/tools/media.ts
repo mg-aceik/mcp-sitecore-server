@@ -6,7 +6,7 @@ import path from "node:path";
 import { safeMcpResponse } from "@/helper.js";
 import { requireOneTarget } from "@/tools/target-input.js";
 import { fetchWithTimeout } from "@/utils.js";
-import { assertFetchableSourceUrl, resolveLocalMediaPath } from "@/tools/powershell/media/local-files.js";
+import { fetchSourceUrl, resolveLocalMediaPath } from "@/tools/powershell/media/local-files.js";
 import { mediaTimeoutMs } from "@/tools/powershell/media/media-service.js";
 import { executeAuthoringGraphQL, getAuthoringToken } from "../client.js";
 import { runAuthoringOperation } from "../logic/run.js";
@@ -34,8 +34,7 @@ async function resolveSource(params: {
     itemPath: string;
 }): Promise<MediaSource> {
     if (params.sourceUrl) {
-        const url = await assertFetchableSourceUrl(params.sourceUrl);
-        const response = await fetchWithTimeout(url.toString(), {}, mediaTimeoutMs());
+        const { response, url } = await fetchSourceUrl(params.sourceUrl, mediaTimeoutMs());
         if (!response.ok) {
             throw new Error(
                 `Fetching sourceUrl failed: ${response.status} ${response.statusText}`

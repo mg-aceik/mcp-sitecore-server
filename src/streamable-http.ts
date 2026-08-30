@@ -6,9 +6,22 @@ import { toNodeHandler } from "@modelcontextprotocol/node";
 import { getServer } from "./server.js";
 import { config } from "./config.js";
 import { authorizationHeaderName } from "./const.js";
+import { ALLOWED_HOSTS_ENV, checkRequestHost, resolveAllowedHosts } from "./http-guards.js";
 
 /** Default listen port, overridable with PORT (and HOST for the interface to bind). */
 const DEFAULT_PORT = 3001;
+
+/**
+ * Default interface to bind, overridable with HOST.
+ *
+ * Loopback, not every interface. This server hands whoever reaches it administrative
+ * control of a Sitecore instance, and `AUTHORIZATION_HEADER` is empty by default, so
+ * binding to `0.0.0.0` published that on every network the machine is attached to for
+ * anyone who set `TRANSPORT=streamable-http` without reading the configuration docs. A
+ * deployment that means to be reachable says so: the container images set `HOST=0.0.0.0`
+ * themselves, because a container's published port cannot work any other way.
+ */
+const DEFAULT_HOST = "127.0.0.1";
 
 /**
  * Body cap for the MCP endpoint. Express defaults to 100kb, which is under the size of a
@@ -36,6 +49,23 @@ function secretsMatch(expected: string, presented: string): boolean {
 
 export function startStreamableHTTP() {
     const app = express();
+
+    // First, ahead of every route and ahead of body parsing: a request from somewhere this
+    // server is not served from is refused before 32mb of JSON is allocated for it.
+    const allowedHosts = resolveAllowedHosts();
+    app.use((req: Request, res: Response, next: NextFunction) => {
+        const check = checkRequestHost(
+            { host: req.headers.host, origin: req.headers.origin as string | undefined },
+            allowedHosts
+        );
+        if (check.ok) {
+            next();
+            return;
+        }
+        console.error(check.reason);
+        res.status(403).json({ error: "Forbidden", detail: check.reason });
+    });
+
     app.use(express.json({ limit: process.env.MCP_BODY_LIMIT || DEFAULT_BODY_LIMIT }));
 
     // There is no transport map here any more, and nothing to key one on. The
@@ -127,11 +157,27 @@ export function startStreamableHTTP() {
     });
 
     const port = Number(process.env.PORT) || DEFAULT_PORT;
-    const host = process.env.HOST || undefined;
+    const host = process.env.HOST || DEFAULT_HOST;
 
-    const server = host ? app.listen(port, host) : app.listen(port);
+    const server = app.listen(port, host);
     server.on("listening", () => {
-        console.error(`MCP Streamable HTTP listening on ${host ?? "0.0.0.0"}:${port}/mcp`);
+        console.error(`MCP Streamable HTTP listening on ${host}:${port}/mcp`);
+        if (allowedHosts.any) {
+            console.error(
+                `${ALLOWED_HOSTS_ENV}=* : the Host and Origin checks are off. This server is only `
+                + `as protected as the network in front of it.`
+            );
+        }
+        // Two defaults that are safe together and not safe apart. Loopback alone means an
+        // empty AUTHORIZATION_HEADER costs nothing; opening the interface without setting
+        // one hands administrative access to the Sitecore instance to the network.
+        if (config.authorizationHeader === "" && host !== DEFAULT_HOST && host !== "localhost") {
+            console.error(
+                `Warning: bound to ${host} with no AUTHORIZATION_HEADER set, so every client that `
+                + `can reach ${host}:${port} has full access to the configured Sitecore instance. `
+                + `Set AUTHORIZATION_HEADER, or bind to ${DEFAULT_HOST}.`
+            );
+        }
     });
     server.on("error", (error: NodeJS.ErrnoException) => {
         if (error.code === "EADDRINUSE") {

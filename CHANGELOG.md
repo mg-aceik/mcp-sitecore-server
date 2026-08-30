@@ -185,6 +185,33 @@ MCP SDK and MCP protocol revision 2026-07-28._
   [#1368](https://github.com/SitecorePowerShell/Console/issues/1368)). Sitecore CLI is the
   supported serialization route.
 
+#### New prompts
+
+- `[prompts]` **The server now registers MCP prompts — three of them, for the workflows the
+  tools can perform but do not encode.** A prompt costs nothing until a user picks one,
+  unlike the server `instructions`, which are paid every session, so this is where
+  task-specific guidance lives:
+  - **`add-component-to-page`** — the composition procedure in the right order, with the
+    placeholder-path, dynamic-placeholder, SXA Container/splitter and grid-parameter
+    knowledge whose absence produces a page that saves, renders, and is wrong. Offered only
+    when `powershell.composition` and `add-rendering-to-placeholder` are enabled, so it never
+    advertises a workflow whose first call does not exist.
+  - **`bulk-update-items`** — the same change across many items, as a `run-powershell-script`
+    script that follows the safe pattern: every ID resolved from the instance rather than
+    guessed, filter to the items that actually need the change, dry run whose output the user
+    approves before anything is written, edits bracketed in `BeginEdit`/`EndEdit` with a
+    per-item `try`/`catch`, and a final summary. Offered only when `powershell.core` and
+    `run-powershell-script` are enabled.
+  - **`diagnose-connection`** — which of the four surfaces can reach the instance, and what
+    each failure signature actually means — including the ones that read as the opposite of
+    their cause, like the Authoring API's unauthorized-but-HTTP-200 and SPE's 400-with-an-
+    identity-provider's-HTML-page. Never gated: which surfaces are absent is the question it
+    answers.
+
+  A client lists prompts separately from tools and an agent has no reason to go looking, so
+  the `guide://tool-selection` resource discloses each prompt and when to reach for it.
+  See [Prompts](docs/prompts.md).
+
 #### Performance and token cost
 
 - **`tools/list` serves 121 tools / 135,573 characters, down from 162 tools / 150,038 in
@@ -553,6 +580,29 @@ MCP SDK and MCP protocol revision 2026-07-28._
 
 
 ### 🔒 Security
+
+- `[http]` **Streamable HTTP validates `Host` and `Origin`, and binds loopback by default.**
+  A browser cannot reach `/mcp` cross-origin on its own — `application/json` is not a
+  CORS-simple content type and no CORS headers are sent — but DNS rebinding steps around
+  that entirely: a page on a name that resolves first to the attacker's address and then to
+  `127.0.0.1` is treated by the browser as _same-origin_ with whatever is listening there,
+  with no preflight and full read access to the response. On this server that is
+  administrative control of the configured Sitecore instance, since `AUTHORIZATION_HEADER`
+  is empty by default. The MCP specification requires servers to validate `Origin` for this
+  reason and the SDK does not do it, so both headers are now checked ahead of every route
+  and ahead of body parsing: loopback names pass, anything else gets a 403 naming the header
+  and how to permit it, and a request sending neither header is allowed through, because only
+  a browser is obliged to send `Origin` and only a browser can be made to lie about `Host`.
+  `HOST` now defaults to `127.0.0.1` rather than every interface, so a
+  `TRANSPORT=streamable-http` set without reading the configuration docs no longer publishes
+  the port to the network, and binding elsewhere with no `AUTHORIZATION_HEADER` set warns on
+  stderr. Deployments reached by a name of their own list it in `MCP_ALLOWED_HOSTS`
+  (comma-separated; `*` turns the check off and says so at startup). **Two behaviour changes
+  to note:** the container images set `HOST=0.0.0.0` themselves, because a published
+  container port cannot reach the container's own loopback — what the port is exposed to is
+  decided by the `-p` mapping as before — and a non-container deployment that relied on the
+  old all-interfaces default must now set `HOST` explicitly. See
+  [DNS rebinding](./docs/configuration.md#dns-rebinding).
 
 - `[media]` **`filePath` and `saveTo` are refused over the HTTP transport by default.**
   Both read and write the filesystem of the machine running this server, which is

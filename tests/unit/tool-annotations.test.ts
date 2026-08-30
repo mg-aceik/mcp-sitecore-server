@@ -28,6 +28,22 @@ describe("inferToolAnnotations", () => {
         expect(set.destructiveHint).toBe(false);
     });
 
+    // These four verbs were in neither token set, so every tool named with one inferred
+    // readOnlyHint: true -- an auto-permitted mutation. tool-annotation-sweep.test.ts
+    // guards the registered surface; this guards the rule.
+    it("treats move/copy/rename/rebuild as writes, not reads", () => {
+        for (const name of [
+            "authoring-move-item",
+            "authoring-copy-item",
+            "authoring-rename-item",
+            "authoring-rebuild-indexes",
+        ]) {
+            const a = inferToolAnnotations(name);
+            expect(a.readOnlyHint, name).toBe(false);
+            expect(a.destructiveHint, name).toBe(false);
+        }
+    });
+
     it("does not treat unlock/unprotect as destructive (token, not substring, match)", () => {
         expect(inferToolAnnotations("security-unlock-item").destructiveHint).toBe(false);
         expect(inferToolAnnotations("security-unprotect-item").destructiveHint).toBe(false);

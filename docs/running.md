@@ -62,5 +62,10 @@ or use `npm run inspector` to drive the stdio server from the MCP Inspector. See
 
 There is no SSE transport — it was removed from the MCP specification and from the SDK.
 `TRANSPORT=sse` starts a Streamable HTTP server and says so on stderr, so repoint any
-client still configured for `/sse` at `/mcp`. Set `AUTHORIZATION_HEADER` whenever the HTTP
-port is reachable by anything other than your own machine.
+client still configured for `/sse` at `/mcp`.
+
+Streamable HTTP binds `127.0.0.1` by default, so the port is not published to the network
+until you set `HOST`. Set `AUTHORIZATION_HEADER` whenever you do. Requests are also refused
+unless their `Host` and `Origin` name somewhere this server is served from, which stops a
+browser being rebound onto the port; a deployment reached by a name of its own lists it in
+`MCP_ALLOWED_HOSTS`. See [Configuration](./configuration.md#dns-rebinding).

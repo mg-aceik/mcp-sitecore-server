@@ -1,6 +1,6 @@
 # Sitecore Community MCP
 
-[![Build](https://github.com/antonytm/mcp-sitecore-server/actions/workflows/publish-npm.yml/badge.svg)](https://github.com/Antonytm/mcp-sitecore-server/actions/workflows/publish-npm.yml) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![Build](https://github.com/antonytm/mcp-sitecore-server/actions/workflows/publish-npm.yml/badge.svg)](https://github.com/Antonytm/mcp-sitecore-server/actions/workflows/publish-npm.yml) [![MCP spec 2026-07-28](https://img.shields.io/badge/MCP%20spec-2026--07--28-1f6feb)](https://modelcontextprotocol.io/specification/2026-07-28) [![Legacy handshake 2025-11-25 to 2024-10-07](https://img.shields.io/badge/legacy%20handshake-2025--11--25%20%E2%86%92%202024--10--07-8250df)](https://modelcontextprotocol.io/specification/) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 This repository contains the source code for the Sitecore Community MCP server — an
 open-source [Model Context Protocol](https://modelcontextprotocol.io) server that gives AI
@@ -8,9 +8,10 @@ agents direct read/write access to Sitecore, so you stop copy-pasting between yo
 and the Content Editor.
 
 - **121 tools** across search, query, create, read, update, delete, media, PowerShell, logging, security and presentation
+- **Three prompts** — `add-component-to-page`, `bulk-update-items` and `diagnose-connection` — covers two common, complex workflows that you'd want to use this MCP for, plus a connection issue self diagnosis helper.
 - Covers four Sitecore API surfaces: the **Authoring and Management GraphQL API**, the **Item Service**, **GraphQL Edge** and **Sitecore PowerShell Extensions**
 - Works with **SitecoreAI** and **Sitecore XM/XP** (all versions), from any MCP-compatible client
-- Implements **MCP protocol revision 2026-07-28**, and answers the 2025 `initialize` handshake from the same tool registrations
+- Implements **MCP protocol revision 2026-07-28**, and answers the older `initialize` handshake from the same tool registrations — negotiating down to any revision from `2025-11-25` to `2024-10-07`, so a client on either era sees the same tools
 - Reported impact: **5× faster** Figma-to-Sitecore workflows and **~70% less** manual scaffolding ([case study](https://exdst.com/case-studies/sitecore-mcp))
 - Three ways to run it: **npm**, **Docker**, or from source
 
@@ -113,6 +114,7 @@ and operating Sitecore solutions, this server is the one with the depth.
 - [Tool reference](docs/tools.md) — every tool, grouped by API surface
 - [Configuration](docs/configuration.md) — environment variables, transports, timeouts and TLS
 - [Tool selection](docs/tool-selection.md) — `TOOL_GROUPS`, `DISABLED_TOOLS` and `TOOL_PROFILE`
+- [Prompts](docs/prompts.md) — `add-component-to-page`, `bulk-update-items` and `diagnose-connection`, and when each is offered
 - [Docker images](docs/docker.md) — the published Linux and Windows images
 - [Changelog](CHANGELOG.md) — what's new in 2.0 and its breaking changes
 

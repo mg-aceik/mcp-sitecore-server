@@ -14,8 +14,35 @@ Service configuration these settings talk to.
 | ---------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `TRANSPORT`      | `stdio`        | `stdio` or `streamable-http`. Streamable HTTP serves MCP at `/mcp`, with a `/health` liveness endpoint. An unrecognised value falls back to `stdio` and says so on stderr. `sse` is gone — see [SSE removal](#sse-removal) below. |
 | `PORT`           | `3001`         | Port the Streamable HTTP transport listens on. Ignored on stdio.                                                                                                                                                                  |
-| `HOST`           | all interfaces | Interface to bind. Set it to `127.0.0.1` to keep the port off the network.                                                                                                                                                        |
+| `HOST`           | `127.0.0.1`    | Interface to bind. Loopback by default, so the port is not published to the network by a `TRANSPORT=streamable-http` that was set without reading this page. Set it to `0.0.0.0` to serve other machines — and set `AUTHORIZATION_HEADER` when you do. The container images set it to `0.0.0.0` themselves, because a published container port cannot reach the container's own loopback. |
+| `MCP_ALLOWED_HOSTS` | loopback names | Extra hostnames this server answers to, comma-separated, added to `localhost`, `127.0.0.1` and `::1`. A request whose `Host` or `Origin` names anything else is refused with 403. Set it to the name your deployment is reached by; `*` turns the check off. See [DNS rebinding](#dns-rebinding) below. |
 | `MCP_BODY_LIMIT` | `32mb`         | Maximum request body the `/mcp` endpoint accepts. Express's own default of 100kb is smaller than a single base64 image, so `media-upload`'s inline `content` needs the headroom.                                                  |
+
+### DNS rebinding
+
+A browser cannot reach `/mcp` cross-origin on its own — the endpoint takes
+`application/json`, which is not a CORS-simple content type, and no CORS headers are sent.
+DNS rebinding steps around that: a page on a name that resolves first to the attacker's
+address and then to `127.0.0.1` is treated by the browser as *same-origin* with whatever is
+listening there. The MCP specification requires servers to validate `Origin` for this
+reason, and the SDK does not do it.
+
+So every request's `Host` and `Origin` are checked before anything else runs — before the
+body is even parsed. Loopback names are allowed by default; a request naming anything else
+gets a 403 that says which header was wrong and how to permit it. A client that sends
+neither header is allowed through, because only a browser is obliged to send `Origin` and
+only a browser can be made to lie about `Host` — CLI clients, curl and the container health
+check are unaffected.
+
+Deployments reached by a name of their own list it:
+
+```shell
+MCP_ALLOWED_HOSTS=mcp.example.com,10.0.0.5
+```
+
+`MCP_ALLOWED_HOSTS=*` disables the check, for a proxy that forwards hostnames not known
+ahead of time. It is reported on stderr at startup, and it leaves this server only as
+protected as the network in front of it.
 
 ### SSE removal
 

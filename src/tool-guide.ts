@@ -22,6 +22,13 @@
  * and the environment variables, none of which an agent can act on. This file covers the
  * part an agent can — which surface answers which question, and what it costs — and the
  * latency table is the same measured one, not a second estimate.
+ *
+ * It also discloses the prompts. A client lists prompts separately from tools and an agent
+ * has no reason to go looking, so a server's prompts are easy to ship and never have
+ * anything reach them. This resource is already the place the instructions send an agent
+ * before it starts choosing, which makes it the one place a pointer to them lands in front
+ * of the right decision. The prompts' own text stays in `src/prompts/`; what is here is
+ * their names and when to reach for them.
  */
 
 /**
@@ -55,6 +62,28 @@ export const TOOL_SELECTION_GUIDE = `# Choosing a Sitecore tool
 Four surfaces reach the same Sitecore instance. They differ in speed, in what they can see,
 and in what they need switched on. Picking the wrong one is rarely an error — it is usually
 just slow, or silently missing content.
+
+## Three tasks have a prompt; get it before choosing tools
+
+This server registers prompts as well as tools, and a client lists them separately from
+\`tools/list\` — so they are easy to have and never notice. Each is a procedure that
+several tools have to be run in the right order to satisfy, and the order is not
+recoverable from their schemas.
+
+- **\`add-component-to-page\`** — adding a component to a page. Placeholder allow-lists,
+  runtime placeholder paths, dynamic placeholder IDs, SXA containers and splitters, and
+  grid parameters. Every one of them has a way of producing a page that saves, renders,
+  and is wrong, so read this before composing rather than after.
+- **\`bulk-update-items\`** — the same change across many items. The safe script pattern
+  for \`run-powershell-script\`: resolve every ID from the instance, filter to the items
+  that actually need the change, dry-run and show the list, get a yes, then edit inside
+  BeginEdit/EndEdit with a per-item try/catch and a summary. Reach for it whenever a
+  request says "all", "every" or "each" about items.
+- **\`diagnose-connection\`** — a tool returned an error. Maps failure signatures to
+  causes, including the three that mean the opposite of how they read: the Authoring API
+  answers an unauthorized call with HTTP 200, SPE answers an unauthenticated one with a
+  400 and an identity provider's HTML page, and the Item Service's 403 has two causes that
+  need separating before either can be fixed.
 
 ## The surfaces
 
@@ -167,6 +196,8 @@ composition tools (\`get-allowed-components-by-placeholder\`, \`create-component
 \`add-rendering-to-placeholder\`) read placeholder settings, datasource locations and the
 available renderings in order to *refuse* an invalid layout. When authoring a page, use the
 composition tools; when inspecting structure, \`presentation-get-layout\` is the cheaper read.
+The \`add-component-to-page\` prompt is the order to run them in, and the placeholder and
+grid detail that decides whether the result is valid.
 
 ## Escape hatches
 

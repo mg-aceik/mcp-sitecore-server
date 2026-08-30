@@ -1,8 +1,9 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
     LocalFileAccessError,
     SourceUrlError,
     assertFetchableSourceUrl,
+    fetchSourceUrl,
     resolveLocalMediaPath,
 } from "@/tools/powershell/media/local-files.js";
 import {
@@ -112,6 +113,50 @@ describe("assertFetchableSourceUrl", () => {
     it("refuses a malformed URL with a message naming the parameter", async () => {
         await expect(assertFetchableSourceUrl("not a url", {}))
             .rejects.toThrow(/'sourceUrl' is not a valid URL/);
+    });
+});
+
+describe("fetchSourceUrl redirect handling", () => {
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    it("re-validates each redirect and refuses one pointing at the metadata endpoint", async () => {
+        // The whole point of the guard: a public host that passes the initial check must
+        // not be able to bounce the fetch to 169.254.169.254 via a 302.
+        const fetchMock = vi.fn(async () => new Response(null, {
+            status: 302,
+            headers: { location: "http://169.254.169.254/latest/meta-data/" },
+        }));
+        vi.stubGlobal("fetch", fetchMock);
+
+        await expect(fetchSourceUrl("https://example.com/logo.png", 1000, {}))
+            .rejects.toThrow(/private, loopback or link-local/);
+    });
+
+    it("follows a redirect whose target also passes the guard", async () => {
+        const fetchMock = vi.fn()
+            .mockResolvedValueOnce(new Response(null, {
+                status: 302,
+                headers: { location: "https://example.com/real.png" },
+            }))
+            .mockResolvedValueOnce(new Response("bytes", { status: 200 }));
+        vi.stubGlobal("fetch", fetchMock);
+
+        const { response, url } = await fetchSourceUrl("https://example.com/logo.png", 1000, {});
+        expect(response.status).toBe(200);
+        expect(url.href).toBe("https://example.com/real.png");
+    });
+
+    it("refuses to follow more than the redirect limit", async () => {
+        const fetchMock = vi.fn(async () => new Response(null, {
+            status: 302,
+            headers: { location: "https://example.com/next" },
+        }));
+        vi.stubGlobal("fetch", fetchMock);
+
+        await expect(fetchSourceUrl("https://example.com/logo.png", 1000, {}))
+            .rejects.toThrow(/exceeded 5 redirects/);
     });
 });
 

@@ -1,5 +1,6 @@
 import path from "node:path";
 import { lookup } from "node:dns/promises";
+import { fetchWithTimeout } from "@/utils.js";
 
 /**
  * Guards for the two things the media tools do outside Sitecore: read a file from the
@@ -156,4 +157,55 @@ export async function assertFetchableSourceUrl(
     }
 
     return url;
+}
+
+/** HTTP status codes that fetch would follow to a Location header. */
+function isRedirectStatus(status: number): boolean {
+    return status === 301 || status === 302 || status === 303 || status === 307 || status === 308;
+}
+
+/**
+ * Fetches a caller-supplied `sourceUrl`, re-running {@link assertFetchableSourceUrl} against
+ * every hop.
+ *
+ * Validating only the first URL and then letting fetch follow redirects is an SSRF bypass:
+ * a public host that passes the check can answer with `302 Location: http://169.254.169.254/...`
+ * and the default `redirect: "follow"` walks straight into the metadata endpoint or the CM's
+ * private network. So redirects are handled manually here and each `Location` is validated
+ * before it is followed, with a bounded hop count. The final resolved URL is returned so
+ * callers can derive a file name from the resource actually fetched.
+ */
+export async function fetchSourceUrl(
+    sourceUrl: string,
+    timeoutMs: number,
+    env: NodeJS.ProcessEnv = process.env
+): Promise<{ response: Response; url: URL }> {
+    const maxRedirects = 5;
+    let url = await assertFetchableSourceUrl(sourceUrl, env);
+
+    for (let hop = 0; ; hop++) {
+        const response = await fetchWithTimeout(url.toString(), { redirect: "manual" }, timeoutMs);
+        if (!isRedirectStatus(response.status)) {
+            return { response, url };
+        }
+
+        const location = response.headers.get("location");
+        if (!location) {
+            // A redirect status with no target: nothing to follow, hand it back as-is.
+            return { response, url };
+        }
+        if (hop >= maxRedirects) {
+            throw new SourceUrlError(
+                `'sourceUrl' exceeded ${maxRedirects} redirects; refusing to follow further.`
+            );
+        }
+
+        let next: URL;
+        try {
+            next = new URL(location, url);
+        } catch {
+            throw new SourceUrlError(`'sourceUrl' redirected to an invalid location: ${location}`);
+        }
+        url = await assertFetchableSourceUrl(next.toString(), env);
+    }
 }

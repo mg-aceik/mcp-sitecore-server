@@ -4,11 +4,10 @@ import { z } from "zod";
 import { readFile } from "node:fs/promises";
 import { safeMcpResponse } from "@/helper.js";
 import { requireOneTarget } from "@/tools/target-input.js";
-import { fetchWithTimeout } from "@/utils.js";
 import { runGenericPowershellCommand } from "../simple/generic.js";
 import { quotePowerShellString } from "../command-builder.js";
 import { mediaFetch, mediaServiceUrl, mediaTimeoutMs, toMediaLibraryRelativePath } from "./media-service.js";
-import { assertFetchableSourceUrl, resolveLocalMediaPath } from "./local-files.js";
+import { fetchSourceUrl, resolveLocalMediaPath } from "./local-files.js";
 
 /**
  * Uploads a media item through the SPE mediaUpload handler — the same wire protocol as
@@ -71,8 +70,7 @@ export function mediaUploadTool(server: McpServer, config: Config) {
 
                 let bytes: Buffer;
                 if (params.sourceUrl) {
-                    const url = await assertFetchableSourceUrl(params.sourceUrl);
-                    const source = await fetchWithTimeout(url.toString(), {}, mediaTimeoutMs());
+                    const { response: source } = await fetchSourceUrl(params.sourceUrl, mediaTimeoutMs());
                     if (!source.ok) {
                         throw new Error(`Fetching sourceUrl failed: ${source.status} ${source.statusText}`);
                     }

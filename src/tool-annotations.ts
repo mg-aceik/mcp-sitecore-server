@@ -28,6 +28,17 @@ const WRITE_TOKENS = new Set([
     "convert",
     "restore",
     "initialize",
+    // Structural changes that keep the item and its ID: none of them destroys content, so
+    // they are writes rather than destructive. Their absence used to leave
+    // authoring-move-item, authoring-copy-item and authoring-rename-item inferring
+    // readOnlyHint: true -- an auto-permitted mutation, which is the one mistake this
+    // inference must not make.
+    "move",
+    "copy",
+    "rename",
+    // Rebuilding an index writes no content but degrades search until it finishes.
+    // Matches what indexing-rebuild-search-index sets explicitly.
+    "rebuild",
     "resume",
     "suspend",
     "stop",
