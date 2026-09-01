@@ -17,6 +17,23 @@ Our versioning strategy is as follows:
 _Released 2026-08 — a fourth API surface, a tool surface a third smaller per operation, on the v2
 MCP SDK and MCP protocol revision 2026-07-28._
 
+### 🧱 Build & Release
+
+- `[build]` **The version is stated once, in `package.json`.** It used to be written by
+  hand in five places and had already drifted — the release workflows still tagged v2
+  images `1.4.2`. `scripts/version.mjs` (the npm `version` lifecycle step) carries it into
+  `server.json`, `scripts/docker.mjs` reads it for the local `docker:*` scripts, and both
+  Docker workflows plus the npm workflow resolve it at release time. A prerelease no
+  longer takes `latest`: the images are tagged with the version alone and the npm publish
+  goes to the `beta` dist-tag.
+- `[build]` **Fixed: both Docker images failed to build.** `npm run build` ends in
+  `node scripts/copy-docs.mjs`, but neither Dockerfile copied `scripts/`, so the build step
+  exited with `ERR_MODULE_NOT_FOUND`. CI never builds an image, so the first symptom would
+  have been a failed release.
+- `[build]` **Fixed: the `docker:*` npm scripts were broken on Windows.** They interpolated
+  `$npm_package_version`, which `cmd.exe` — npm's default script shell there — does not
+  expand, so the tag became that literal string.
+
 ### 🎉 New Features & Improvements
 
 - `[sdk]` **The server runs on the v2 MCP TypeScript SDK and speaks MCP protocol revision

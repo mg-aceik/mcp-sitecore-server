@@ -114,7 +114,7 @@ existing section without its ID is rejected for creating a duplicate.
     - [x] `security-get-domain`: returns domains; omit `name` for all of them
     - [x] `security-get-role`: returns roles by exact `identity` or wildcard `filter` (supply one)
     - [x] `security-get-role-member`: returns members of a role. `userOnly` and `roleOnly` send
-      SPE's `-UsersOnly` / `-RolesOnly`; before 2.0.1 they sent the singular form and failed the call.
+      SPE's `-UsersOnly` / `-RolesOnly`; before 2.0.0 they sent the singular form and failed the call.
     - [x] `security-enable-user`: enables a user
     - [x] `security-disable-user`: disables a user
     - [x] `security-set-user-password`: changes a user's password. Supply either `oldPassword`

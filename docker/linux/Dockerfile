@@ -10,6 +10,10 @@ RUN npm install --ignore-scripts
 
 # Build application
 COPY src ./src
+
+# `npm run build` ends in `node scripts/copy-docs.mjs`, so the script has to be in the
+# image too -- without it the build step exits non-zero on ERR_MODULE_NOT_FOUND.
+COPY scripts ./scripts
 RUN npm run build
 
 RUN npm run bundle

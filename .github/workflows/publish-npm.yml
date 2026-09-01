@@ -27,4 +27,12 @@ jobs:
         run: npm run bundle
       - name: Publish package on NPM 📦
         working-directory: .
-        run: npm publish
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          # `npm publish` moves the `latest` dist-tag regardless of the semver
+          # prerelease suffix, so `npx @antonytm/mcp-sitecore-server` would hand every
+          # user the beta. Route prereleases to `beta` instead.
+          case "$version" in
+            *-*) echo "prerelease $version -> dist-tag beta"; npm publish --tag beta ;;
+            *)   echo "release $version -> dist-tag latest";  npm publish ;;
+          esac

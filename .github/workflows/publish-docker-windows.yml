@@ -31,11 +31,20 @@ jobs:
           if ($LASTEXITCODE -ne 0) {
             throw 'Docker daemon did not become ready in time.'
           }
+      - name: Resolve image tags from package.json
+        id: version
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          # A prerelease must not move `latest`.
+          if ($version -match "-") { $tags = $version } else { $tags = "$version, latest" }
+          Write-Host "resolved tags: $tags"
+          "tags=$tags" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
       - uses: mr-smithers-excellent/docker-build-push@v6
         name: Build & push Docker image
         with:
           image: antonytm/mcp-sitecore-windows
-          tags: 1.4.2, latest
+          tags: ${{ steps.version.outputs.tags }}
           registry: docker.io
           dockerfile: ./docker/windows/Dockerfile
           platform: windows/amd64
