@@ -8,7 +8,7 @@ agents direct read/write access to Sitecore, so you stop copy-pasting between yo
 and the Content Editor.
 
 - **121 tools** across search, query, create, read, update, delete, media, PowerShell, logging, security and presentation
-- **Three prompts** — `add-component-to-page`, `bulk-update-items` and `diagnose-connection` — covers two common, complex workflows that you'd want to use this MCP for, plus a connection issue self diagnosis helper.
+- **Three guides** — `guide://compose-page`, `guide://bulk-update` and `guide://diagnose-connection` — resources an agent can read mid-task: two common, complex workflows that you'd want to use this MCP for, plus a connection issue self diagnosis helper.
 - Covers four Sitecore API surfaces: the **Authoring and Management GraphQL API**, the **Item Service**, **GraphQL Edge** and **Sitecore PowerShell Extensions**
 - Works with **SitecoreAI** and **Sitecore XM/XP** (all versions), from any MCP-compatible client
 - Implements **MCP protocol revision 2026-07-28**, and answers the older `initialize` handshake from the same tool registrations — negotiating down to any revision from `2025-11-25` to `2024-10-07`, so a client on either era sees the same tools
@@ -114,7 +114,7 @@ and operating Sitecore solutions, this server is the one with the depth.
 - [Tool reference](docs/tools.md) — every tool, grouped by API surface
 - [Configuration](docs/configuration.md) — environment variables, transports, timeouts and TLS
 - [Tool selection](docs/tool-selection.md) — `TOOL_GROUPS`, `DISABLED_TOOLS` and `TOOL_PROFILE`
-- [Prompts](docs/prompts.md) — `add-component-to-page`, `bulk-update-items` and `diagnose-connection`, and when each is offered
+- [Guides](docs/guides.md) — the `guide://compose-page`, `guide://bulk-update` and `guide://diagnose-connection` resources, and when each is offered
 - [Docker images](docs/docker.md) — the published Linux and Windows images
 - [Changelog](CHANGELOG.md) — what's new in 2.0 and its breaking changes
 

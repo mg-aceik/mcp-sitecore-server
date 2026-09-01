@@ -1,6 +1,3 @@
-import type { McpServer } from "@modelcontextprotocol/server";
-import { z } from "zod";
-
 /**
  * Bulk-updating items with an SPE script, written for an agent that has
  * `run-powershell-script` but not the discipline that makes a mass write safe.
@@ -22,27 +19,34 @@ import { z } from "zod";
  *   a fabricated one either matches nothing or silently matches the wrong thing.
  * - **Resetting a field to its template default has two meanings.** `.Reset()` restores
  *   inheritance, so later standard-values changes flow through; copying the standard
- *   values text freezes today's value onto the item. The example this prompt generalises
+ *   values text freezes today's value onto the item. The example this guide generalises
  *   copied the text; most of the time `.Reset()` is what was actually wanted.
  * - **This runs over SPE Remoting, not the ISE.** `Write-Progress` and console colors go
  *   nowhere, and every output line travels back in the response — so emit plain lines,
  *   cap the per-item listing, and end with counts.
  */
 
-const DESCRIPTION =
-    "Bulk-update Sitecore items with a PowerShell script that follows the safe pattern: "
-    + "resolve every ID first, pre-flight check, filter to the items that actually need the "
-    + "change, dry-run and show the list, get explicit confirmation, then edit inside "
-    + "BeginEdit/EndEdit with a per-item try/catch and a final summary.";
-
-const GUIDANCE = `
+/**
+ * Served as the `guide://bulk-update` resource, and named by `run-powershell-script`'s
+ * description, which is the tool every step of it executes on — so an agent holding the
+ * one tool a mass write needs is told where the safe pattern is before it writes one.
+ */
+export const BULK_UPDATE_GUIDE = `
 ## Order
+
+Throughout, **ground truth** means a value you read back from this instance. At fifty
+items a guessed value stops being a mistake you notice and becomes fifty wrong writes.
+
+Two things this procedure needs before step 1, and neither is ever inferred: the
+**subtree to run under**, because a bulk write is never run unrooted, and **which items
+under it qualify**. Establish both with the user — a root or a filter you guessed at is
+the one mistake here that cannot be walked back.
 
 1. **Resolve every identifier with a tool call before writing the script.** The root item
    (\`item-service-get-item\` or \`get-item\` by path), the template ID, and any rendering
    or standard-values IDs the filter or the change refers to (\`find-item\`,
-   \`item-service-search-items\`, or read them off a known item). Never type a GUID you
-   have not read back from the instance.
+   \`item-service-search-items\`, or read them off a known item). Every GUID in the script
+   is ground truth: never type a GUID you have not read back from the instance.
 2. **Write the script from the template below** and run it with \`run-powershell-script\`
    with \`$dryRun = $true\`.
 3. **Show the user the dry-run output** — the count and the matched paths — and get an
@@ -60,7 +64,7 @@ Adapt the config block, the filter and the change; keep the structure.
 # Set to $false only after the dry-run output has been reviewed and approved.
 $dryRun = $true
 
-# --- Configuration: every value here was resolved from the instance, not guessed ---
+# --- Configuration: every value here is ground truth, read back from the instance ---
 $rootPath   = "/sitecore/content/<tenant>/<site>/Home"
 $templateId = "{...}"    # template of the items to update
 # Any IDs the filter or change needs, normalised for raw-value matching:
@@ -113,15 +117,16 @@ Write-Output "Updated: $updated  Failed: $failed  Targeted: $($targets.Count)"
 
 ## Rules the template encodes
 
-- **Dry run first, as a separate execution.** \`$dryRun = $true\` is the shipped state.
-  Show the user what would change and get an explicit yes before rerunning with
-  \`$false\`. Do not merge the two runs, and do not flip the default.
+- **Dry run first, as a separate execution.** \`$dryRun = $true\` is the shipped state and
+  stays that way until a real run is approved: show the user what would change, get an
+  explicit yes, then rerun with \`$false\`. Two executions, in that order — one run that
+  decides for itself whether to write is the failure this rule exists to prevent.
 - **Filter to items that need the change, not just items of the type.** The candidate
   set is "every item of the template"; the target set is "every item whose current value
   is wrong". The second makes the script idempotent and the dry-run count meaningful.
-- **Compare template IDs as IDs** — \`[Sitecore.Data.ID]::Parse\` — not names, which are
-  not unique. To include items of derived templates, compare against
-  \`$_.Template.BaseTemplates\` too, deliberately.
+- **Compare template IDs as IDs** — \`[Sitecore.Data.ID]::Parse\` — since template names
+  repeat across a tree and IDs do not. To include items of derived templates, compare
+  against \`$_.Template.BaseTemplates\` too, deliberately.
 - **Normalise GUIDs before matching raw field text.** Layout and link fields store XML;
   match with braces stripped and case fixed, as \`$renderingIdNorm\` does.
 - **\`.Reset()\` versus copying a value.** \`$item.Fields[$name].Reset()\` restores
@@ -148,44 +153,3 @@ After the real run, report: candidates, targeted, updated, failed, and every per
 error verbatim. Remind the user the changes are unpublished, and offer the publish as a
 follow-up rather than doing it unasked.
 `;
-
-export function bulkUpdateItemsPrompt(server: McpServer) {
-    server.registerPrompt(
-        "bulk-update-items",
-        {
-            title: "Bulk-update items with PowerShell",
-            description: DESCRIPTION,
-            argsSchema: z.object({
-                change: z.string()
-                    .describe("The change to make to each matching item, e.g. 'reset __Final Renderings to the template default' or 'set the Robots field to noindex'."),
-                rootPath: z.string()
-                    .describe("The subtree to update under, as a full content path (/sitecore/content/<tenant>/<site>/Home). Bulk writes are never run unrooted."),
-                criteria: z.string().optional()
-                    .describe("Which items qualify, e.g. 'Article Page items whose __Final Renderings contain the Related Pages rendering'. Omit to update every item of the relevant template under the root."),
-            }),
-        },
-        ({ change, rootPath, criteria }) => {
-            const scope = criteria
-                ? `Only items matching: ${criteria}.`
-                : `Establish with the user which items under the root qualify before writing the script.`;
-
-            return {
-                messages: [
-                    {
-                        role: "user" as const,
-                        content: {
-                            type: "text" as const,
-                            text:
-                                `Bulk-update Sitecore items under \`${rootPath}\`: ${change}. ${scope}\n\n`
-                                + `Write the update as a PowerShell script for \`run-powershell-script\`, `
-                                + `following the template and rules below. Resolve every ID from the `
-                                + `instance first, run the dry run, show me what it matched, and wait for `
-                                + `my confirmation before running the real update.\n`
-                                + GUIDANCE,
-                        },
-                    },
-                ],
-            };
-        }
-    );
-}

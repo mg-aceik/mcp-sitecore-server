@@ -54,7 +54,10 @@ const DESCRIPTION =
     + "collision-free DynamicPlaceholderId when the rendering's parameters template "
     + "defines one, and writes the full parameter set the template declares. Returns the "
     + "placeholder path a child rendering should target, so a nested build is one call per "
-    + "level. Pass force=true to skip validation for migration or repair work.";
+    + "level. Pass force=true to skip validation for migration or repair work. Read the "
+    + "guide://compose-page resource for the order to run the composition tools in, and "
+    + "for the dynamic placeholder, splitter and GridParameters cases that silently "
+    + "produce a broken page when guessed at.";
 
 const FORCE_DESCRIPTION =
     "Skip the placeholder-settings check and add the rendering anyway. For migration and "

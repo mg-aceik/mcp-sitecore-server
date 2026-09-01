@@ -100,7 +100,7 @@ existing section without its ID is rejected for creating a duplicate.
     - [x] `item-service-get-item-descendants`: returns the descendants of an item by ID
 - [x] Sitecore PowerShell
   - [x] `get-powershell-documentation`: the SPE command reference, revealed progressively. No arguments returns an index of all 129 commands with one-line summaries (~11KB); `command` returns the full page for up to 5 named commands; `search` finds a command by what it does; `category` lists one group. It no longer returns the whole corpus in one result, and the pages for commands that only work inside the SPE console's own UI (`Show-*`, `Invoke-JavaScript`, `Read-Variable`, …) are not bundled at all — nothing reachable over the `remoting` service can call them.
-  - [x] `run-powershell-script`: runs a PowerShell script and returns the output
+  - [x] `run-powershell-script`: runs a PowerShell script and returns the output; its description points at the [`guide://bulk-update`](./guides.md) resource for the safe mass-write pattern
   - [x] Security
     - [x] `security-get-current-user`: returns the current user
     - [x] `security-get-user`: returns users by exact `identity` or wildcard `filter` (supply one)
@@ -194,7 +194,7 @@ existing section without its ID is rejected for creating a duplicate.
   - [x] Site composition
     - [x] `get-allowed-components-by-placeholder`: lists the renderings a placeholder allows on a page, from the site-level and global placeholder settings items
     - [x] `create-component-datasource`: creates a component's datasource item from the Datasource Template and Datasource Location declared on the rendering, page-local or shared
-    - [x] `add-rendering-to-placeholder`: adds a rendering to a placeholder, refusing one the placeholder settings forbid, assigning a collision-free `DynamicPlaceholderId` and writing the full parameter set
+    - [x] `add-rendering-to-placeholder`: adds a rendering to a placeholder, refusing one the placeholder settings forbid, assigning a collision-free `DynamicPlaceholderId` and writing the full parameter set; its description points at the [`guide://compose-page`](./guides.md) resource
     - [x] `list-sites`: lists the content sites registered on the CM with their root and start paths
     - [x] `get-site-information`: one site's definition plus the paths the composition tools need (home, placeholder settings, available renderings, shared data, site definition item)
     - [x] `get-pages-by-site`: the pages of a site as `{ID, Path, Template, TemplateID}`

@@ -185,32 +185,57 @@ MCP SDK and MCP protocol revision 2026-07-28._
   [#1368](https://github.com/SitecorePowerShell/Console/issues/1368)). Sitecore CLI is the
   supported serialization route.
 
-#### New prompts
+#### New guides
 
-- `[prompts]` **The server now registers MCP prompts — three of them, for the workflows the
-  tools can perform but do not encode.** A prompt costs nothing until a user picks one,
-  unlike the server `instructions`, which are paid every session, so this is where
-  task-specific guidance lives:
-  - **`add-component-to-page`** — the composition procedure in the right order, with the
+- `[guides]` **The server now serves guide resources — three of them, for the workflows the
+  tools can perform but do not encode.** A resource costs nothing until it is read, unlike
+  the server `instructions`, which are paid every session, so this is where task-specific
+  guidance lives:
+  - **`guide://compose-page`** — the composition procedure in the right order, with the
     placeholder-path, dynamic-placeholder, SXA Container/splitter and grid-parameter
-    knowledge whose absence produces a page that saves, renders, and is wrong. Offered only
+    knowledge whose absence produces a page that saves, renders, and is wrong. Its step 5
+    also requires the new datasource's text fields to be filled — placeholder copy where the
+    caller gave no content — because `create-component-datasource` sets only the fields it is
+    given, and a component added and left alone renders blank and reads as a failed
+    deployment rather than a page awaiting copy. Offered only
     when `powershell.composition` and `add-rendering-to-placeholder` are enabled, so it never
-    advertises a workflow whose first call does not exist.
-  - **`bulk-update-items`** — the same change across many items, as a `run-powershell-script`
-    script that follows the safe pattern: every ID resolved from the instance rather than
-    guessed, filter to the items that actually need the change, dry run whose output the user
-    approves before anything is written, edits bracketed in `BeginEdit`/`EndEdit` with a
-    per-item `try`/`catch`, and a final summary. Offered only when `powershell.core` and
-    `run-powershell-script` are enabled.
-  - **`diagnose-connection`** — which of the four surfaces can reach the instance, and what
-    each failure signature actually means — including the ones that read as the opposite of
-    their cause, like the Authoring API's unauthorized-but-HTTP-200 and SPE's 400-with-an-
-    identity-provider's-HTML-page. Never gated: which surfaces are absent is the question it
-    answers.
+    describes a workflow whose first call does not exist.
+  - **`guide://bulk-update`** — the same change across many items, as a
+    `run-powershell-script` script that follows the safe pattern: every ID resolved from the
+    instance rather than guessed, the subtree and the item filter established with the user
+    rather than inferred, filter to the items that actually need the change, dry run whose
+    output the user approves before anything is written, edits bracketed in
+    `BeginEdit`/`EndEdit` with a per-item `try`/`catch`, and a final summary. Offered only
+    when `powershell.core` and `run-powershell-script` are enabled.
+  - **`guide://diagnose-connection`** — which of the four surfaces can reach the instance,
+    and what each failure signature actually means — including the ones that read as the
+    opposite of their cause, like the Authoring API's unauthorized-but-HTTP-200 and SPE's
+    400-with-an-identity-provider's-HTML-page. Never gated: which surfaces are absent is the
+    question it answers.
 
-  A client lists prompts separately from tools and an agent has no reason to go looking, so
-  the `guide://tool-selection` resource discloses each prompt and when to reach for it.
-  See [Prompts](docs/prompts.md).
+  **Resources rather than MCP prompts, deliberately.** All three were prototyped as prompts
+  as well, and the prompt half was dropped before release: the server advertises no prompts
+  capability. A prompt is user-triggered and one-shot — somebody has to know it exists, pick
+  it before the first tool call, and it cannot be consulted again once injected — while the
+  failures these bodies guard against surface *mid-task*, several calls in, when an agent
+  meets a Column Splitter, has to put a value in `GridParameters`, or gets a 400 with an
+  HTML body back from SPE. A resource is readable at the moment the question arises,
+  re-readable, and reachable by an agent that would never have gone looking through a prompt
+  list. The prompt argument was carrying nothing either: the request is already in the
+  agent's context in the user's own message, and a slash-command client that splits one
+  string across declared arguments turned `/add-component-to-page create a fresh page and
+  add header banner heading and content block` into `page: "create"`, `component: "a"` —
+  four well-formed strings that are collectively nonsense, which nothing in the schema
+  rejects.
+
+- `[guides]` **Each guide is named where an agent already reads.** A client lists resources
+  separately from tools and an agent has no reason to go looking, so the
+  `guide://tool-selection` resource discloses each URI and when to reach for it, and — the
+  pointer that lands mid-task — the description of the tool each guide is about names it:
+  `add-rendering-to-placeholder` names `guide://compose-page`, and `run-powershell-script`
+  names `guide://bulk-update`. Each guide is gated with the tools its steps call, since a
+  procedure whose every step names an absent tool is misleading rather than merely useless.
+  See [Guides](docs/guides.md).
 
 #### Performance and token cost
 

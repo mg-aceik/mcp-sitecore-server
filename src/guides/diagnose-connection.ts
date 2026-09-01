@@ -1,6 +1,3 @@
-import type { McpServer } from "@modelcontextprotocol/server";
-import { z } from "zod";
-
 /**
  * "Which of the four surfaces actually work against this instance, and why not?"
  *
@@ -16,12 +13,8 @@ import { z } from "zod";
  * what a tool returns to what is actually wrong.
  */
 
-const DESCRIPTION =
-    "Work out which of this server's four Sitecore surfaces (Authoring and Management API, "
-    + "Item Service, GraphQL Edge, SPE Remoting) can reach the instance, and diagnose the "
-    + "ones that cannot from their failure signatures.";
-
-const GUIDANCE = `
+/** Served as the `guide://diagnose-connection` resource. */
+export const DIAGNOSE_CONNECTION_GUIDE = `
 ## What to probe
 
 Four independent APIs, four sets of credentials, four enablement switches. They fail
@@ -39,14 +32,17 @@ cheapest read and record the exact error text; the wording is the diagnosis.
 Start with \`config\`. It reports which endpoints and accounts are configured with the
 secrets redacted, and an empty value there explains a failure without a round trip.
 
-Do not stop at the first failure — report on all four, because which ones work determines
-what the user can actually do. If a surface is deliberately absent, say so rather than
-calling it broken: \`TOOL_PROFILE\` has \`no-spe\`, \`no-item-service\`,
-\`no-edge-graphql\` and \`no-authoring-api\` for exactly that.
+**You are done when every surface in scope has a verdict line** — reachable, misconfigured,
+or deliberately disabled — so a failure on the first surface is a result to record and
+carry on from, not a stopping point. Which surfaces work is what determines what the user
+can actually do next. A surface switched off on purpose gets the "deliberately disabled"
+verdict: \`TOOL_PROFILE\` has \`no-spe\`, \`no-item-service\`, \`no-edge-graphql\` and
+\`no-authoring-api\` for exactly that.
 
 ## Failure signatures
 
-Match on what came back, not on what you expected.
+The exact error text is the ground truth here — match a signature against what came back,
+and let it overrule what you expected the surface to do.
 
 **Authoring and Management API**
 - *"needs a bearer token, and none is configured"* — neither \`AUTHORING_CLIENT_ID\` +
@@ -92,47 +88,6 @@ diagnosis for each failure and the single most likely fix, naming the setting or
 environment variable. Point at \`/sitecore/admin/showconfig.aspx\` when the answer depends
 on whether a config patch merged.
 
-Never print a secret. \`config\` returns them redacted; keep it that way, and refer to
-credentials by their variable name.
+Refer to every credential by its variable name — \`AUTHORING_CLIENT_SECRET\`, not its
+value. \`config\` returns secrets redacted; keep them that way and never print a secret.
 `;
-
-export function diagnoseConnectionPrompt(server: McpServer) {
-    server.registerPrompt(
-        "diagnose-connection",
-        {
-            title: "Diagnose the Sitecore connection",
-            description: DESCRIPTION,
-            argsSchema: z.object({
-                surface: z.string().optional()
-                    .describe("Limit the check to one surface: 'authoring', 'item-service', 'graphql' or 'powershell'. Omit to check all four."),
-                symptom: z.string().optional()
-                    .describe("What went wrong, if something specific prompted this — the exact error text is most useful."),
-            }),
-        },
-        ({ surface, symptom }) => {
-            const scope = surface
-                ? `Check the ${surface} surface only.`
-                : `Check all four surfaces.`;
-            const reported = symptom
-                ? `\n\nThe reported symptom is: ${symptom}\nStart from that signature, but still confirm which surfaces work — a symptom on one surface is often caused by a setting that affects another.`
-                : "";
-
-            return {
-                messages: [
-                    {
-                        role: "user" as const,
-                        content: {
-                            type: "text" as const,
-                            text:
-                                `Diagnose this server's connection to Sitecore. ${scope}${reported}\n\n`
-                                + `Probe each surface, record the exact error text, and match it against `
-                                + `the table below before drawing a conclusion — several of these failures `
-                                + `are misleading on their face.\n`
-                                + GUIDANCE,
-                        },
-                    },
-                ],
-            };
-        }
-    );
-}
