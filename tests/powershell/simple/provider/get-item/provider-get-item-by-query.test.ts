@@ -1,30 +1,27 @@
-import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { describe, it, expect, afterAll } from "vitest";
+import { client, transport, callTool } from "../../../../client";
+import { seedScratch } from "../../../../fixtures";
 
 await client.connect(transport);
 
-describe("powershell", () => {
-    it("provider-get-item-by-query", async () => {
-        // Use a query that should return results in any Sitecore instance
-        const query = "/sitecore/content/Home/Tests/Provider//*[@@name='Get-Item-By-Query']";
+const scratch = await seedScratch("provider-get-item-by-query", ["Target"]);
+afterAll(() => scratch.cleanup());
 
+describe("powershell", () => {
+    it("provider-get-item", async () => {
+        // Sitecore query rather than a path. The scratch root's name carries hyphens, and a
+        // query treats those as operators unless the segment is wrapped in #...#.
         const args: Record<string, any> = {
-            query: query
+            query: `/sitecore/content/#${scratch.root.name}#//*[@@name='Target']`
         };
 
-        const result = await callTool(client, "provider-get-item-by-query", args);
+        const result = await callTool(client, "provider-get-item", args);
         const json = JSON.parse(result.content[0].text);
 
-        // Verify the response has items array
-        expect(json).toMatchObject({
-            Obj: expect.arrayContaining([
-                expect.objectContaining({
-                    ToString: "Sitecore.Data.Items.Item",
-                    ItemPath: "/sitecore/content/Home/Tests/Provider/Get-Item/Get-Item-By-Query",
-                    FullPath: "/sitecore/content/Home/Tests/Provider/Get-Item/Get-Item-By-Query",
-                })
-            ])
-        });
+        // The projection returns identity, not the whole .NET graph, so ItemPath and ID are
+        // what identify the item that came back.
+        expect(json.Obj).toHaveLength(1);
+        expect(json.Obj[0].ItemPath).toBe(scratch.item("Target").path);
+        expect(json.Obj[0].ID.toLowerCase()).toBe(scratch.item("Target").id.toLowerCase());
     });
 });

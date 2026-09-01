@@ -1,24 +1,33 @@
 import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { client, transport, callTool } from "../../../../client";
 
 await client.connect(transport);
 
-describe("powershell", () => {
-    it("indexing-stop-search-index", async () => {
-        // Test stopping a specific index
-        const specificIndexArgs: Record<string, any> = {
-            name: "sitecore_test_index_2",
-        };
+// The core index, not the master one: this takes an index out of service for a moment and
+// every other file in the suite is searching master while it runs.
+//
+// The assertion is that SPE accepts the call and the index is left running, not that the
+// index was in a particular state afterwards -- the sibling state files act on the same
+// index in parallel, so any state read here belongs to whichever of them ran last.
+// `tests/unit/merged-sweep.test.ts` covers which cmdlet each action dispatches to.
+const INDEX = "sitecore_core_index";
 
-        const specificIndexResult = await callTool(client, "indexing-stop-search-index", specificIndexArgs);
-        const specificIndexJson = JSON.parse(specificIndexResult.content[0].text);
-        
-        // Verify that the command executed successfully
-        expect(specificIndexJson).toBeDefined();
-        
-        // How to check if the index is stopped?
-        // There is no PowerShell command to do it. It requires calling .Net API via PS.
-        // ToDo: Implement a way to verify that the index is stopped.
+const indexingState = async () => {
+    const result = await callTool(client, "indexing-get-search-index", { name: INDEX });
+    return JSON.parse(result.content[0].text).Obj[0].IndexingState;
+};
+
+describe("powershell", () => {
+    it("indexing-set-search-index-state", async () => {
+        const result = await callTool(client, "indexing-set-search-index-state", {
+            action: "stop",
+            name: INDEX,
+        });
+
+        expect(result.isError).not.toBe(true);
+        expect(typeof await indexingState()).toBe("string");
+
+        // Leave it running, whatever this test did to it.
+        await callTool(client, "indexing-set-search-index-state", { action: "resume", name: INDEX });
     });
 });

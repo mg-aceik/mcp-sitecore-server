@@ -1,22 +1,24 @@
-import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { describe, it, expect, afterAll } from "vitest";
+import { client, transport, callTool } from "../../../../client";
+import { seedScratch } from "../../../../fixtures";
 
 await client.connect(transport);
 
+const scratch = await seedScratch("get-item-template-by-id", ["Target"]);
+afterAll(() => scratch.cleanup());
+
 describe("powershell", () => {
-    it("common-get-item-template-by-id", async () => {
-        const itemId = "{772CCBA4-9FF0-435B-87A2-1A3256023CE2}";
-        
+    it("common-get-item-template", async () => {
         const args: Record<string, any> = {
-            id: itemId
+            id: scratch.item("Target").id
         };
 
-        const result = await callTool(client, "common-get-item-template-by-id", args);
+        const result = await callTool(client, "common-get-item-template", args);
         const json = JSON.parse(result.content[0].text);
-        
-        // Verify that the command executed successfully and returned template information
+
         expect(json).toBeDefined();
-        expect(json.Obj[0].Name).toBe("Sample Item");
+        expect(json.Obj[0].Name).toBe(scratch.template.name);
+        expect(json.Obj[0].ID.toLowerCase()).toBe(scratch.template.id.toLowerCase());
+        expect(json.Obj[0].ItemPath).toBe(scratch.template.path);
     });
 });

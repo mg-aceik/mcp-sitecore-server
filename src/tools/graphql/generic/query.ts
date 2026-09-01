@@ -1,6 +1,4 @@
-import { type CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { buildClientSchema, getIntrospectionQuery, printSchema } from "graphql";
-import { type IntrospectionQuery } from "graphql";
+import type { CallToolResult } from "@modelcontextprotocol/server";
 import { type Config } from "@/config.js";
 import { parse } from "graphql/language/index.js";
 import { fetchWithTimeout } from "@/utils.js";
@@ -10,6 +8,21 @@ export async function query(conf: Config, schemaName:string, query: string, vari
 
     // Validate the query syntax before sending it to the server.
     parse(query);
+
+    // The MCP parameter is a JSON string; GraphQL servers expect `variables` to be a
+    // JSON object in the request body, not a string, so parse it here and fail with a
+    // clear message rather than the server's opaque 400.
+    let parsedVariables: unknown;
+    if (variables !== undefined && variables !== "") {
+        try {
+            parsedVariables = JSON.parse(variables);
+        } catch {
+            throw new Error(
+                `The 'variables' parameter must be a JSON object string, e.g. '{"path": "/sitecore/content/Home"}'. Got: ${variables}`
+            );
+        }
+    }
+
     const response = await fetchWithTimeout(url, {
         method: 'POST',
         headers: {
@@ -21,7 +34,7 @@ export async function query(conf: Config, schemaName:string, query: string, vari
         },
         body: JSON.stringify({
             query,
-            variables,
+            variables: parsedVariables,
         }),
     });
 

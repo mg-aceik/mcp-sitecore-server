@@ -1,30 +1,25 @@
-import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { describe, it, expect, afterAll } from "vitest";
+import { client, transport, callTool } from "../../../../client";
+import { seedScratch } from "../../../../fixtures";
 
 await client.connect(transport);
 
+const scratch = await seedScratch("lock-item-by-id", ["Target"]);
+afterAll(() => scratch.cleanup());
+
+const addressing = { id: scratch.item("Target").id };
+
 describe("powershell", () => {
-    it("security-lock-item-by-id", async () => {
-       const itemId = "{1ADB079D-DD98-487A-BC2E-31E2D9880DBF}"; 
-        // Test locking by ID
-        const args: Record<string, any> = {
-            id: itemId,
-            passThru: "true"
-        };
-        
-        const result = await callTool(client, "security-lock-item-by-id", args);
-        const json = JSON.parse(result.content[0].text);
-        
-        expect(json.Obj[0].__Lock).contains(
-            "sitecore\\admin"
-        );
-        
-        // Unlock the item after test to clean up
-        const forceArgs: Record<string, any> = {
-            id: itemId,
-        };
-        
-        await callTool(client, "security-unlock-item-by-id", forceArgs);
+    it("security-set-item-lock", async () => {
+        const locked = await callTool(client, "security-set-item-lock", {
+            ...addressing,
+            action: "lock",
+            passThru: true,
+            fields: ["__Lock"],
+        });
+        expect(JSON.parse(locked.content[0].text).Obj[0].__Lock).toContain("owner=");
+
+        // Leave it as it was found.
+        await callTool(client, "security-set-item-lock", { ...addressing, action: "unlock" });
     });
 });

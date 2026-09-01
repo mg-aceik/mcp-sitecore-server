@@ -1,44 +1,30 @@
-import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../client";
-import { resetLayoutById } from "../../tools/reset-layout";
-import { getRenderingById } from "../../tools/get-rendering";
+import { describe, it, expect, afterAll } from "vitest";
+import { client, transport, callTool } from "../../../client";
+import { seedScratch, seedPresentation, applyPresentation } from "../../../fixtures";
 
 await client.connect(transport);
 
-// /sitecore/content/Home/Tests/Presentation/Switch-Rendering-By-Unique-Id
-const itemId = "{F8C6F8A2-A505-47C9-AB80-BFA551E616C0}";
-const uniqueId = "{B343725A-3A93-446E-A9C8-3A2CBD3DB489}";
+const scratch = await seedScratch("switch-rendering-by-unique-id", ["Page"]);
+const presentation = await seedPresentation(scratch);
+const applied = await applyPresentation(scratch.item("Page"), presentation);
+afterAll(() => scratch.cleanup());
 
-// /sitecore/layout/Renderings/Feature/Tests/Switch-Rendering/Expected Rendering
-const newRenderingId = "{1C8B443B-E78A-4AE7-AB30-CB0166299877}";
-
-const database = "master";
-const language = "ja-jp";
-const finalLayout = "true";
+const addressing = { id: scratch.item("Page").id };
 
 describe("powershell", () => {
-    it("presentation-switch-rendering-by-unique-id", async () => {
-        // Arrange
-        // Initialize item initial state before test.
-        await resetLayoutById(client, itemId, database, language, finalLayout);
-
-        const switchRenderingArgs: Record<string, any> = {
-            itemId,
-            uniqueId,
-            newRenderingId,            
-            database,
-            finalLayout,
-            language,
-        };
-        
+    it("presentation-switch-rendering", async () => {
         // Act
-        await callTool(client, "presentation-switch-rendering-by-unique-id", switchRenderingArgs);
+        await callTool(client, "presentation-switch-rendering", {
+            ...addressing,
+            uniqueId: applied.uniqueId,
+            newRenderingId: presentation.otherRendering.id,
+            finalLayout: true,
+        });
 
-        // Assert
-        const renderings = await getRenderingById(client, itemId, database, undefined, language, finalLayout);
-        
-        const rendering = renderings[2];
-        expect(rendering.ItemID.toLowerCase()).toBe(newRenderingId.toLowerCase());
+        // Assert: same slot, different rendering.
+        const result = await callTool(client, "presentation-get-rendering", { ...addressing, finalLayout: true });
+        const rendering = JSON.parse(result.content[0].text).Obj[0];
+
+        expect(rendering.ItemID.toLowerCase()).toBe(presentation.otherRendering.id.toLowerCase());
     });
 });

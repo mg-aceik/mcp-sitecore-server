@@ -1,24 +1,19 @@
-import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { describe, it, expect, afterAll } from "vitest";
+import { client, transport, callTool } from "../../../../client";
+import { seedRole } from "../../../../fixtures";
 
 await client.connect(transport);
 
+const role = await seedRole("test-account-positive");
+afterAll(() => role.remove());
+
 describe("powershell", () => {
     it("security-test-account", async () => {
-        // Test on the admin user which should exist in most Sitecore instances
-        const args: Record<string, string> = {
-            identity: "sitecore\\Developer does-not-exist",
-            accountType: "Role"
-        };
-        
-        // Test if the user exists
-        const result = await callTool(client, "security-test-account", args);
-        const json = JSON.parse(result.content[0].text);
-        
-        // Test-Account should return false for a non-existing user
-        expect(json).toMatchObject({
-            Obj: [false]
+        const result = await callTool(client, "security-test-account", {
+            identity: role.name,
+            accountType: "Role",
         });
+
+        expect(JSON.parse(result.content[0].text).Obj[0]).toBe(true);
     });
 });

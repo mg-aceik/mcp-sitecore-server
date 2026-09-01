@@ -1,21 +1,21 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "./config.js";
 
 import { registerGraphQL } from "./tools/graphql/register-graphql.js";
+import {
+    AUTHORING_CONTENT_REGISTRARS,
+    AUTHORING_CORE_REGISTRARS,
+    AUTHORING_MANAGEMENT_REGISTRARS,
+} from "./tools/authoring/register-authoring.js";
 import { getItemTool } from "./tools/item-service/tools/simple/get-item.js";
 import { getItemChildrenTool } from "./tools/item-service/tools/simple/get-item-children.js";
-import { getItemByPathTool } from "./tools/item-service/tools/simple/get-item-by-path.js";
 import { createItemTool } from "./tools/item-service/tools/simple/create-item.js";
 import { editItemTool } from "./tools/item-service/tools/simple/edit-item.js";
 import { deleteItemTool } from "./tools/item-service/tools/simple/delete-item.js";
 import { searchItemsTool } from "./tools/item-service/tools/simple/search-items.js";
-import { runStoredQueryTool } from "./tools/item-service/tools/simple/run-stored-query.js";
-import { runStoredSearchTool } from "./tools/item-service/tools/simple/run-stored-search.js";
 import { getItemDescendantsTool } from "./tools/item-service/tools/composite/get-item-descendants.js";
 import { getLanguagesTool } from "./tools/item-service/tools/composite/get-languages.js";
-import { getUserByIdentityPowerShellTool } from "./tools/powershell/simple/security/get-user-by-identity.js";
 import { getCurrentUserPowerShellTool } from "./tools/powershell/simple/security/get-current-user.js";
-import { getUserByFilterPowerShellTool } from "./tools/powershell/simple/security/get-user-by-filter.js";
 import { newUserPowerShellTool } from "./tools/powershell/simple/security/new-user.js";
 import { removeUserPowerShellTool } from "./tools/powershell/simple/security/remove-user.js";
 import { disableUserPowerShellTool } from "./tools/powershell/simple/security/disable-user.js";
@@ -23,14 +23,9 @@ import { enableUserPowerShellTool } from "./tools/powershell/simple/security/ena
 import { unlockUserPowerShellTool } from "./tools/powershell/simple/security/unlock-user.js";
 import { setUserPowerShellTool } from "./tools/powershell/simple/security/set-user.js";
 import { setUserPasswordPowerShellTool } from "./tools/powershell/simple/security/set-user-password.js";
-import { getRoleByIdentityPowerShellTool } from "./tools/powershell/simple/security/get-role-by-identity.js";
-import { getRoleByFilterPowerShellTool } from "./tools/powershell/simple/security/get-role-by-filter.js";
 import { getRoleMemberPowerShellTool } from "./tools/powershell/simple/security/get-role-member.js";
 import { addRoleMemberPowerShellTool } from "./tools/powershell/simple/security/add-role-member.js";
 import { removeRoleMemberPowerShellTool } from "./tools/powershell/simple/security/remove-role-member.js";
-import { unlockItemPowerShellTool } from "./tools/powershell/simple/security/unlock-item.js";
-import { protectItemByPathPowerShellTool } from "./tools/powershell/simple/security/protect-item-by-path.js";
-import { protectItemByIdPowerShellTool } from "./tools/powershell/simple/security/protect-item-by-id.js";
 import { newRolePowerShellTool } from "./tools/powershell/simple/security/new-role.js";
 import { removeRolePowerShellTool } from "./tools/powershell/simple/security/remove-role.js";
 import { newDomainPowerShellTool } from "./tools/powershell/simple/security/new-domain.js";
@@ -38,111 +33,82 @@ import { removeDomainPowerShellTool } from "./tools/powershell/simple/security/r
 import { testAccountPowerShellTool } from "./tools/powershell/simple/security/test-account.js";
 import { getItemAclPowerShellTool } from "./tools/powershell/simple/security/get-item-acl.js";
 import { testItemAclPowerShellTool } from "./tools/powershell/simple/security/test-item-acl.js";
-import { addItemAclPowerShellTool } from "./tools/powershell/simple/security/add-item-acl.js";
-import { clearItemAclPowerShellTool } from "./tools/powershell/simple/security/clear-item-acl.js";
 import { getItemPowerShellTool } from "./tools/powershell/simple/provider/get-item.js";
-import { initializeSearchIndexPowerShellTool } from "./tools/powershell/simple/indexing/initialize-search-index.js";
 import { getSearchIndexPowerShellTool } from "./tools/powershell/simple/indexing/get-search-index.js";
 import { findItemPowerShellTool } from "./tools/powershell/simple/indexing/find-item.js";
-import { resumeSearchIndexPowerShellTool } from "./tools/powershell/simple/indexing/resume-search-index.js";
-import { suspendSearchIndexPowerShellTool } from "./tools/powershell/simple/indexing/suspend-search-index.js";
-import { stopSearchIndexPowerShellTool } from "./tools/powershell/simple/indexing/stop-search-index.js";
-import { setItemAclByIdPowerShellTool } from "./tools/powershell/composite/security/set-item-acl-by-id.js";
-import { setItemAclByPathPowerShellTool } from "./tools/powershell/composite/security/set-item-acl-by-path.js";
-import { initializeSearchIndexingItemByIdPowerShellTool } from "./tools/powershell/composite/indexing/initialialize-search-indexing-item-by-id.js";
-import { initializeSearchIndexingItemByPathPowerShellTool } from "./tools/powershell/composite/indexing/initialialize-search-indexing-item-by-path.js";
-import { removeSearchIndexItemByIdPowerShellTool } from "./tools/powershell/composite/indexing/remove-search-index-item-by-id.js";
-import { removeSearchIndexItemByPathPowerShellTool } from "./tools/powershell/composite/indexing/remove-search-index-item-by-path.js";
-import { lockItemByIdPowerShellTool } from "./tools/powershell/simple/security/lock-item-by-id.js";
-import { lockItemByPathPowerShellTool } from "./tools/powershell/simple/security/lock-item-by-path.js";
-import { unprotectItemByIdPowerShellTool } from "./tools/powershell/simple/security/unprotect-item-by-id.js";
-import { unprotectItemByPathPowerShellTool } from "./tools/powershell/simple/security/unprotect-item-by-path.js";
-import { getDomainByNamePowerShellTool } from "./tools/powershell/simple/security/get-domain-by-name.js";
+import { setItemAclPowerShellTool } from "./tools/powershell/composite/security/set-item-acl.js";
 import { getAllDomainsPowerShellTool } from "./tools/powershell/simple/security/get-all-domains.js";
+import { getUserPowerShellTool } from "./tools/powershell/simple/security/get-user.js";
+import { getRolePowerShellTool } from "./tools/powershell/simple/security/get-role.js";
+import { setItemLockPowerShellTool } from "./tools/powershell/composite/security/set-item-lock.js";
+import { setItemProtectionPowerShellTool } from "./tools/powershell/composite/security/set-item-protection.js";
+import { exportAccountPowerShellTool, importAccountPowerShellTool } from "./tools/powershell/composite/security/export-account.js";
+import { setSearchIndexStatePowerShellTool } from "./tools/powershell/composite/indexing/set-search-index-state.js";
+import { rebuildSearchIndexPowerShellTool } from "./tools/powershell/composite/indexing/rebuild-search-index.js";
+import { setBaseTemplatePowerShellTool } from "./tools/powershell/composite/common/set-base-template.js";
 import { getArchivePowerShellTool } from "./tools/powershell/composite/common/get-archive.js";
 import { getArchiveItemPowerShellTool } from "./tools/powershell/composite/common/get-archive-item.js";
 import { getDatabasePowerShellTool } from "./tools/powershell/simple/common/get-database.js";
 import { getCachePowerShellTool } from "./tools/powershell/simple/common/get-cache.js";
-import { getItemTemplateByIdPowerShellTool } from "./tools/powershell/simple/common/get-item-template-by-id.js";
-import { getItemTemplateByPathPowerShellTool } from "./tools/powershell/simple/common/get-item-template-by-path.js";
-import { setItemTemplateByIdPowerShellTool } from "./tools/powershell/simple/common/set-item-template-by-id.js";
-import { setItemTemplateByPathPowerShellTool } from "./tools/powershell/simple/common/set-item-template-by-path.js";
-import { addBaseTemplateByIdPowerShellTool } from "./tools/powershell/simple/common/add-base-template-by-id.js";
-import { addBaseTemplateByPathPowerShellTool } from "./tools/powershell/simple/common/add-base-template-by-path.js";
-import { removeBaseTemplateByIdPowerShellTool } from "./tools/powershell/simple/common/remove-base-template-by-id.js";
-import { removeBaseTemplateByPathPowerShellTool } from "./tools/powershell/simple/common/remove-base-template-by-path.js";
-import { getItemFieldByIdPowerShellTool } from "./tools/powershell/simple/common/get-item-field-by-id.js";
-import { getItemFieldByPathPowerShellTool } from "./tools/powershell/simple/common/get-item-field-by-path.js";
-import { getItemReferenceByIdPowerShellTool } from "./tools/powershell/simple/common/get-item-reference-by-id.js";
-import { getItemReferenceByPathPowerShellTool } from "./tools/powershell/simple/common/get-item-reference-by-path.js";
-import { getItemReferrerByIdPowerShellTool } from "./tools/powershell/simple/common/get-item-referrer-by-id.js";
-import { getItemReferrerByPathPowerShellTool } from "./tools/powershell/simple/common/get-item-referrer-by-path.js";
-import { getItemWorkflowEventByIdPowerShellTool } from "./tools/powershell/simple/common/get-item-workflow-event-by-id.js";
-import { getItemWorkflowEventByPathPowerShellTool } from "./tools/powershell/simple/common/get-item-workflow-event-by-path.js";
+import { getItemTemplatePowerShellTool } from "./tools/powershell/simple/common/get-item-template.js";
+import { setItemTemplatePowerShellTool } from "./tools/powershell/simple/common/set-item-template.js";
+import { getItemFieldPowerShellTool } from "./tools/powershell/simple/common/get-item-field.js";
+import { getItemReferencePowerShellTool } from "./tools/powershell/simple/common/get-item-reference.js";
+import { getItemReferrerPowerShellTool } from "./tools/powershell/simple/common/get-item-referrer.js";
+import { getItemWorkflowEventPowerShellTool } from "./tools/powershell/simple/common/get-item-workflow-event.js";
 import { getPowershellDocumentationTool } from "./tools/powershell/get-powershell-documentation.js";
 import { runPowershellScriptTool } from "./tools/powershell/run-powershell-script.js";
 import { getSitecoreJobPowerShellTool } from "./tools/powershell/simple/common/get-sitecore-job.js";
-import { addItemVersionByIdPowerShellTool } from "./tools/powershell/simple/common/add-item-version-by-id.js";
-import { addItemVersionByPathPowerShellTool } from "./tools/powershell/simple/common/add-item-version-by-path.js";
-import { invokeWorkflowByIdPowerShellTool } from "./tools/powershell/simple/common/invoke-workflow-by-id.js";
-import { invokeWorkflowByPathPowerShellTool } from "./tools/powershell/simple/common/invoke-workflow-by-path.js";
-import { newItemWorkflowEventByIdPowerShellTool } from "./tools/powershell/simple/common/new-item-workflow-event-by-id.js";
-import { newItemWorkflowEventByPathPowerShellTool } from "./tools/powershell/simple/common/new-item-workflow-event-by-path.js";
-import { publishItemByIdPowerShellTool } from "./tools/powershell/simple/common/publish-item-by-id.js";
-import { publishItemByPathPowerShellTool } from "./tools/powershell/simple/common/publish-item-by-path.js";
+import { addItemVersionPowerShellTool } from "./tools/powershell/simple/common/add-item-version.js";
+import { invokeWorkflowPowerShellTool } from "./tools/powershell/simple/common/invoke-workflow.js";
+import { newItemWorkflowEventPowerShellTool } from "./tools/powershell/simple/common/new-item-workflow-event.js";
+import { publishItemPowerShellTool } from "./tools/powershell/simple/common/publish-item.js";
 import { removeArchiveItemPowerShellTool } from "./tools/powershell/composite/common/remove-archive-item.js";
-import { removeItemVersionByIdPowerShellTool } from "./tools/powershell/simple/common/remove-item-version-by-id.js";
-import { removeItemVersionByPathPowerShellTool } from "./tools/powershell/simple/common/remove-item-version-by-path.js";
-import { resetItemFieldByIdPowerShellTool } from "./tools/powershell/simple/common/reset-item-field-by-id.js";
-import { resetItemFieldByPathPowerShellTool } from "./tools/powershell/simple/common/reset-item-field-by-path.js";
+import { removeItemVersionPowerShellTool } from "./tools/powershell/simple/common/remove-item-version.js";
+import { resetItemFieldPowerShellTool } from "./tools/powershell/simple/common/reset-item-field.js";
 import { restartApplicationPowerShellTool } from "./tools/powershell/simple/common/restart-application.js";
 import { restoreArchiveItemPowerShellTool } from "./tools/powershell/composite/common/restore-archive-item.js";
-import { testBaseTemplateByIdPowerShellTool } from "./tools/powershell/simple/common/test-base-template-by-id.js";
-import { testBaseTemplateByPathPowerShellTool } from "./tools/powershell/simple/common/test-base-template-by-path.js";
-import { updateItemReferrerByIdPowerShellTool } from "./tools/powershell/composite/common/update-item-referrer-by-id.js";
-import { updateItemReferrerByPathPowerShellTool } from "./tools/powershell/composite/common/update-item-referrer-by-path.js";
-import { getItemCloneByIdPowerShellTool } from "./tools/powershell/simple/common/get-item-clone-by-id.js";
-import { getItemCloneByPathPowerShellTool } from "./tools/powershell/simple/common/get-item-clone-by-path.js";
-import { convertFromItemCloneByIdPowerShellTool } from "./tools/powershell/simple/common/convert-from-item-clone-by-id.js";
-import { convertFromItemCloneByPathPowerShellTool } from "./tools/powershell/simple/common/convert-from-item-clone-by-path.js";
-import { newItemCloneByIdPowerShellTool } from "./tools/powershell/composite/common/new-item-clone-by-id.js";
-import { newItemCloneByPathPowerShellTool } from "./tools/powershell/composite/common/new-item-clone-by-path.js";
+import { testBaseTemplatePowerShellTool } from "./tools/powershell/simple/common/test-base-template.js";
+import { updateItemReferrerPowerShellTool } from "./tools/powershell/composite/common/update-item-referrer.js";
+import { getItemClonePowerShellTool } from "./tools/powershell/simple/common/get-item-clone.js";
+import { convertFromItemClonePowerShellTool } from "./tools/powershell/simple/common/convert-from-item-clone.js";
+import { newItemClonePowerShellTool } from "./tools/powershell/composite/common/new-item-clone.js";
 
-import { getLayoutByIdPowershellTool } from "./tools/powershell/simple/presentation/get-layout-by-id.js";
-import { getLayoutByPathPowershellTool } from "./tools/powershell/simple/presentation/get-layout-by-path.js";
-import { setLayoutIdPowershellTool } from "./tools/powershell/composite/presentation/set-layout-by-id.js";
-import { setLayoutByPathPowershellTool } from "./tools/powershell/composite/presentation/set-layout-by-path.js";
-import { resetLayoutByIdPowershellTool } from "./tools/powershell/simple/presentation/reset-layout-by-id.js";
-import { resetLayoutByPathPowershellTool } from "./tools/powershell/simple/presentation/reset-layout-by-path.js";
-import { mergeLayoutByIdPowershellTool } from "./tools/powershell/simple/presentation/merge-layout-by-id.js";
-import { mergeLayoutByPathPowershellTool } from "./tools/powershell/simple/presentation/merge-layout-by-path.js";
+import { getLayoutPowershellTool } from "./tools/powershell/simple/presentation/get-layout.js";
+import { setLayoutPowershellTool } from "./tools/powershell/composite/presentation/set-layout.js";
+import { resetLayoutPowershellTool } from "./tools/powershell/simple/presentation/reset-layout.js";
+import { mergeLayoutPowershellTool } from "./tools/powershell/simple/presentation/merge-layout.js";
 import { getLayoutDevicePowershellTool } from "./tools/powershell/simple/presentation/get-layout-device.js";
-import { getDefaultLayoutDevicePowershellTool } from "./tools/powershell/simple/presentation/get-default-layout-device.js";
-import { getRenderingByIdPowershellTool } from "./tools/powershell/simple/presentation/get-rendering-by-id.js";
-import { getRenderingByPathPowershellTool } from "./tools/powershell/simple/presentation/get-rendering-by-path.js";
-import { removeRenderingByPathPowershellTool } from "./tools/powershell/simple/presentation/remove-rendering-by-path.js";
-import { removeRenderingByIdPowershellTool } from "./tools/powershell/simple/presentation/remove-rendering-by-id.js";
-import { addRenderingByPathPowershellTool } from "./tools/powershell/composite/presentation/add-rendering-by-path.js";
-import { addRenderingByIdPowershellTool } from "./tools/powershell/composite/presentation/add-rendering-by-id.js";
-import { setRenderingByPathPowershellTool } from "./tools/powershell/composite/presentation/set-rendering-by-path.js";
-import { setRenderingByIdPowershellTool } from "./tools/powershell/composite/presentation/set-rendering-by-id.js";
-import { switchRenderingByIdPowershellTool } from "./tools/powershell/composite/presentation/switch-rendering-by-id.js";
-import { switchRenderingByPathPowershellTool } from "./tools/powershell/composite/presentation/switch-rendering-by-path.js";
-import { switchRenderingByUniqueIdPowershellTool } from "./tools/powershell/composite/presentation/switch-rendering-by-unique-id.js";
-import { getPlaceholderSettingByIdPowershellTool } from "./tools/powershell/simple/presentation/get-placeholder-setting-by-id.js";
-import { getPlaceholderSettingByPathPowershellTool } from "./tools/powershell/simple/presentation/get-placeholder-setting-by-path.js";
-import { addPlaceholderSettingByIdPowershellTool } from "./tools/powershell/composite/presentation/add-placeholder-setting-by-id.js";
-import { addPlaceholderSettingByPathPowershellTool } from "./tools/powershell/composite/presentation/add-placeholder-setting-by-path.js";
-import { removePlaceholderSettingByIdPowershellTool } from "./tools/powershell/simple/presentation/remove-placeholder-setting-by-id.js";
-import { removePlaceholderSettingByPathPowershellTool } from "./tools/powershell/simple/presentation/remove-placeholder-setting-by-path.js";
-import { getRenderingParameterByIdPowershellTool } from "./tools/powershell/composite/presentation/get-rendering-parameter-by-id.js";
-import { getRenderingParameterByPathPowershellTool } from "./tools/powershell/composite/presentation/get-rendering-parameter-by-path.js";
-import { removeRenderingParameterByIdPowershellTool } from "./tools/powershell/composite/presentation/remove-rendering-parameter-by-id.js";
-import { removeRenderingParameterByPathPowershellTool } from "./tools/powershell/composite/presentation/remove-rendering-parameter-by-path.js";
-import { setRenderingParameterByIdPowershellTool } from "./tools/powershell/composite/presentation/set-rendering-parameter-by-id.js";
-import { setRenderingParameterByPathPowershellTool } from "./tools/powershell/composite/presentation/set-rendering-parameter-by-path.js";
+import { getRenderingPowershellTool } from "./tools/powershell/simple/presentation/get-rendering.js";
+import { removeRenderingPowershellTool } from "./tools/powershell/simple/presentation/remove-rendering.js";
+import { addRenderingPowershellTool } from "./tools/powershell/composite/presentation/add-rendering.js";
+import { setRenderingPowershellTool } from "./tools/powershell/composite/presentation/set-rendering.js";
+import { switchRenderingPowershellTool } from "./tools/powershell/composite/presentation/switch-rendering.js";
+import { getPlaceholderSettingPowershellTool } from "./tools/powershell/simple/presentation/get-placeholder-setting.js";
+import { addPlaceholderSettingPowershellTool } from "./tools/powershell/composite/presentation/add-placeholder-setting.js";
+import { removePlaceholderSettingPowershellTool } from "./tools/powershell/simple/presentation/remove-placeholder-setting.js";
+import { getRenderingParameterPowershellTool } from "./tools/powershell/composite/presentation/get-rendering-parameter.js";
+import { removeRenderingParameterPowershellTool } from "./tools/powershell/composite/presentation/remove-rendering-parameter.js";
+import { setRenderingParameterPowershellTool } from "./tools/powershell/composite/presentation/set-rendering-parameter.js";
 import { getLogsPowerShellTool } from "./tools/powershell/composite/logging/get-logs.js";
-import { getSitecoreCliDocumentation } from "./tools/sitecore-cli/get-sitecore-cli-documentation.js";
+import { mediaUploadTool } from "./tools/powershell/media/media-upload.js";
+import { mediaDownloadTool } from "./tools/powershell/media/media-download.js";
+import { listRenderingsPowershellTool } from "./tools/powershell/composite/presentation/list-renderings.js";
+import { getAllowedComponentsByPlaceholderPowershellTool } from "./tools/powershell/composite/composition/get-allowed-components-by-placeholder.js";
+import { createComponentDatasourcePowershellTool } from "./tools/powershell/composite/composition/create-component-datasource.js";
+import { addRenderingToPlaceholderPowershellTool } from "./tools/powershell/composite/composition/add-rendering-to-placeholder.js";
+import { listSitesPowershellTool } from "./tools/powershell/composite/composition/list-sites.js";
+import { getPagesBySitePowershellTool } from "./tools/powershell/composite/composition/get-pages-by-site.js";
+import { listSiteComponentsPowershellTool } from "./tools/powershell/composite/composition/list-site-components.js";
+import { listInsertOptionsPowershellTool } from "./tools/powershell/composite/composition/list-insert-options.js";
+import {
+    isGroupEnabled,
+    reportUnmatchedTools,
+    resolveToolGating,
+    withToolGating,
+    type ToolGating,
+    type ToolGroup,
+} from "./tool-profiles.js";
 
 export async function register(array: Array<(server: McpServer, config: Config) => void>,
     server: McpServer,
@@ -152,55 +118,70 @@ export async function register(array: Array<(server: McpServer, config: Config) 
     }
 }
 
-export async function registerAll(server: McpServer, config: Config) {
-    await register([
-        registerGraphQL,        
-        //Item Service
+type ToolRegistrar = (server: McpServer, config: Config) => void;
+
+/**
+ * The registrars, grouped exactly as the tools are laid out on disk. The grouping is
+ * what `TOOL_GROUPS` and `TOOL_PROFILE` select over, and skipping a group here skips
+ * its registrars' startup cost (schema introspection, index lookups) as well as their
+ * schemas. Registration order matches the flat list this replaced.
+ */
+export const TOOL_GROUP_REGISTRARS: Record<ToolGroup, ToolRegistrar[]> = {
+    "graphql": [
+        registerGraphQL,
+    ],
+
+    "authoring.core": AUTHORING_CORE_REGISTRARS,
+
+    "authoring.content": AUTHORING_CONTENT_REGISTRARS,
+
+    "authoring.management": AUTHORING_MANAGEMENT_REGISTRARS,
+
+    "item-service": [
         //Simple Item Service Tools
         getItemTool,
         getItemChildrenTool,
-        getItemByPathTool,
         createItemTool,
         editItemTool,
         deleteItemTool,
         searchItemsTool,
-        runStoredQueryTool,
-        runStoredSearchTool,
 
         //Composite Item Service Tools
         getItemDescendantsTool,
-        getLanguagesTool,     
+        getLanguagesTool,
+    ],
 
-        //PowerShell tools
+    "powershell.core": [
         getPowershellDocumentationTool,
         runPowershellScriptTool,
+    ],
 
-        //Security
+    "powershell.composition": [
+        getAllowedComponentsByPlaceholderPowershellTool,
+        createComponentDatasourcePowershellTool,
+        addRenderingToPlaceholderPowershellTool,
+        listSitesPowershellTool,
+        getPagesBySitePowershellTool,
+        listSiteComponentsPowershellTool,
+        listInsertOptionsPowershellTool,
+    ],
+
+    "powershell.security": [
         //Simple Security PowerShell Tools
-        getUserByIdentityPowerShellTool,
         getCurrentUserPowerShellTool,
-        getUserByFilterPowerShellTool,
         newUserPowerShellTool,
         removeUserPowerShellTool,
         disableUserPowerShellTool,
-        enableUserPowerShellTool,        
+        enableUserPowerShellTool,
         unlockUserPowerShellTool,
-        setUserPowerShellTool,        
+        setUserPowerShellTool,
         setUserPasswordPowerShellTool,
-        getDomainByNamePowerShellTool,
         getAllDomainsPowerShellTool,
-        getRoleByIdentityPowerShellTool,
-        getRoleByFilterPowerShellTool,
+        getUserPowerShellTool,
+        getRolePowerShellTool,
         getRoleMemberPowerShellTool,
         addRoleMemberPowerShellTool,
         removeRoleMemberPowerShellTool,
-        lockItemByIdPowerShellTool,
-        lockItemByPathPowerShellTool,
-        unlockItemPowerShellTool,        
-        protectItemByPathPowerShellTool,
-        protectItemByIdPowerShellTool,
-        unprotectItemByIdPowerShellTool,
-        unprotectItemByPathPowerShellTool,
         newRolePowerShellTool,
         removeRolePowerShellTool,
         newDomainPowerShellTool,
@@ -208,122 +189,112 @@ export async function registerAll(server: McpServer, config: Config) {
         testAccountPowerShellTool,
         getItemAclPowerShellTool,
         testItemAclPowerShellTool,
-        addItemAclPowerShellTool,
-        clearItemAclPowerShellTool,
-        
-        //Composite Security PowerShell Tools
-        setItemAclByIdPowerShellTool,
-        setItemAclByPathPowerShellTool,
 
-        //Common PowerShell Tools
+        //Composite Security PowerShell Tools
+        setItemAclPowerShellTool,
+        setItemLockPowerShellTool,
+        setItemProtectionPowerShellTool,
+        exportAccountPowerShellTool,
+        importAccountPowerShellTool,
+    ],
+
+    "powershell.common": [
         //Simple Common PowerShell Tools
-        addBaseTemplateByIdPowerShellTool,
-        addBaseTemplateByPathPowerShellTool,
-        addItemVersionByIdPowerShellTool,
-        addItemVersionByPathPowerShellTool,
-        convertFromItemCloneByIdPowerShellTool,
-        convertFromItemCloneByPathPowerShellTool,
+        addItemVersionPowerShellTool,
+        convertFromItemClonePowerShellTool,
         getCachePowerShellTool,
         getDatabasePowerShellTool,
-        getItemCloneByIdPowerShellTool,
-        getItemCloneByPathPowerShellTool,
-        getItemFieldByIdPowerShellTool,
-        getItemFieldByPathPowerShellTool,
-        getItemReferenceByIdPowerShellTool,
-        getItemReferenceByPathPowerShellTool,
-        getItemReferrerByIdPowerShellTool,
-        getItemReferrerByPathPowerShellTool,
-        getItemTemplateByIdPowerShellTool, 
-        getItemTemplateByPathPowerShellTool,
-        getItemWorkflowEventByIdPowerShellTool,
-        getItemWorkflowEventByPathPowerShellTool,
+        getItemClonePowerShellTool,
+        getItemFieldPowerShellTool,
+        getItemReferencePowerShellTool,
+        getItemReferrerPowerShellTool,
+        getItemTemplatePowerShellTool,
+        getItemWorkflowEventPowerShellTool,
         getSitecoreJobPowerShellTool,
-        invokeWorkflowByIdPowerShellTool,
-        invokeWorkflowByPathPowerShellTool,
-        newItemWorkflowEventByIdPowerShellTool,
-        newItemWorkflowEventByPathPowerShellTool,
-        publishItemByIdPowerShellTool,
-        publishItemByPathPowerShellTool,
-        removeBaseTemplateByIdPowerShellTool,
-        removeBaseTemplateByPathPowerShellTool,
-        removeItemVersionByIdPowerShellTool,
-        removeItemVersionByPathPowerShellTool,
-        resetItemFieldByIdPowerShellTool,
-        resetItemFieldByPathPowerShellTool,
+        invokeWorkflowPowerShellTool,
+        newItemWorkflowEventPowerShellTool,
+        publishItemPowerShellTool,
+        removeItemVersionPowerShellTool,
+        resetItemFieldPowerShellTool,
         restartApplicationPowerShellTool,
-        setItemTemplateByIdPowerShellTool,
-        setItemTemplateByPathPowerShellTool,
-        testBaseTemplateByIdPowerShellTool,
-        testBaseTemplateByPathPowerShellTool,
+        setItemTemplatePowerShellTool,
+        testBaseTemplatePowerShellTool,
 
-        //Composite Common PowerShell Tools 
+        //Composite Common PowerShell Tools
+        setBaseTemplatePowerShellTool,
         getArchivePowerShellTool,
         getArchiveItemPowerShellTool,
-        newItemCloneByIdPowerShellTool,
-        newItemCloneByPathPowerShellTool,
+        newItemClonePowerShellTool,
         removeArchiveItemPowerShellTool,
         restoreArchiveItemPowerShellTool,
-        updateItemReferrerByIdPowerShellTool,
-        updateItemReferrerByPathPowerShellTool,
+        updateItemReferrerPowerShellTool,
+    ],
 
-        //Presentation
+    "powershell.presentation": [
         //Simple Presentation PowerShell Tools
-        getLayoutByIdPowershellTool,
-        getLayoutByPathPowershellTool,
-        resetLayoutByIdPowershellTool,
-        resetLayoutByPathPowershellTool,
-        mergeLayoutByIdPowershellTool,
-        mergeLayoutByPathPowershellTool,
+        getLayoutPowershellTool,
+        resetLayoutPowershellTool,
+        mergeLayoutPowershellTool,
         getLayoutDevicePowershellTool,
-        getDefaultLayoutDevicePowershellTool,
-        getRenderingByIdPowershellTool,
-        getRenderingByPathPowershellTool,
-        removeRenderingByPathPowershellTool,
-        removeRenderingByIdPowershellTool,
-        getPlaceholderSettingByIdPowershellTool,
-        getPlaceholderSettingByPathPowershellTool,
-        removePlaceholderSettingByIdPowershellTool,
-        removePlaceholderSettingByPathPowershellTool,
-        
+        getRenderingPowershellTool,
+        removeRenderingPowershellTool,
+        getPlaceholderSettingPowershellTool,
+        removePlaceholderSettingPowershellTool,
+
         //Composite Presentation PowerShell Tools
-        setLayoutIdPowershellTool,
-        setLayoutByPathPowershellTool,
-        addRenderingByPathPowershellTool,
-        addRenderingByIdPowershellTool,
-        setRenderingByPathPowershellTool,
-        setRenderingByIdPowershellTool,
-        switchRenderingByIdPowershellTool,
-        switchRenderingByPathPowershellTool,
-        switchRenderingByUniqueIdPowershellTool,
-        addPlaceholderSettingByIdPowershellTool,
-        addPlaceholderSettingByPathPowershellTool,
-        getRenderingParameterByIdPowershellTool,
-        getRenderingParameterByPathPowershellTool,
-        removeRenderingParameterByIdPowershellTool,
-        removeRenderingParameterByPathPowershellTool,
-        setRenderingParameterByIdPowershellTool,
-        setRenderingParameterByPathPowershellTool,
+        listRenderingsPowershellTool,
+        setLayoutPowershellTool,
+        addRenderingPowershellTool,
+        setRenderingPowershellTool,
+        switchRenderingPowershellTool,
+        addPlaceholderSettingPowershellTool,
+        getRenderingParameterPowershellTool,
+        removeRenderingParameterPowershellTool,
+        setRenderingParameterPowershellTool,
+    ],
 
-        //Logging
+    "powershell.logging": [
         getLogsPowerShellTool,
+    ],
 
-        //Provider
-        getItemPowerShellTool,        
-        //Indexing PowerShell Tools
-        initializeSearchIndexPowerShellTool,
+    "powershell.provider": [
+        getItemPowerShellTool,
+    ],
+
+    "powershell.indexing": [
+        //Simple Indexing PowerShell Tools
         getSearchIndexPowerShellTool,
         findItemPowerShellTool,
-        resumeSearchIndexPowerShellTool,
-        suspendSearchIndexPowerShellTool,
-        stopSearchIndexPowerShellTool,
+
         //Composite Indexing PowerShell Tools
-        initializeSearchIndexingItemByIdPowerShellTool,
-        initializeSearchIndexingItemByPathPowerShellTool,
-        removeSearchIndexItemByIdPowerShellTool,
-        removeSearchIndexItemByPathPowerShellTool,
+        rebuildSearchIndexPowerShellTool,
+        setSearchIndexStatePowerShellTool,
+    ],
 
-        //Sitecore CLI
-        getSitecoreCliDocumentation,
+    "powershell.media": [
+        mediaUploadTool,
+        mediaDownloadTool,
+    ],
 
-    ], server, config);
+};
+
+export async function registerAll(server: McpServer, config: Config, gating?: ToolGating) {
+    // `gating` is supplied by getServer, which applies the tool denylist before it
+    // registers anything of its own. Resolve it here too so registerAll stays usable
+    // on its own.
+    let resolved = gating;
+    if (!resolved) {
+        resolved = resolveToolGating();
+        withToolGating(server, resolved);
+    }
+
+    for (const group of Object.keys(TOOL_GROUP_REGISTRARS) as ToolGroup[]) {
+        if (!isGroupEnabled(group, resolved)) {
+            continue;
+        }
+        await register(TOOL_GROUP_REGISTRARS[group], server, config);
+    }
+
+    // Now that every name is known, say so if a denylist entry matched nothing.
+    reportUnmatchedTools(resolved);
 }

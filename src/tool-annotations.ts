@@ -1,5 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
+import type { McpServer, ToolAnnotations } from "@modelcontextprotocol/server";
 
 // Tokens (matched against the hyphen-delimited segments of a tool name) that mark a
 // tool as performing a destructive change — deleting content, clearing state, or
@@ -29,6 +28,17 @@ const WRITE_TOKENS = new Set([
     "convert",
     "restore",
     "initialize",
+    // Structural changes that keep the item and its ID: none of them destroys content, so
+    // they are writes rather than destructive. Their absence used to leave
+    // authoring-move-item, authoring-copy-item and authoring-rename-item inferring
+    // readOnlyHint: true -- an auto-permitted mutation, which is the one mistake this
+    // inference must not make.
+    "move",
+    "copy",
+    "rename",
+    // Rebuilding an index writes no content but degrades search until it finishes.
+    // Matches what indexing-rebuild-search-index sets explicitly.
+    "rebuild",
     "resume",
     "suspend",
     "stop",
@@ -37,14 +47,14 @@ const WRITE_TOKENS = new Set([
     "protect",
     "unprotect",
     "enable",
+    // export writes serialized files on the server; import overwrites the live
+    // user/role with the serialized state.
+    "export",
+    "import",
+    // upload creates or overwrites a media item ("download" stays read-only: it does
+    // not mutate Sitecore).
+    "upload",
 ]);
-
-function toTitle(name: string): string {
-    return name
-        .split("-")
-        .map((part) => (part ? part[0].toUpperCase() + part.slice(1) : part))
-        .join(" ");
-}
 
 /**
  * Infers MCP tool annotations from a tool name using its hyphen-delimited tokens.
@@ -53,29 +63,36 @@ function toTitle(name: string): string {
  * verb reliably indicates intent (get-* reads, delete-/remove-* destroy, set-/add-*
  * write). Matching on whole tokens (not substrings) avoids false positives such as
  * "unlock" matching "lock" or "unprotect" matching "protect".
+ *
+ * No `title` is inferred, deliberately. A title derived from the tool name only restates a
+ * field the client already has: 134 of this server's 136 titles were exactly that, costing
+ * roughly 4,800 characters of every `tools/list` — paid on every turn — to say that
+ * `common-get-item-field` displays as "Common Get Item Field". Any client that wants it can
+ * derive it. The two tools whose title says something the name does not ("Authoring
+ * GraphQL", "Query GraphQL edge") set it explicitly in their own config, and
+ * `withInferredAnnotations` leaves an explicit `annotations` object alone.
  */
 export function inferToolAnnotations(name: string): ToolAnnotations {
-    const title = toTitle(name);
     const normalized = name.toLowerCase();
 
     // run-powershell-script executes arbitrary PowerShell — treat it as the most
     // dangerous, open-world tool.
     if (normalized === "run-powershell-script") {
-        return { title, readOnlyHint: false, destructiveHint: true, openWorldHint: true };
+        return { readOnlyHint: false, destructiveHint: true, openWorldHint: true };
     }
 
     const tokens = normalized.split("-");
     const isDestructive = tokens.some((t) => DESTRUCTIVE_TOKENS.has(t));
     if (isDestructive) {
-        return { title, readOnlyHint: false, destructiveHint: true };
+        return { readOnlyHint: false, destructiveHint: true };
     }
 
     const isWrite = tokens.some((t) => WRITE_TOKENS.has(t));
     if (isWrite) {
-        return { title, readOnlyHint: false, destructiveHint: false };
+        return { readOnlyHint: false, destructiveHint: false };
     }
 
-    return { title, readOnlyHint: true };
+    return { readOnlyHint: true };
 }
 
 /**

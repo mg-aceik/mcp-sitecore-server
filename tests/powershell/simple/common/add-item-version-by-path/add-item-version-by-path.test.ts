@@ -1,42 +1,36 @@
-import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { describe, it, expect, afterAll } from "vitest";
+import { client, transport, callTool } from "../../../../client";
+import { seedScratch, ensureLanguage } from "../../../../fixtures";
 
 await client.connect(transport);
 
-describe("powershell", () => {
-    it("common-add-item-version-by-path", async () => {
-        // Arrange
-        const itemPath = "/sitecore/content/Home/Tests/Common/Add-Item-Version-By-Path";
-        const language = "en";
-        const targetLanguage = "fr-CA";
+// Only `en` is guaranteed on a CM, so the second language is part of the fixture. It is
+// removed again only if this run is what added it.
+const scratch = await seedScratch("add-item-version-by-path", ["Target"]);
+const language = await ensureLanguage("fr-CA");
+afterAll(async () => {
+    await scratch.cleanup();
+    await language.remove();
+});
 
-        const args: Record<string, any> = {
-            path: itemPath,
-            language: language,
-            targetLanguage: targetLanguage
-        };
+describe("powershell", () => {
+    it("common-add-item-version", async () => {
+        // Arrange
+        const target = scratch.item("Target").path;
+        const before = await callTool(client, "provider-get-item", { path: target, language: "fr-CA" });
+        expect(JSON.parse(before.content[0].text).Obj).toBeUndefined();
 
         // Act
-        await callTool(client, "common-add-item-version-by-path", args);
+        await callTool(client, "common-add-item-version", {
+            path: target,
+            language: "en",
+            targetLanguage: "fr-CA",
+        });
 
         // Assert
-        const getItemArgs: Record<string, any> = {
-            path: itemPath,
-            language: targetLanguage,
-        };
-
-        const result = await callTool(client, "provider-get-item-by-path", getItemArgs);
-        const json = JSON.parse(result.content[0].text);
-        
+        const after = await callTool(client, "provider-get-item", { path: target, language: "fr-CA" });
+        const json = JSON.parse(after.content[0].text);
         expect(json.Obj).toBeDefined();
-
-        // Cleanup
-        const removeVersionArgs: Record<string, any> = {
-            path: itemPath,
-            language: targetLanguage,
-        };
-
-        await callTool(client, "common-remove-item-version-by-path", removeVersionArgs);
+        expect(json.Obj[0].Language).toBe("fr-CA");
     });
 });

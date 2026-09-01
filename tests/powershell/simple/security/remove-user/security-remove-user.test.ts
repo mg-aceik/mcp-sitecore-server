@@ -1,49 +1,22 @@
 import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
-import { get } from "http";
+import { client, transport, callTool } from "../../../../client";
 
 await client.connect(transport);
 
+const identity = `sitecore\\MCP-remove-user-${Date.now().toString(36)}`;
+
 describe("powershell", () => {
     it("security-remove-user", async () => {
+        // Arrange
+        await callTool(client, "security-new-user", { identity, password: "b", enabled: true });
+        const before = await callTool(client, "security-get-user", { identity });
+        expect(JSON.parse(before.content[0].text).Obj[0].Name).toBe(identity);
 
-        const randomHexSuffix = Math.floor(Math.random() * 1000000).toString(16);
-        const newUserArgs: Record<string, string> = {
-            identity: `anton-${randomHexSuffix}`,
-            password: "anton",
-            email: "at@exdst.com",
-            fullName: "Anton Tishehnko",
-            comment: "Anton Tishehnko",
-            portrait: "office/16x16/default_user.png",
-            enabled: "true",
-            profileItemId: "{AE4C4969-5B7E-4B4E-9042-B2D8701CE214}",
-        };
-        const result = await callTool(client, "security-new-user", newUserArgs);
-        const json = JSON.parse(result.content[0].text);
-        expect(json.Obj[0].Name).toBe(`sitecore\\anton-${randomHexSuffix}`);
-        const getUserArgs: Record<string, string> = {
-            identity: `sitecore\\anton-${randomHexSuffix}`,
-        };
+        // Act
+        await callTool(client, "security-remove-user", { identity });
 
-        const getUserResult = await callTool(client, "security-get-user-by-identity", getUserArgs);
-        const getUserJson = JSON.parse(getUserResult.content[0].text);
-        expect(getUserJson.Obj[0].Name).toBe(`sitecore\\anton-${randomHexSuffix}`);
-
-        const removeUserArgs: Record<string, string> = {
-            identity: `sitecore\\anton-${randomHexSuffix}`,
-        };
-
-        const removeUserResult = await callTool(client, "security-remove-user", removeUserArgs);
-        const removeUserJson = JSON.parse(removeUserResult.content[0].text);
-
-        expect(removeUserJson).toMatchObject(
-            {}
-        );
-
-        const getUserResult2 = await callTool(client, "security-get-user-by-identity", getUserArgs);
-        const getUserJson2 = JSON.parse(getUserResult2.content[0].text);
-        expect(getUserJson2.Obj[0].ToString)
-            .toBe(`Cannot find an account with identity 'sitecore\\anton-${randomHexSuffix}'.`);
+        // Assert: Get-User reports a missing account as an error rather than an empty result.
+        const after = await callTool(client, "security-get-user", { identity });
+        expect(after.isError).toBe(true);
     });
 });

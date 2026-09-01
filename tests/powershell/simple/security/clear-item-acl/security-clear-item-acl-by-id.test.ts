@@ -1,45 +1,52 @@
-import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { describe, it, expect, afterAll } from "vitest";
+import { client, transport, callTool } from "../../../../client";
+import { seedScratch, seedRole } from "../../../../fixtures";
 
 await client.connect(transport);
 
+const scratch = await seedScratch("clear-item-acl-by-id", ["Target"]);
+const role = await seedRole("acl-clear");
+afterAll(async () => {
+    await scratch.cleanup();
+    await role.remove();
+});
+
+const addressing = { id: scratch.item("Target").id };
+
+const rules = async () => {
+    const result = await callTool(client, "security-get-item-acl", { path: scratch.item("Target").path });
+    return JSON.parse(result.content[0].text).Obj ?? [];
+};
+
 describe("powershell", () => {
-    it("security-clear-item-acl-by-id", async () => {
-        // Use the specific ID mentioned in the task requirements
-        const itemId = "{ECFF05F9-8334-4BCA-8CE8-00A3F42AEE1D}";
-        // Clean up 
-        const clearupAclArgs: Record<string, any> = {
-            id: itemId,
-        };
-
-        await callTool(client, "security-clear-item-acl-by-id", clearupAclArgs);
-
-        const getAclArgs: Record<string, any> = {
-            id: itemId,
-        };
-
-        // Add a new ACL entry - Deny read access to the Everyone role
-        const addAclArgs: Record<string, any> = {
-            id: itemId,
-            identity: "sitecore\\Everyone",
-            accessRight: "item:read",
+    it("security-set-item-acl clear", async () => {
+        // Arrange: a rule to clear.
+        await callTool(client, "security-set-item-acl", {
+            ...addressing,
+            action: "add",
+            identity: role.name,
+            accessRight: "item:write",
             propagationType: "Entity",
-            securityPermission: "DenyAccess"
-        };
+            securityPermission: "DenyAccess",
+        });
+        expect(await rules()).not.toHaveLength(0);
 
-        const addAclResult = await callTool(client, "security-add-item-acl-by-id", addAclArgs);
-        const addAclJson = JSON.parse(addAclResult.content[0].text);
+        // Act
+        await callTool(client, "security-set-item-acl", { ...addressing, action: "clear" });
 
+        // Assert
+        expect(await rules()).toHaveLength(0);
+    });
 
+    it("security-set-item-acl rejects a clear that also names a rule", async () => {
+        // A clear carrying an identity was most likely meant to be a replace.
+        const result = await callTool(client, "security-set-item-acl", {
+            ...addressing,
+            action: "clear",
+            identity: role.name,
+            accessRight: "item:write",
+        });
 
-        // Clean up 
-        await callTool(client, "security-clear-item-acl-by-id", clearupAclArgs);
-
-        // Verify the ACL was removed by retrieving the item ACL again
-        const getUpdatedAclResult = await callTool(client, "security-get-item-acl-by-id", getAclArgs);
-        const updatedAclJson = JSON.parse(getUpdatedAclResult.content[0].text);
-
-        expect(updatedAclJson).toMatchObject({});
+        expect(result.isError).toBe(true);
     });
 });

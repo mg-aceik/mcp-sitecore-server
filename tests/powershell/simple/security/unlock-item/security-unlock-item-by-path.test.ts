@@ -1,33 +1,38 @@
-import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { describe, it, expect, afterAll } from "vitest";
+import { client, transport, callTool } from "../../../../client";
+import { seedScratch } from "../../../../fixtures";
 
 await client.connect(transport);
 
+const scratch = await seedScratch("unlock-item-by-path", ["Target"]);
+afterAll(() => scratch.cleanup());
+
+const addressing = { path: scratch.item("Target").path };
+
 describe("powershell", () => {
-    it("security-unlock-item-by-path", async () => {
-        // Using a common content path that should exist in most Sitecore instances
-        const path = "/sitecore/content/Home/Tests/Security/Unlock-Item/Unlock-Item-By-Path";
-        
-        // First lock the item so we have something to unlock
-        const lockArgs: Record<string, any> = {
-            path: path,
-            passThru: "true"
-        };
+    it("security-set-item-lock unlock", async () => {
+        // Arrange: a lock to release.
+        await callTool(client, "security-set-item-lock", { ...addressing, action: "lock" });
 
-        // Lock the item
-        await callTool(client, "security-lock-item-by-path", lockArgs);
-        
-        // Now unlock the item
-        const unlockArgs: Record<string, any> = {
-            path: path,
-            passThru: "true"
-        };
+        const unlocked = await callTool(client, "security-set-item-lock", {
+            ...addressing,
+            action: "unlock",
+            passThru: true,
+            fields: ["__Lock"],
+        });
 
-        const result = await callTool(client, "security-unlock-item-by-path", unlockArgs);
-        const json = JSON.parse(result.content[0].text);
+        expect(JSON.parse(unlocked.content[0].text).Obj[0].__Lock).not.toContain("owner=");
+    });
 
-        // Verify the item is unlocked
-        expect(json.Obj[0].__Lock).not.contains("sitecore\\admin");
+    it("security-set-item-lock rejects force on unlock", async () => {
+        // SPE's Unlock-Item has no -Force, so the tool refuses it rather than letting the
+        // whole call fail inside PowerShell.
+        const result = await callTool(client, "security-set-item-lock", {
+            ...addressing,
+            action: "unlock",
+            force: true,
+        });
+
+        expect(result.isError).toBe(true);
     });
 });

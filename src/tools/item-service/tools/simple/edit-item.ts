@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { editItem } from "../../logic/simple/edit-item.js";
@@ -9,7 +9,7 @@ export function editItemTool(server: McpServer, config: Config) {
         'item-service-edit-item',
         {
             description: "Edit a Sitecore item by its ID.",
-            inputSchema: {
+            inputSchema: z.object({
                 id: z.string(),
                 data:
                     z.record(z.string(), z.string()),
@@ -18,7 +18,7 @@ export function editItemTool(server: McpServer, config: Config) {
                     language: z.string().optional(),
                     version: z.string().optional(),
                 }).optional(),
-            },
+            }),
         },
         async (params) => {
             return safeMcpResponse(editItem(config, params.id, params.data, params.options || {}));

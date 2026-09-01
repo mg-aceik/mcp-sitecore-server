@@ -1,23 +1,16 @@
 import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { client, transport, callTool } from "../../../../client";
 
 await client.connect(transport);
 
 describe("powershell", () => {
     it("security-test-account", async () => {
-        // Test on the admin user which should exist in most Sitecore instances
-        const args: Record<string, string> = {
-            identity: "sitecore\\admin-does-not-exist"
-        };
-        
-        // Test if the user exists
-        const result = await callTool(client, "security-test-account", args);
-        const json = JSON.parse(result.content[0].text);
-        
-        // Test-Account should return false for a non-existing user
-        expect(json).toMatchObject({
-            Obj: [false]
+        // A name nothing could have created: the tool answers false rather than failing.
+        const result = await callTool(client, "security-test-account", {
+            identity: "sitecore\\MCP-no-such-user-at-all",
+            accountType: "User",
         });
+
+        expect(JSON.parse(result.content[0].text).Obj[0]).toBe(false);
     });
 });

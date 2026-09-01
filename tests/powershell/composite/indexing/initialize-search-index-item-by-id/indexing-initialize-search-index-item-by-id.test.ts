@@ -1,44 +1,44 @@
-import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { describe, it, expect, afterAll } from "vitest";
+import { client, transport, callTool } from "../../../../client";
+import { seedScratch } from "../../../../fixtures";
 
 await client.connect(transport);
 
+const INDEX = "sitecore_master_index";
+
+const scratch = await seedScratch("rebuild-search-index-item-by-id", ["Target"]);
+afterAll(() => scratch.cleanup());
+
 describe("powershell", () => {
-    it("indexing-initialize-search-index-item-by-id", async () => {
-        const testItemId = "{FAEC8BE9-E2F1-4758-930B-0A1D05C9B9AA}";
+    it("indexing-rebuild-search-index scoped to one item", async () => {
+        // Act: rebuild only the seeded item's subtree.
+        const result = await callTool(client, "indexing-rebuild-search-index", {
+            id: scratch.item("Target").id,
+            name: INDEX,
+        });
+        expect(result.isError).not.toBe(true);
 
-        const args: Record<string, any> = {
-            id: testItemId,
-            indexName: "sitecore_test_index"
-        };
-
-        const result = await callTool(client, "indexing-initialize-search-index-item-by-id", args);
-        const json = JSON.parse(result.content[0].text);
-
-        // Verify that the command executed successfully
-        expect(json).toBeDefined();
-
-        // find the item in the index
-        const searchArgs: Record<string, any> = {
-            index: "sitecore_test_index",
-            criteria: [
-                {
-                    filter: "Equals",
-                    field: "_path",
-                    value: testItemId
+        // Assert: the item is findable in the index it was just written to. Indexing is
+        // asynchronous, so this polls rather than reading once.
+        const deadline = Date.now() + 30_000;
+        let ids: string[] = [];
+        while (Date.now() < deadline) {
+            const found = await callTool(client, "indexing-find-item", {
+                index: INDEX,
+                criteria: [{ filter: "Equals", field: "_name", value: "Target" }],
+                first: 20,
+                skip: 0,
+            });
+            if (!found.isError) {
+                const json = JSON.parse(found.content[0].text);
+                ids = (json.Items ?? []).map((item: any) => String(item.ItemId).toLowerCase());
+                if (ids.includes(scratch.item("Target").id.toLowerCase())) {
+                    break;
                 }
-            ],
-            first: 1,  // Limiting results for test performance
-            skip: 0
-        };
+            }
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+        }
 
-        // sleep to ensure the indexing operation has time to complete
-        await new Promise(resolve => setTimeout(resolve, 5000));
-        const searchResult = await callTool(client, "indexing-find-item", searchArgs);
-        const searchJson = JSON.parse(searchResult.content[0].text);
-
-        // Verify that the search result is successful
-        expect(searchJson[0].Name).toBe("Initialize-SearchIndexItem-By-Id");
-    });
+        expect(ids).toContain(scratch.item("Target").id.toLowerCase());
+    }, 60_000);
 });

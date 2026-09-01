@@ -1,26 +1,43 @@
-import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { describe, it, expect, afterAll } from "vitest";
+import { client, transport, callTool } from "../../../../client";
+import { seedScratch, seedUser } from "../../../../fixtures";
 
 await client.connect(transport);
 
+const scratch = await seedScratch("test-item-acl-by-path", ["Target"]);
+const user = await seedUser("acl-test");
+afterAll(async () => {
+    await scratch.cleanup();
+    await user.remove();
+});
+
+const addressing = { path: scratch.item("Target").path };
+
 describe("powershell", () => {
-    it("security-test-item-acl-by-path", async () => {
-        const args: Record<string, any> = {
-            path: "/sitecore/content/Home/Tests/Security/Test-Item-ACL/Test-Item-ACL-By-Path",
-            identity: "sitecore\\Author",
-            accessRight: "item:write"
-        };
+    it("security-test-item-acl", async () => {
+        // A new user can read by default, so the interesting half is what happens after a
+        // deny: the same call has to answer the other way.
+        const allowed = await callTool(client, "security-test-item-acl", {
+            ...addressing,
+            identity: user.name,
+            accessRight: "item:read",
+        });
+        expect(JSON.parse(allowed.content[0].text).Obj[0]).toBe(true);
 
-        const result = await callTool(client, "security-test-item-acl-by-path", args);
-        const json = JSON.parse(result.content[0].text);
+        await callTool(client, "security-set-item-acl", {
+            ...addressing,
+            action: "add",
+            identity: user.name,
+            accessRight: "item:read",
+            propagationType: "Entity",
+            securityPermission: "DenyAccess",
+        });
 
-        expect(json).toMatchObject(
-            {
-                Obj: [
-                    false,
-                ],
-            }
-        );
+        const denied = await callTool(client, "security-test-item-acl", {
+            ...addressing,
+            identity: user.name,
+            accessRight: "item:read",
+        });
+        expect(JSON.parse(denied.content[0].text).Obj[0]).toBe(false);
     });
 });

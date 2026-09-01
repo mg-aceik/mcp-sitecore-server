@@ -1,36 +1,36 @@
-import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../client";
-import { getCurrentLayoutId } from "../../tools/get-current-layout-id";
+import { describe, it, expect, afterAll } from "vitest";
+import { client, transport, callTool } from "../../../client";
+import { seedScratch, seedPresentation, applyPresentation } from "../../../fixtures";
 
 await client.connect(transport);
 
-// /sitecore/content/Home/Tests/Presentation/Set-Layout-By-Id
-const itemId = "{9AC094BF-5EFD-4BE3-B04B-2C3CE926673B}";
-const layoutOneId = "{7BDF4126-6FF2-413F-A85F-154FF6372F55}";
-const layoutTwoId = "{65B0B63C-55B5-4348-A009-10AB428E50D3}";
+const scratch = await seedScratch("set-layout-by-id", ["Page"]);
+const presentation = await seedPresentation(scratch);
+await applyPresentation(scratch.item("Page"), presentation, { finalLayout: false });
+afterAll(() => scratch.cleanup());
+
+const addressing = { id: scratch.item("Page").id };
+
+const currentLayoutId = async () => {
+    const result = await callTool(client, "presentation-get-layout", { ...addressing, finalLayout: true });
+    return String(JSON.parse(result.content[0].text).Obj[0].ID).toLowerCase();
+};
 
 describe("powershell", () => {
-    it("presentation-set-layout-by-id", async () => {
-        // Arrange
-        const currentLayoutId = await getCurrentLayoutId(client, itemId);
-        const expectedLayoutId = currentLayoutId.toLowerCase() === layoutOneId.toLowerCase() ?
-            layoutTwoId.toLowerCase() : layoutOneId.toLowerCase();
+    it("presentation-set-layout", async () => {
+        await callTool(client, "presentation-set-layout", {
+            ...addressing,
+            layoutId: presentation.otherLayout.id,
+            finalLayout: true,
+        });
+        expect(await currentLayoutId()).toBe(presentation.otherLayout.id.toLowerCase());
 
-        const setLayoutArgs: Record<string, any> = {
-            itemId: itemId,
-            layoutId: expectedLayoutId,
-            layoutPath: "master:",
-            language: "ja-jp",
-            finalLayout: "true",
-            database: "master",
-        };
-
-        // Act
-        await callTool(client, "presentation-set-layout-by-id", setLayoutArgs);
-
-        // Assert
-        const layoutId = await getCurrentLayoutId(client, itemId);
-        expect(layoutId.toLowerCase()).toBe(expectedLayoutId.toLowerCase());
+        // And back, so the tool is shown to set rather than only to set once.
+        await callTool(client, "presentation-set-layout", {
+            ...addressing,
+            layoutId: presentation.layout.id,
+            finalLayout: true,
+        });
+        expect(await currentLayoutId()).toBe(presentation.layout.id.toLowerCase());
     });
 });

@@ -1,22 +1,29 @@
-import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { describe, it, expect, afterAll } from "vitest";
+import { client, transport, callTool } from "../../../../client";
+import { seedScratch, linkItems } from "../../../../fixtures";
 
 await client.connect(transport);
 
+// Referrers point the other way to references: Source's link field holds Target's id, so
+// Target's referrer is Source. Nothing refers to a freshly created item, so the link is
+// part of the fixture rather than something the test can assume.
+const scratch = await seedScratch(
+    "get-item-referrer-by-path",
+    ["Target", "Source"],
+    ["Title", "Text", { name: "Link", type: "Droptree" }],
+);
+await linkItems(scratch.item("Source"), scratch.item("Target"));
+afterAll(() => scratch.cleanup());
+
 describe("powershell", () => {
-    it("common-get-item-referrer-by-path", async () => {
-        // Using a known item path for testing
-        const itemPath = "/sitecore/content/Home/Tests/Common/Get-Item-Referrer-By-Path";
-        
+    it("common-get-item-referrer", async () => {
         const args: Record<string, any> = {
-            path: itemPath
+            path: scratch.item("Target").path
         };
 
-        const result = await callTool(client, "common-get-item-referrer-by-path", args);
+        const result = await callTool(client, "common-get-item-referrer", args);
         const json = JSON.parse(result.content[0].text);
-        
-        // Verify that the command executed successfully and returned referrer information
-        expect(json.Obj[0].Name).toBe("Get-Item-Referrer-By-Id");
+
+        expect(json.Obj.map((item: any) => item.Name)).toContain("Source");
     });
 });

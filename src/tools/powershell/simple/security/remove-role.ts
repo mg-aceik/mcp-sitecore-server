@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -9,10 +9,10 @@ export function removeRolePowerShellTool(server: McpServer, config: Config) {
         "security-remove-role",
         {
             description: "Removes a Sitecore role.",
-            inputSchema: {
+            inputSchema: z.object({
                 identity: z.string()
                     .describe("The identity of the role to remove (e.g. 'CustomRole' or full path 'sitecore\\CustomRole')"),
-            },
+            }),
         },
         async (params) => {
             const command = `Remove-Role`;

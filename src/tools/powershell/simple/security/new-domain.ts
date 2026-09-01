@@ -1,18 +1,21 @@
+import type { McpServer } from "@modelcontextprotocol/server";
+
 // filepath: c:\source\mcp-sitecore-server\src\tools\powershell\simple\security\register-new-domain.ts
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
 import { runGenericPowershellCommand } from "../generic.js";
+import { DOMAIN_PROJECTION, fixedProjectionPipeline, fullOnlyInputSchema } from "../../projection.js";
 
 export function newDomainPowerShellTool(server: McpServer, config: Config) {
     server.registerTool(
         "security-new-domain",
         {
             description: "Creates a new Sitecore domain.",
-            inputSchema: {
+            inputSchema: z.object({
+                ...fullOnlyInputSchema,
                 name: z.string().describe("The name of the domain to create"),
-            },
+            }),
         },
         async (params) => {
             const command = `New-Domain`;
@@ -20,7 +23,14 @@ export function newDomainPowerShellTool(server: McpServer, config: Config) {
                 "Name": params.name,
             };
 
-            return safeMcpResponse(runGenericPowershellCommand(config, command, options));
+            const pipeline = fixedProjectionPipeline(DOMAIN_PROJECTION, params);
+
+            return safeMcpResponse(
+                runGenericPowershellCommand(config, command, options, undefined, {
+                    pipeline,
+                    full: params.full,
+                })
+            );
         }
     );
 }

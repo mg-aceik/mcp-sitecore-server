@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { deleteItem } from "../../logic/simple/delete-item.js";
@@ -9,14 +9,14 @@ export function deleteItemTool(server: McpServer, config: Config) {
         'item-service-delete-item',
         {
             description: "Delete a Sitecore item by its ID.",
-            inputSchema: {
+            inputSchema: z.object({
                 id: z.string(),
                 options: z.object({
                     database: z.string().optional(),
                     language: z.string().optional(),
                     version: z.string().optional(),
                 }).optional(),
-            },
+            }),
         },
         async (params) => {
             return safeMcpResponse(deleteItem(config, params.id, params.options || {}));

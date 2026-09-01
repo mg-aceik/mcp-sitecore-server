@@ -1,8 +1,8 @@
 {
   "name": "@antonytm/mcp-sitecore-server",
   "mcpName": "io.github.Antonytm/mcp-sitecore-server",
-  "version": "1.4.2",
-  "description": "A Model Context Protocol server for Sitecore",
+  "version": "2.0.0",
+  "description": "Sitecore Community MCP: read/write access to Sitecore XM Cloud and XM/XP over the Authoring and Management API, the Item Service, GraphQL Edge and Sitecore PowerShell Extensions",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -19,36 +19,41 @@
   },
   "type": "module",
   "scripts": {
-    "build": "tsc && tsc-alias",
+    "build": "tsc && tsc-alias && node scripts/copy-docs.mjs",
     "bundle": "rollup -c",
-    "prepare": "npm run build",
+    "prepare": "npm run build && npm run bundle",
     "watch": "tsc --watch",
-    "inspector": "npx @modelcontextprotocol/inspector@latest dist/index.js",
-    "start": "npm run build && node dist/app.js",
-    "start:sse": "npm run build && cross-env TRANSPORT=sse node dist/index.js",
+    "inspector": "npx @modelcontextprotocol/inspector@latest node dist/index.js",
+    "start": "npm run start:streamable-http",
     "start:streamable-http": "npm run build && cross-env TRANSPORT=streamable-http node dist/index.js",
     "start:stdio": "npm run build && cross-env TRANSPORT=stdio node dist/index.js",
     "run": "npm run build && node dist/run.js",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "test": "npm run build && npm run bundle && vitest run",
     "test:unit": "vitest run --config vitest.unit.config.ts",
-    "docker:windows:build": "docker build -t antonytm/mcp-sitecore-windows:1.4.2 -t antonytm/mcp-sitecore-windows:latest --file .\\docker\\windows\\Dockerfile .",
+    "docker:windows:build": "docker build -t antonytm/mcp-sitecore-windows:$npm_package_version -t antonytm/mcp-sitecore-windows:latest --file .\\docker\\windows\\Dockerfile .",
     "docker:windows:run": "docker run -it --rm -p 4001:3001 antonytm/mcp-sitecore-windows:latest",
-    "docker:windows:push": "docker push antonytm/mcp-sitecore-windows:1.4.2 && docker push antonytm/mcp-sitecore-windows:latest",
+    "docker:windows:push": "docker push antonytm/mcp-sitecore-windows:$npm_package_version && docker push antonytm/mcp-sitecore-windows:latest",
     "docker:windows": "npm run docker:windows:build && npm run docker:windows:push",
-    "docker:linux:build": "docker build -t antonytm/mcp-sitecore-linux:1.4.2 -t antonytm/mcp-sitecore-linux:latest --file ./docker/linux/Dockerfile .",
+    "docker:linux:build": "docker build -t antonytm/mcp-sitecore-linux:$npm_package_version -t antonytm/mcp-sitecore-linux:latest --file ./docker/linux/Dockerfile .",
     "docker:linux:run": "docker run -it --rm -p 4001:3001 antonytm/mcp-sitecore-linux:latest",
-    "docker:linux:push": "docker push antonytm/mcp-sitecore-linux:1.4.2 && docker push antonytm/mcp-sitecore-linux:latest",
+    "docker:linux:push": "docker push antonytm/mcp-sitecore-linux:$npm_package_version && docker push antonytm/mcp-sitecore-linux:latest",
     "docker:linux": "npm run docker:linux:build && npm run docker:linux:push"
   },
   "dependencies": {
     "@antonytm/clixml-parser": "^0.1.5",
-    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@modelcontextprotocol/node": "^2.0.0",
+    "@modelcontextprotocol/server": "^2.0.0",
     "dotenv": "^16.6.1",
-    "graphql": "^16.11.0"
+    "express": "^5.2.1",
+    "graphql": "^16.11.0",
+    "zod": "^4.2.0"
   },
   "devDependencies": {
-    "@modelcontextprotocol/inspector": "^0.16.8",
+    "@eslint/js": "^10.0.1",
+    "@modelcontextprotocol/client": "^2.0.0",
     "@rollup/plugin-alias": "^5.1.1",
     "@rollup/plugin-commonjs": "^28.0.9",
     "@rollup/plugin-json": "^6.1.0",
@@ -56,15 +61,19 @@
     "@types/express": "^5.0.6",
     "@types/node": "^24.13.2",
     "cross-env": "^7.0.3",
-    "express": "^5.2.1",
+    "eslint": "^10.9.1",
+    "globals": "^17.11.0",
     "rollup": "^4.62.2",
     "rollup-plugin-copy": "^3.5.0",
-    "ts-node": "^10.9.2",
     "tsc-alias": "^1.8.17",
-    "typescript": "^7.0.2",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.69.0",
     "vitest": "^3.2.6"
   },
   "publishConfig": {
     "access": "public"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

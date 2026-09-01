@@ -1,69 +1,41 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
+import { hasTarget, requireOneTarget } from "@/tools/target-input.js";
 import { runGenericPowershellCommand } from "../generic.js";
 import { AccessRights } from "./access-rights.js";
+import { ITEM_DATABASE_DESCRIPTION } from "../../utils.js";
 
 export function testItemAclPowerShellTool(server: McpServer, config: Config) {
     server.registerTool(
-        "security-test-item-acl-by-id",
+        "security-test-item-acl",
         {
-            description: "Tests whether a user or role has specific access rights to a Sitecore item by its ID.",
-            inputSchema: {
-                id: z.string()
-                    .describe("The ID of the item to test access rights on"),
+            description: "Tests whether a user or role has specific access rights to a Sitecore item.",
+            inputSchema: z.object({
+                id: z.string().optional()
+                    .describe("The ID of the item to test access rights on. Supply this or path."),
+                path: z.string().optional()
+                    .describe("The path of the item to test access rights on (e.g. /sitecore/content/Home). Supply this or id."),
                 identity: z.string()
                     .describe("The identity of the user or role to test (e.g. 'sitecore\\admin')"),
-                accessRight: z.enum(AccessRights as [string, ...string[]])
+                accessRight: z.enum(AccessRights)
                     .describe("The access right to test (e.g. 'item:read', 'item:write')"),
                 propType: z.enum(["Descendants", "Children", "Entity"]).optional()
                     .describe("The propagation type for the access right"),
                 database: z.string().optional()
-                    .describe("The database containing the item (defaults to the context database)")
-            },
+                    .describe(ITEM_DATABASE_DESCRIPTION)
+            }),
         },
         async (params) => {
-            const command = `Test-ItemAcl`;
-            const options: Record<string, any> = {
-                "ID": params.id,
-                "Identity": params.identity,
-                "AccessRight": params.accessRight,
-            };
-
-            if (params.propType) {
-                options["PropType"] = params.propType;
+            const invalid = requireOneTarget(params, ["id", "path"]);
+            if (invalid) {
+                return invalid;
             }
 
-            if (params.database) {
-                options["Database"] = params.database;
-            }
-
-            return safeMcpResponse(runGenericPowershellCommand(config, command, options));
-        }
-    );
-
-    server.registerTool(
-        "security-test-item-acl-by-path",
-        {
-            description: "Tests whether a user or role has specific access rights to a Sitecore item by its path.",
-            inputSchema: {
-                path: z.string()
-                    .describe("The path of the item to test access rights on (e.g. /sitecore/content/Home)"),
-                identity: z.string()
-                    .describe("The identity of the user or role to test (e.g. 'sitecore\\admin')"),
-                accessRight: z.string()
-                    .describe("The access right to test (e.g. 'item:read', 'item:write')"),
-                propType: z.enum(["Descendants", "Children", "Entity"]).optional()
-                    .describe("The propagation type for the access right"),
-                database: z.string().optional()
-                    .describe("The database containing the item (defaults to the context database)")
-            },
-        },
-        async (params) => {
             const command = `Test-ItemAcl`;
             const options: Record<string, any> = {
-                "Path": params.path,
+                ...(hasTarget(params.id) ? { "ID": params.id } : { "Path": params.path }),
                 "Identity": params.identity,
                 "AccessRight": params.accessRight,
             };

@@ -1,15 +1,17 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
 import { runGenericPowershellCommand } from "../generic.js";
+import { ACCOUNT_PROJECTION, fixedProjectionPipeline, fullOnlyInputSchema } from "../../projection.js";
 
 export function newUserPowerShellTool(server: McpServer, config: Config) {
     server.registerTool(
         "security-new-user",
         {
             description: "Creates a new Sitecore user.",
-            inputSchema: {
+            inputSchema: z.object({
+                ...fullOnlyInputSchema,
                 identity: z.string(),
                 password: z.string().optional(),
                 email: z.string().optional(),
@@ -18,7 +20,7 @@ export function newUserPowerShellTool(server: McpServer, config: Config) {
                 portrait: z.string().optional(),
                 enabled: z.boolean().optional(),
                 profileItemId: z.string().optional(),
-            },
+            }),
         },
         async (params) => {
             const command = `New-User`;
@@ -48,7 +50,14 @@ export function newUserPowerShellTool(server: McpServer, config: Config) {
                 options["ProfileItemId"] = params.profileItemId;
             }
 
-            return safeMcpResponse(runGenericPowershellCommand(config, command, options));
+            const pipeline = fixedProjectionPipeline(ACCOUNT_PROJECTION, params);
+
+            return safeMcpResponse(
+                runGenericPowershellCommand(config, command, options, undefined, {
+                    pipeline,
+                    full: params.full,
+                })
+            );
         }
     );
 }

@@ -1,52 +1,44 @@
-import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../client";
+import { describe, it, expect, afterAll } from "vitest";
+import { client, transport, callTool } from "../../../client";
+import { seedScratch, seedPresentation, applyPresentation } from "../../../fixtures";
 
 await client.connect(transport);
 
-const path = "master:/sitecore/content/Home/Tests/Presentation/Get-Rendering-By-Path";
+const scratch = await seedScratch("get-rendering-by-path", ["Page"]);
+const presentation = await seedPresentation(scratch);
+const placeholder = "/main/content";
+const datasource = "test_datasource";
+const applied = await applyPresentation(scratch.item("Page"), presentation, { placeholder, datasource });
+afterAll(() => scratch.cleanup());
 
-const sampleRenderingId = "{493B3A83-0FA7-4484-8FC9-4680991CF743}";
-
-const sampleRenderingUniqueId = "{B343725A-3A93-446E-A9C8-3A2CBD3DB489}";
-
-const sampleRenderingPlaceholder = "/main/centercolumn/content";
+const path = `master:${scratch.item("Page").path}`;
 
 describe("powershell", () => {
-    it("presentation-get-rendering-by-path-with-uniqueid", async () => {
-        const args: Record<string, any> = {
+    it("presentation-get-rendering-with-uniqueid", async () => {
+        const result = await callTool(client, "presentation-get-rendering", {
             path,
-            uniqueId: sampleRenderingUniqueId,       
-        };
-
-        // Act
-        const result = await callTool(client, "presentation-get-rendering-by-path", args);
+            uniqueId: applied.uniqueId,
+            finalLayout: true,
+        });
         const json = JSON.parse(result.content[0].text);
 
-        // Assert
         const testObject = json.Obj[0];
-        expect(testObject.ItemID.toLowerCase()).toBe(sampleRenderingId.toLowerCase());
-        expect(testObject.UniqueId.toLowerCase()).toBe(sampleRenderingUniqueId.toLowerCase());
-        expect(testObject.Placeholder).toBe(sampleRenderingPlaceholder);
+        expect(testObject.ItemID.toLowerCase()).toBe(presentation.rendering.id.toLowerCase());
+        expect(testObject.UniqueId.toLowerCase()).toBe(applied.uniqueId.toLowerCase());
+        expect(testObject.Placeholder).toBe(placeholder);
     });
 
-    it("presentation-get-rendering-by-path-with-filter-parameters", async () => {
-        // Arrange
-        const args: Record<string, any> = {
+    it("presentation-get-rendering-with-filter-parameters", async () => {
+        const result = await callTool(client, "presentation-get-rendering", {
             path,
-            placeholder: sampleRenderingPlaceholder,
-            language: "ja-jp",
-            finalLayout: "true",
-        };
-
-        // Act
-        const result = await callTool(client, "presentation-get-rendering-by-path", args);
+            placeholder,
+            finalLayout: true,
+        });
         const json = JSON.parse(result.content[0].text);
 
-        // Assert
         const testObject = json.Obj[0];
-        expect(testObject.ItemID.toLowerCase()).toBe(sampleRenderingId.toLowerCase());
-        expect(testObject.UniqueId.toLowerCase()).toBe(sampleRenderingUniqueId.toLowerCase());
-        expect(testObject.Placeholder).toBe(sampleRenderingPlaceholder);
+        expect(testObject.ItemID.toLowerCase()).toBe(presentation.rendering.id.toLowerCase());
+        expect(testObject.UniqueId.toLowerCase()).toBe(applied.uniqueId.toLowerCase());
+        expect(testObject.Datasource).toBe(datasource);
     });
 });

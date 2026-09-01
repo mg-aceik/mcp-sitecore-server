@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
 import { z } from "zod";
 import { safeMcpResponse } from "@/helper.js";
@@ -16,28 +16,41 @@ const logFilePrefixes =
         "Publising.log",
     ];
 
-function formatDate(date?: string): string {
-    const d = date ? new Date(date) : new Date();
-    let month = '' + (d.getMonth() + 1),
-        day = '' + d.getDate(),
-        year = d.getFullYear();
-
-    if (month.length < 2) {
-        month = '0' + month;
+/**
+ * Sitecore names its log files with the CM's own local date, and this process may not
+ * share that timezone. Formatting in UTC makes the value predictable and documented
+ * rather than silently dependent on where the MCP server happens to run; a caller in a
+ * different zone to the CM passes an explicit `date`.
+ *
+ * An unparseable `date` is rejected instead of yielding "NaNNaNNaN", which used to produce
+ * a glob that matched nothing and reported it as "no logs". It is returned rather than
+ * thrown for the reason `target-input.ts` gives: `safeMcpResponse` would prefix a thrown
+ * error with "Error executing tool:", which reads as a server fault rather than as a call
+ * the agent can correct.
+ */
+function formatDate(date: string | undefined): string | undefined {
+    if (date === undefined) {
+        return new Date().toISOString().slice(0, 10).replace(/-/g, "");
     }
-    if (day.length < 2) {
-        day = '0' + day;
-    }
 
-    return [year, month, day].join("");
+    const parsed = new Date(date);
+    if (Number.isNaN(parsed.getTime())) {
+        return undefined;
+    }
+    return parsed.toISOString().slice(0, 10).replace(/-/g, "");
 }
 
 export function getLogsPowerShellTool(server: McpServer, config: Config) {
     server.registerTool(
         `logging-get-logs`,
         {
-            description: `Retrieves Sitecore logs from the log directory.`,
-            inputSchema: {
+            description:
+                "Retrieves Sitecore logs from the CM's data folder over SPE. On a local Docker "
+                + "CM the same files are on a mounted volume, so reading them from disk is "
+                + "cheaper and shows the whole file; use this when you have no filesystem access "
+                + "to the CM. On a deployed SitecoreAI environment the platform collects logs "
+                + "and the data folder may hold little or nothing.",
+            inputSchema: z.object({
                 name: z.string()
                     // Restrict to a safe filename charset: this value is interpolated into a
                     // PowerShell path glob (alongside the $SitecoreDataFolder variable), so it
@@ -46,27 +59,47 @@ export function getLogsPowerShellTool(server: McpServer, config: Config) {
                     .optional()
                     .default("log")
                     .describe(`The name of the log file to retrieve. If not provided, defaults to log.*. Possible options: ${logFilePrefixes.join(", ")}.`),
-                level: z.enum(Object.values(LogLevel) as [string, ...[string]])
+                level: z.enum(Object.values(LogLevel))
                     .optional()
                     .default(LogLevel.DEBUG)
                     .describe("The level of the log to retrieve. Defaults to DEBUG."),
                 date: z.string()
                     .optional()
                     .describe(`The date of the log file to retrieve. If not provided, defaults to today. Date format should be in ISO 8601 format (e.g., '2023-10-01T00:00:00Z'`),
-                tail: z.number()
+                tail: z.number().int().positive()
                     .optional()
                     .default(500)
                     .describe("The number of lines to retrieve from the end of the log file. Defaults to 500."),
-            },
+            }),
         },
         async (params) => {
             const stringDate = formatDate(params.date);
-            const command = `Get-ChildItem -Path $SitecoreDataFolder/logs/${params.name}*${stringDate}*.* | Sort LastWriteTime | Get-Content -Tail ${params.tail} `;
+            if (stringDate === undefined) {
+                return {
+                    isError: true,
+                    content: [{
+                        type: "text" as const,
+                        text:
+                            `'date' is not a date this server can read: '${params.date}'. Use `
+                            + `ISO 8601, e.g. '2023-10-01T00:00:00Z'.`,
+                    }],
+                };
+            }
 
             return safeMcpResponse((async () => {
-                const json = await runGenericPowershellCommand(config, command, {});
+                const command = `Get-ChildItem -Path $SitecoreDataFolder/logs/${params.name}*${stringDate}*.* | Sort LastWriteTime | Get-Content -Tail ${params.tail} `;
 
-                const filteredLogs = filterByLogLevel(JSON.parse((json.content[0] as any).text as string) as any, LogLevel[params.level as keyof typeof LogLevel] || LogLevel.DEBUG);
+                const json = await runGenericPowershellCommand(config, command, {});
+                const raw = (json.content[0] as any)?.text as string;
+
+                // On failure `raw` is the shaped error message, not JSON. Parsing it anyway
+                // threw a SyntaxError that replaced a message built to be actionable with
+                // "Error executing tool: Unexpected token".
+                if (json.isError) {
+                    return json;
+                }
+
+                const filteredLogs = filterByLogLevel(JSON.parse(raw) as any, LogLevel[params.level as keyof typeof LogLevel] || LogLevel.DEBUG);
 
                 return {
                     content: [

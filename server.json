@@ -1,37 +1,203 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
   "name": "io.github.Antonytm/mcp-sitecore-server",
-  "description": "A Model Context Protocol server for Sitecore",
+  "description": "Sitecore Community MCP: read/write access to SitecoreAI and Sitecore XM/XP over the Authoring and Management API, the Item Service, GraphQL Edge and Sitecore PowerShell Extensions",
   "status": "active",
   "repository": {
     "url": "https://github.com/Antonytm/mcp-sitecore-server",
     "source": "github"
   },
-  "version": "1.3.12",
+  "version": "2.0.0",
   "packages": [
     {
       "registry_type": "npm",
       "registry_base_url": "https://registry.npmjs.org",
       "identifier": "@antonytm/mcp-sitecore-server",
-      "version": "1.3.12",
+      "version": "2.0.0",
       "transport": {
         "type": "stdio"
       },
       "environment_variables": [
         {
-          "TRANSPORT": "stdio",
-          "GRAPHQL_ENDPOINT": "https://xmcloudcm.localhost/sitecore/api/graph/",
-          "GRAPHQL_SCHEMAS": "edge,master,core",
-          "GRAPHQL_API_KEY": "{6D3F291E-66A5-4703-887A-D549AF83D859}",
-          "GRAPHQL_HEADERS": "",
-          "ITEM_SERVICE_DOMAIN": "sitecore",
-          "ITEM_SERVICE_USERNAME": "admin",
-          "ITEM_SERVICE_PASSWORD": "b",
-          "ITEM_SERVICE_SERVER_URL": "https://xmcloudcm.localhost/",
-          "POWERSHELL_DOMAIN": "sitecore",
-          "POWERSHELL_USERNAME": "admin",
-          "POWERSHELL_PASSWORD": "b",
-          "POWERSHELL_SERVER_URL": "https://xmcloudcm.localhost/"
+          "name": "TRANSPORT",
+          "description": "Transport to serve: 'stdio' or 'streamable-http' (port 3001, MCP at /mcp)",
+          "is_required": false,
+          "default": "stdio"
+        },
+        {
+          "name": "GRAPHQL_ENDPOINT",
+          "description": "GraphQL endpoint URL for the Sitecore instance",
+          "is_required": false,
+          "default": "https://xmcloudcm.localhost/sitecore/api/graph/"
+        },
+        {
+          "name": "GRAPHQL_SCHEMAS",
+          "description": "Comma-separated Sitecore GraphQL schemas to expose",
+          "is_required": false,
+          "default": "edge,master,core"
+        },
+        {
+          "name": "GRAPHQL_API_KEY",
+          "description": "API key for the GraphQL endpoint, sent as an HTTP header",
+          "is_required": false,
+          "is_secret": true
+        },
+        {
+          "name": "GRAPHQL_HEADERS",
+          "description": "Additional headers to include in GraphQL requests",
+          "is_required": false
+        },
+        {
+          "name": "ITEM_SERVICE_DOMAIN",
+          "description": "Domain for Item Service authentication",
+          "is_required": false,
+          "default": "sitecore"
+        },
+        {
+          "name": "ITEM_SERVICE_USERNAME",
+          "description": "Username for Item Service authentication",
+          "is_required": false
+        },
+        {
+          "name": "ITEM_SERVICE_PASSWORD",
+          "description": "Password for Item Service authentication",
+          "is_required": false,
+          "is_secret": true
+        },
+        {
+          "name": "ITEM_SERVICE_SERVER_URL",
+          "description": "Base URL for the Item Service API",
+          "is_required": false,
+          "default": "https://xmcloudcm.localhost/"
+        },
+        {
+          "name": "POWERSHELL_DOMAIN",
+          "description": "Domain for Sitecore PowerShell Remoting authentication",
+          "is_required": false,
+          "default": "sitecore"
+        },
+        {
+          "name": "POWERSHELL_USERNAME",
+          "description": "Username for Sitecore PowerShell Remoting authentication",
+          "is_required": false
+        },
+        {
+          "name": "POWERSHELL_PASSWORD",
+          "description": "Password for Sitecore PowerShell Remoting authentication",
+          "is_required": false,
+          "is_secret": true
+        },
+        {
+          "name": "POWERSHELL_SERVER_URL",
+          "description": "Base URL for the Sitecore PowerShell Remoting API",
+          "is_required": false,
+          "default": "https://xmcloudcm.localhost/"
+        },
+        {
+          "name": "AUTHORING_ENDPOINT",
+          "description": "Authoring and Management GraphQL endpoint. Defaults to ITEM_SERVICE_SERVER_URL plus /sitecore/api/authoring/graphql/v1/",
+          "is_required": false
+        },
+        {
+          "name": "AUTHORING_CLIENT_ID",
+          "description": "Client ID for the Authoring and Management API client-credentials grant (xmcloud.cm:admin scope on SitecoreAI)",
+          "is_required": false
+        },
+        {
+          "name": "AUTHORING_CLIENT_SECRET",
+          "description": "Client secret for the Authoring and Management API client-credentials grant",
+          "is_required": false,
+          "is_secret": true
+        },
+        {
+          "name": "AUTHORING_TOKEN",
+          "description": "A bearer token for the Authoring and Management API, supplied instead of client credentials. Wins when both are set",
+          "is_required": false,
+          "is_secret": true
+        },
+        {
+          "name": "AUTHORING_AUTHORITY",
+          "description": "Token authority for the Authoring and Management API; /oauth/token is appended",
+          "is_required": false,
+          "default": "https://auth.sitecorecloud.io"
+        },
+        {
+          "name": "AUTHORING_AUDIENCE",
+          "description": "Audience the Authoring and Management API token is requested for",
+          "is_required": false,
+          "default": "https://api.sitecorecloud.io"
+        },
+        {
+          "name": "TOOL_GROUPS",
+          "description": "Comma-separated allowlist of tool groups to register; unset registers every group",
+          "is_required": false
+        },
+        {
+          "name": "DISABLED_TOOLS",
+          "description": "Comma-separated list of exact tool names to leave unregistered",
+          "is_required": false
+        },
+        {
+          "name": "TOOL_PROFILE",
+          "description": "Comma-separated list of preset denylists, unioned: 'no-spe', 'no-item-service', 'no-edge-graphql' and 'no-authoring-api' each hide one API surface this instance does not serve, and 'no-account-management' hides the tools that create or edit a CM account, for a deployment that would rather an agent could not manage accounts. Unset disables nothing",
+          "is_required": false
+        },
+        {
+          "name": "REQUEST_TIMEOUT_MS",
+          "description": "Timeout in milliseconds for Item Service and GraphQL requests",
+          "is_required": false,
+          "default": "30000"
+        },
+        {
+          "name": "POWERSHELL_TIMEOUT_MS",
+          "description": "Timeout in milliseconds for a single PowerShell Remoting request",
+          "is_required": false,
+          "default": "600000"
+        },
+        {
+          "name": "POWERSHELL_FULL_ERRORS",
+          "description": "Set to 'true' to return the complete .NET error record instead of the shaped summary",
+          "is_required": false
+        },
+        {
+          "name": "DESCENDANTS_MAX_ITEMS",
+          "description": "Node cap for item-service-get-item-descendants; reports truncation instead of exhausting memory",
+          "is_required": false,
+          "default": "5000"
+        },
+        {
+          "name": "AUTHORIZATION_HEADER",
+          "description": "If set, the HTTP transport requires an 'authorization' header matching this value",
+          "is_required": false,
+          "is_secret": true
+        },
+        {
+          "name": "PORT",
+          "description": "Port the Streamable HTTP transport listens on (ignored on stdio)",
+          "is_required": false,
+          "default": "3001"
+        },
+        {
+          "name": "HOST",
+          "description": "Interface the Streamable HTTP transport binds to; unset binds all interfaces",
+          "is_required": false
+        },
+        {
+          "name": "MCP_BODY_LIMIT",
+          "description": "Maximum request body accepted at /mcp",
+          "is_required": false,
+          "default": "32mb"
+        },
+        {
+          "name": "MEDIA_LOCAL_FILE_ROOT",
+          "description": "Directory that media-upload filePath and media-download saveTo are confined to; required for those parameters under TRANSPORT=streamable-http",
+          "is_required": false
+        },
+        {
+          "name": "MEDIA_ALLOW_PRIVATE_SOURCE_URL",
+          "description": "Allow media-upload sourceUrl to reach private, loopback and link-local addresses",
+          "is_required": false,
+          "default": "false"
         }
       ]
     }

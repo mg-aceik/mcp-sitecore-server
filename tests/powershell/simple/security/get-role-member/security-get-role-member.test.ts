@@ -1,198 +1,28 @@
-import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { describe, it, expect, afterAll } from "vitest";
+import { client, transport, callTool } from "../../../../client";
+import { seedUser, seedRole } from "../../../../fixtures";
 
 await client.connect(transport);
 
+const role = await seedRole("member-get");
+const user = await seedUser("member-get");
+afterAll(async () => {
+    await user.remove();
+    await role.remove();
+});
+
 describe("powershell", () => {
     it("security-get-role-member", async () => {
-        // We'll test with a well-known Sitecore role that should have members
-        const args: Record<string, string | boolean> = {
-            identity: "sitecore\\Author",
-        };
+        // Arrange: a role with one known member.
+        await callTool(client, "security-add-role-member", { identity: role.name, members: user.name });
 
-        const result = await callTool(client, "security-get-role-member", args);
-        const json = JSON.parse(result.content[0].text);
+        // Act
+        const result = await callTool(client, "security-get-role-member", { identity: role.name });
 
-        // The response should contain member information
-        expect(json).toMatchObject({
-            Obj: [
-                {
-                    ToString: "Sitecore.Security.Accounts.Role",
-                    Domain: {
-                        ToString: "sitecore",
-                        AccountNameValidation: "^\\w[\\w\\s\\.\\@\\-]*$",
-                        AccountPrefix: "sitecore\\",
-                        AnonymousUserEmailPattern: "",
-                        AnonymousUserName: "sitecore\\Anonymous",
-                        EveryoneRoleName: "sitecore\\Everyone",
-                        MemberPattern: "sitecore\\*",
-                        Name: "sitecore",
-                        Appearance: expect.anything(),
-                        EnsureAnonymousUser: false,
-                        IsDefault: false,
-                        LocallyManaged: false,
-                        DefaultProfileItemID: "",
-                    },
-                    AccountType: {
-                        ToString: "Role",
-                    },
-                    IsEveryone: false,
-                    IsGlobal: false,
-                    Description: "Role",
-                    DisplayName: "sitecore\\Developer",
-                    LocalName: "sitecore\\Developer",
-                    Name: "sitecore\\Developer",
-                    Roles: [
-                        {
-                            ToString: "Sitecore.Security.Accounts.Role",
-                            IsEveryone: false,
-                            IsGlobal: true,
-                            AccountType: "Role",
-                            Description: "Role",
-                            DisplayName: "sitecore\\Sitecore Client Configuring",
-                            LocalName: "sitecore\\Sitecore Client Configuring",
-                            Name: "sitecore\\Sitecore Client Configuring",
-                            Roles: "Sitecore.Security.Accounts.Role",
-                            MemberOf: "Sitecore.Security.Accounts.Role",
-                        },
-                        {
-                            ToString: "Sitecore.Security.Accounts.Role",
-                            IsEveryone: false,
-                            IsGlobal: false,
-                            AccountType: "Role",
-                            Description: "Role",
-                            DisplayName: "sitecore\\Author",
-                            LocalName: "sitecore\\Author",
-                            Name: "sitecore\\Author",
-                            Roles: "Sitecore.Security.Accounts.Role",
-                            MemberOf: "Sitecore.Security.Accounts.Role",
-                        },
-                        {
-                            ToString: "Sitecore.Security.Accounts.Role",
-                            IsEveryone: false,
-                            IsGlobal: true,
-                            AccountType: "Role",
-                            Description: "Role",
-                            DisplayName: "sitecore\\Sitecore Client Maintaining",
-                            LocalName: "sitecore\\Sitecore Client Maintaining",
-                            Name: "sitecore\\Sitecore Client Maintaining",
-                            Roles: "Sitecore.Security.Accounts.Role",
-                            MemberOf: "Sitecore.Security.Accounts.Role",
-                        },
-                        {
-                            ToString: "Sitecore.Security.Accounts.Role",
-                            IsEveryone: false,
-                            IsGlobal: false,
-                            AccountType: "Role",
-                            Description: "Role",
-                            DisplayName: "sitecore\\JSS Import Service Users",
-                            LocalName: "sitecore\\JSS Import Service Users",
-                            Name: "sitecore\\JSS Import Service Users",
-                            Roles: "Sitecore.Security.Accounts.Role",
-                            MemberOf: "Sitecore.Security.Accounts.Role",
-                        },
-                        {
-                            ToString: "Sitecore.Security.Accounts.Role",
-                            IsEveryone: false,
-                            IsGlobal: false,
-                            AccountType: "Role",
-                            Description: "Role",
-                            DisplayName: "sitecore\\Designer",
-                            LocalName: "sitecore\\Designer",
-                            Name: "sitecore\\Designer",
-                            Roles: "Sitecore.Security.Accounts.Role",
-                            MemberOf: "Sitecore.Security.Accounts.Role",
-                        },
-                        {
-                            ToString: "Sitecore.Security.Accounts.Role",
-                            IsEveryone: false,
-                            IsGlobal: true,
-                            AccountType: "Role",
-                            Description: "Role",
-                            DisplayName: "sitecore\\Sitecore Client Developing",
-                            LocalName: "sitecore\\Sitecore Client Developing",
-                            Name: "sitecore\\Sitecore Client Developing",
-                            Roles: "Sitecore.Security.Accounts.Role",
-                            MemberOf: "Sitecore.Security.Accounts.Role",
-                        },
-                    ],
-                    MemberOf: [
-                        {
-                            ToString: "Sitecore.Security.Accounts.Role",
-                            IsEveryone: false,
-                            IsGlobal: true,
-                            AccountType: "Role",
-                            Description: "Role",
-                            DisplayName: "sitecore\\Sitecore Client Configuring",
-                            LocalName: "sitecore\\Sitecore Client Configuring",
-                            Name: "sitecore\\Sitecore Client Configuring",
-                            Roles: "Sitecore.Security.Accounts.Role",
-                            MemberOf: "Sitecore.Security.Accounts.Role",
-                        },
-                        {
-                            ToString: "Sitecore.Security.Accounts.Role",
-                            IsEveryone: false,
-                            IsGlobal: false,
-                            AccountType: "Role",
-                            Description: "Role",
-                            DisplayName: "sitecore\\Author",
-                            LocalName: "sitecore\\Author",
-                            Name: "sitecore\\Author",
-                            Roles: "Sitecore.Security.Accounts.Role",
-                            MemberOf: "Sitecore.Security.Accounts.Role",
-                        },
-                        {
-                            ToString: "Sitecore.Security.Accounts.Role",
-                            IsEveryone: false,
-                            IsGlobal: true,
-                            AccountType: "Role",
-                            Description: "Role",
-                            DisplayName: "sitecore\\Sitecore Client Maintaining",
-                            LocalName: "sitecore\\Sitecore Client Maintaining",
-                            Name: "sitecore\\Sitecore Client Maintaining",
-                            Roles: "Sitecore.Security.Accounts.Role",
-                            MemberOf: "Sitecore.Security.Accounts.Role",
-                        },
-                        {
-                            ToString: "Sitecore.Security.Accounts.Role",
-                            IsEveryone: false,
-                            IsGlobal: false,
-                            AccountType: "Role",
-                            Description: "Role",
-                            DisplayName: "sitecore\\JSS Import Service Users",
-                            LocalName: "sitecore\\JSS Import Service Users",
-                            Name: "sitecore\\JSS Import Service Users",
-                            Roles: "Sitecore.Security.Accounts.Role",
-                            MemberOf: "Sitecore.Security.Accounts.Role",
-                        },
-                        {
-                            ToString: "Sitecore.Security.Accounts.Role",
-                            IsEveryone: false,
-                            IsGlobal: false,
-                            AccountType: "Role",
-                            Description: "Role",
-                            DisplayName: "sitecore\\Designer",
-                            LocalName: "sitecore\\Designer",
-                            Name: "sitecore\\Designer",
-                            Roles: "Sitecore.Security.Accounts.Role",
-                            MemberOf: "Sitecore.Security.Accounts.Role",
-                        },
-                        {
-                            ToString: "Sitecore.Security.Accounts.Role",
-                            IsEveryone: false,
-                            IsGlobal: true,
-                            AccountType: "Role",
-                            Description: "Role",
-                            DisplayName: "sitecore\\Sitecore Client Developing",
-                            LocalName: "sitecore\\Sitecore Client Developing",
-                            Name: "sitecore\\Sitecore Client Developing",
-                            Roles: "Sitecore.Security.Accounts.Role",
-                            MemberOf: "Sitecore.Security.Accounts.Role",
-                        },
-                    ],
-                },
-            ],
-        });
+        // Assert
+        const members = JSON.parse(result.content[0].text).Obj;
+        expect(members).toHaveLength(1);
+        expect(members[0].Name).toBe(user.name);
+        expect(members[0].AccountType).toBe("User");
     });
 });

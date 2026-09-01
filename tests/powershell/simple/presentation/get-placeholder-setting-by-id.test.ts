@@ -1,62 +1,56 @@
-import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../client";
+import { describe, it, expect, afterAll } from "vitest";
+import { client, transport, callTool } from "../../../client";
+import { seedScratch, seedPresentation, applyPresentation } from "../../../fixtures";
 
 await client.connect(transport);
 
-// /sitecore/content/Home/Tests/Presentation/Get-Placeholder-Setting-By-Id
-const itemId = "{D507DFEC-C58E-4D5B-88D5-06E60A402968}";
+const scratch = await seedScratch("get-placeholder-setting-by-id", ["Page"]);
+const presentation = await seedPresentation(scratch);
+await applyPresentation(scratch.item("Page"), presentation);
 
-// /sitecore/layout/Placeholder Settings/Feature/Tests/Placeholder-Settings
-const placeholderSettingId = "{2B3B1A5E-E231-40DF-BB5F-3EB0061ACC41}";
+const KEY = "test_placeholder";
 
-const uniqueId = "{E59BAEAE-9F59-44CB-BD23-61F5C8278BE1}";
+// Arranged through the tool rather than the fixture: SPE's own Add-PlaceholderSetting is
+// what presentation-add-placeholder-setting wraps, so there is no lower level to reach for.
+await callTool(client, "presentation-add-placeholder-setting", {
+    id: scratch.item("Page").id,
+    placeholderSettingPath: `master:${presentation.placeholderSetting.path}`,
+    key: KEY,
+    finalLayout: true,
+});
 
-const database = "master";
-const language = "ja-jp";
-const finalLayout = "true";
+afterAll(() => scratch.cleanup());
 
-const overridenPlaceholderSettingKey = "test_placeholder_override_key";
+const addressing = { id: scratch.item("Page").id };
 
 describe("powershell", () => {
-    it("presentation-get-placeholder-setting-by-id-using-uniqueid", async () => {
-        // Arrange
-        const args: Record<string, any> = {
-            itemId,
-            database,
-            uniqueId,
-            language,
-            finalLayout,
-        };
+    it("presentation-get-placeholder-setting-using-key", async () => {
+        const result = await callTool(client, "presentation-get-placeholder-setting", {
+            ...addressing,
+            key: KEY,
+            finalLayout: true,
+        });
 
-        // Act
-        const result = await callTool(client, "presentation-get-placeholder-setting-by-id", args);
-        
-        // Assert
-        const json = JSON.parse(result.content[0].text);
-        const objectToAssert = json.Obj[0];
-        expect(objectToAssert.UniqueId.toLowerCase()).toBe(uniqueId.toLowerCase());
-        expect(objectToAssert.Key).toBe("test_placeholder");
-        expect(objectToAssert.MetaDataItemId.toLowerCase()).toBe(placeholderSettingId.toLowerCase());
+        const objectToAssert = JSON.parse(result.content[0].text).Obj[0];
+        expect(objectToAssert.Key).toBe(KEY);
+        expect(objectToAssert.MetaDataItemId.toLowerCase()).toBe(presentation.placeholderSetting.id.toLowerCase());
     });
 
-    it("presentation-get-placeholder-setting-by-id-using-key", async () => {
-        // Arrange
-        const getPlaceholderSettingArgs: Record<string, any> = {
-            itemId,
-            database,
-            key: overridenPlaceholderSettingKey,
-            language,
-            finalLayout,
-        };
+    it("presentation-get-placeholder-setting-using-uniqueid", async () => {
+        const all = await callTool(client, "presentation-get-placeholder-setting", {
+            ...addressing,
+            finalLayout: true,
+        });
+        const uniqueId = JSON.parse(all.content[0].text).Obj[0].UniqueId;
 
-        // Act
-        const result = await callTool(client, "presentation-get-placeholder-setting-by-id", getPlaceholderSettingArgs);
-        
-        // Assert
-        const json = JSON.parse(result.content[0].text);
-        const objectToAssert = json.Obj[0];
-        expect(objectToAssert.Key).toBe(overridenPlaceholderSettingKey);
-        expect(objectToAssert.MetaDataItemId.toLowerCase()).toBe(placeholderSettingId.toLowerCase());
+        const result = await callTool(client, "presentation-get-placeholder-setting", {
+            ...addressing,
+            uniqueId,
+            finalLayout: true,
+        });
+
+        const objectToAssert = JSON.parse(result.content[0].text).Obj[0];
+        expect(objectToAssert.UniqueId.toLowerCase()).toBe(String(uniqueId).toLowerCase());
+        expect(objectToAssert.Key).toBe(KEY);
     });
 });

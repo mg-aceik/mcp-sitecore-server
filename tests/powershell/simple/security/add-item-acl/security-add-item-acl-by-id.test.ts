@@ -1,51 +1,50 @@
-import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { describe, it, expect, afterAll } from "vitest";
+import { client, transport, callTool } from "../../../../client";
+import { seedScratch, seedRole } from "../../../../fixtures";
 
 await client.connect(transport);
 
+// action 'add' appends a rule and leaves the others in place, which is what separates it
+// from 'replace'.
+const scratch = await seedScratch("add-item-acl-by-id", ["Target"]);
+const roleOne = await seedRole("acl-one");
+const roleTwo = await seedRole("acl-two");
+afterAll(async () => {
+    await scratch.cleanup();
+    await roleOne.remove();
+    await roleTwo.remove();
+});
+
+const addressing = { id: scratch.item("Target").id };
+
+const accounts = async () => {
+    const result = await callTool(client, "security-get-item-acl", { path: scratch.item("Target").path });
+    return (JSON.parse(result.content[0].text).Obj ?? []).map((rule: any) => rule.Account);
+};
+
 describe("powershell", () => {
-    it("security-add-item-acl-by-id", async () => {
-        const itemId = "{4E79D567-5396-4987-B350-57D1DCE6B1DA}";
+    it("security-set-item-acl add", async () => {
+        await callTool(client, "security-set-item-acl", {
+            ...addressing,
+            action: "add",
+            identity: roleOne.name,
+            accessRight: "item:write",
+            propagationType: "Entity",
+            securityPermission: "DenyAccess",
+        });
 
-        // Clean up 
-        const clearupAclArgs: Record<string, any> = {
-            id: itemId,
-        };
-
-        await callTool(client, "security-clear-item-acl-by-id", clearupAclArgs);
-
-        const getAclArgs: Record<string, any> = {
-            id: itemId,
-        };
-
-        // Add a new ACL entry - Deny read access to the Everyone role
-        const addAclArgs: Record<string, any> = {
-            id: itemId,
-            identity: "sitecore\\Everyone",
+        await callTool(client, "security-set-item-acl", {
+            ...addressing,
+            action: "add",
+            identity: roleTwo.name,
             accessRight: "item:read",
             propagationType: "Entity",
-            securityPermission: "DenyAccess"
-        };
+            securityPermission: "AllowAccess",
+        });
 
-        const addAclResult = await callTool(client, "security-add-item-acl-by-id", addAclArgs);
-        const addAclJson = JSON.parse(addAclResult.content[0].text);
-
-        // Verify the ACL was added by retrieving the item ACL again
-        const getUpdatedAclResult = await callTool(client, "security-get-item-acl-by-id", getAclArgs);
-        const updatedAclJson = JSON.parse(getUpdatedAclResult.content[0].text);
-
-        // Find the ACL entry we just added
-        const hasAddedAcl = updatedAclJson.Obj.some((aclEntry: any) =>
-            aclEntry.Account?.Name === "sitecore\\Everyone" &&
-            aclEntry.AccessRight?.Name === "item:read" &&
-            aclEntry.PropagationType?.ToString === "Entity" &&
-            aclEntry.SecurityPermission?.ToString === "DenyAccess"
-        );
-
-        expect(hasAddedAcl).toBe(true);
-
-        // Clean up 
-        await callTool(client, "security-clear-item-acl-by-id", clearupAclArgs);
+        // Both survive: the second add did not discard the first.
+        const current = await accounts();
+        expect(current).toContain(roleOne.name);
+        expect(current).toContain(roleTwo.name);
     });
 });

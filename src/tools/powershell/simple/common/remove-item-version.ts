@@ -1,0 +1,68 @@
+import type { McpServer } from "@modelcontextprotocol/server";
+import type { Config } from "@/config.js";
+import { z } from "zod";
+import { safeMcpResponse } from "@/helper.js";
+import { hasTarget, requireOneTarget } from "@/tools/target-input.js";
+import { runGenericPowershellCommand } from "../generic.js";
+import { ITEM_DATABASE_DESCRIPTION, getSwitchParameterValue } from "../../utils.js";
+
+export function removeItemVersionPowerShellTool(server: McpServer, config: Config) {
+    server.registerTool(
+        "common-remove-item-version",
+        {
+            description: "Removes a version of a Sitecore item.",
+            inputSchema: z.object({
+                id: z.string().optional()
+                    .describe("The ID of the item to remove version for. Supply this or path."),
+                path: z.string().optional()
+                    .describe("The path of the item to remove version for (e.g. /sitecore/content/Home). Supply this or id."),
+                language: z.string()
+                    .describe("Language that should be deleted form the provided item. Language parameter supports globbing so you can delete whole language groups using wildcards."),
+                version: z.string().optional()
+                    .describe("Version that should be deleted form the provided item. Version parameter supports globbing so you can delete whole version groups using wildcards."),
+                recurse: z.boolean().optional()
+                    .describe("Removes language versions from the item and all of its children."),
+                maxRecentVersions: z.number().optional()
+                    .describe("Trims the selected language to value specified by this parameter."),
+                database: z.string().optional()
+                    .describe(ITEM_DATABASE_DESCRIPTION),
+                archive: z.boolean().optional()
+                    .describe("Moves the items to the archive rather than recycle bin."),
+            }),
+        },
+        async (params) => {
+            const invalid = requireOneTarget(params, ["id", "path"]);
+            if (invalid) {
+                return invalid;
+            }
+
+            const options: Record<string, any> = {
+                ...(hasTarget(params.id) ? { "Id": params.id } : { "Path": params.path }),
+                "Language": params.language,
+            };
+            const command = `Remove-ItemVersion`;
+
+            if (params.version) {
+                options["Version"] = params.version;
+            }
+
+            if (params.recurse) {
+                options["Recurse"] = getSwitchParameterValue(params.recurse);
+            }
+
+            if (params.maxRecentVersions) {
+                options["MaxRecentVersions"] = params.maxRecentVersions;
+            }
+
+            if (params.database) {
+                options["Database"] = params.database;
+            }
+
+            if (params.archive) {
+                options["Archive"] = getSwitchParameterValue(params.archive);
+            }
+
+            return safeMcpResponse(runGenericPowershellCommand(config, command, options));
+        }
+    );
+}

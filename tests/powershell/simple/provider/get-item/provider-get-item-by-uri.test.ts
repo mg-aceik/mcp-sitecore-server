@@ -1,30 +1,27 @@
-import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { describe, it, expect, afterAll } from "vitest";
+import { client, transport, callTool } from "../../../../client";
+import { seedScratch } from "../../../../fixtures";
 
 await client.connect(transport);
 
-describe("powershell", () => {
-    it("provider-get-item-by-uri", async () => {
-        // Use a URI that should exist in any Sitecore instance
-        const itemUri = "sitecore://master/{058F0569-5129-4052-961D-0A61741BBFBB}?lang=en&ver=1";
+const scratch = await seedScratch("provider-get-item-by-uri", ["Target"]);
+afterAll(() => scratch.cleanup());
 
+describe("powershell", () => {
+    it("provider-get-item", async () => {
+        // sitecore://<database>/<id>?lang=&ver= -- the addressing form that carries the
+        // database and version in the identifier itself.
         const args: Record<string, any> = {
-            uri: itemUri
+            uri: `sitecore://master/${scratch.item("Target").id}?lang=en&ver=1`
         };
 
-        const result = await callTool(client, "provider-get-item-by-uri", args);
+        const result = await callTool(client, "provider-get-item", args);
         const json = JSON.parse(result.content[0].text);
 
-        // Verify the response has the basic item properties
-        expect(json).toMatchObject({
-            Obj: expect.arrayContaining([
-                expect.objectContaining({
-                    ToString: "Sitecore.Data.Items.Item",
-                    ItemPath: "/sitecore/content/Home/Tests/Provider/Get-Item/Get-Item-By-Uri",
-                    FullPath: "/sitecore/content/Home/Tests/Provider/Get-Item/Get-Item-By-Uri",
-                })
-            ])
-        });
+        // The projection returns identity, not the whole .NET graph, so ItemPath and ID are
+        // what identify the item that came back.
+        expect(json.Obj).toHaveLength(1);
+        expect(json.Obj[0].ItemPath).toBe(scratch.item("Target").path);
+        expect(json.Obj[0].ID.toLowerCase()).toBe(scratch.item("Target").id.toLowerCase());
     });
 });

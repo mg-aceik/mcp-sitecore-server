@@ -1,25 +1,43 @@
-import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { describe, it, expect, afterAll } from "vitest";
+import { client, transport, callTool } from "../../../../client";
+import { seedScratch, seedUser } from "../../../../fixtures";
 
 await client.connect(transport);
 
+const scratch = await seedScratch("test-item-acl-by-id", ["Target"]);
+const user = await seedUser("acl-test");
+afterAll(async () => {
+    await scratch.cleanup();
+    await user.remove();
+});
+
+const addressing = { id: scratch.item("Target").id };
+
 describe("powershell", () => {
-    it("security-test-item-acl-by-id", async () => {
-        const args: Record<string, any> = {
-            id: "{8E1899B5-A688-49D3-82D6-AD0C21A07891}",
-            identity: "sitecore\\Developer",
-            accessRight: "item:read"
-        };
+    it("security-test-item-acl", async () => {
+        // A new user can read by default, so the interesting half is what happens after a
+        // deny: the same call has to answer the other way.
+        const allowed = await callTool(client, "security-test-item-acl", {
+            ...addressing,
+            identity: user.name,
+            accessRight: "item:read",
+        });
+        expect(JSON.parse(allowed.content[0].text).Obj[0]).toBe(true);
 
-        const result = await callTool(client, "security-test-item-acl-by-id", args);
-        const json = JSON.parse(result.content[0].text);
+        await callTool(client, "security-set-item-acl", {
+            ...addressing,
+            action: "add",
+            identity: user.name,
+            accessRight: "item:read",
+            propagationType: "Entity",
+            securityPermission: "DenyAccess",
+        });
 
-        expect(json).toMatchObject({
-            Obj: [
-                true,
-            ],
-        }
-        );
+        const denied = await callTool(client, "security-test-item-acl", {
+            ...addressing,
+            identity: user.name,
+            accessRight: "item:read",
+        });
+        expect(JSON.parse(denied.content[0].text).Obj[0]).toBe(false);
     });
 });

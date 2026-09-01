@@ -1,41 +1,26 @@
-import { describe, it, expect } from "vitest";
-import { callTool } from "@modelcontextprotocol/inspector/cli/build/client/tools.js";
-import { client, transport } from "../../../../client";
+import { describe, it, expect, afterAll } from "vitest";
+import { client, transport, callTool } from "../../../../client";
+import { seedScratch } from "../../../../fixtures";
 
 await client.connect(transport);
 
-describe("powershell", () => {
-    it("common-reset-item-field-by-id", async () => {
-        // Arrange
-        // /sitecore/content/Home/Tests/Common/Reset-Item-Field-By-Id
-        const itemId = "{F862A147-873F-478F-8CC8-33F542B0C441}";
+// The fixture writes a value into every text field, so there is something to reset back to
+// the template's (empty) standard value.
+const scratch = await seedScratch("reset-item-field-by-id", ["Target"]);
+afterAll(() => scratch.cleanup());
 
-        const args: Record<string, any> = {
-            id: itemId,
-            name: ["Text"]
-        };
+describe("powershell", () => {
+    it("common-reset-item-field", async () => {
+        // Arrange
+        const target = scratch.item("Target").id;
+        const before = await callTool(client, "provider-get-item", { id: target, fields: ["Text"] });
+        expect(JSON.parse(before.content[0].text).Obj[0].Text).not.toBe("");
 
         // Act
-        await callTool(client, "common-reset-item-field-by-id", args);
+        await callTool(client, "common-reset-item-field", { id: target, name: ["Text"] });
 
         // Assert
-        const getItemArgs: Record<string, any> = {
-            id: itemId,
-        };
-
-        const result = await callTool(client, "provider-get-item-by-id", getItemArgs);
-        const json = JSON.parse(result.content[0].text);
-
-        expect(json.Obj[0].Text).toBe("");
-
-        // Cleanup
-        const editItemArgs: Record<string, any> = {
-            id: itemId,
-            data: {
-                Text: "Sample text"
-            }
-        };
-
-        await callTool(client, "item-service-edit-item", editItemArgs);
+        const after = await callTool(client, "provider-get-item", { id: target, fields: ["Text"] });
+        expect(JSON.parse(after.content[0].text).Obj[0].Text).toBe("");
     });
 });
