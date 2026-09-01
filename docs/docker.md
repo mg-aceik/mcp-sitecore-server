@@ -49,8 +49,7 @@ npm run docker:windows:build
 
 Both scripts tag the image with the version from `package.json` — that file is the only
 place the version is written, and `scripts/docker.mjs` reads it, as do the release
-workflows. A prerelease version (`2.0.0-beta1`) is tagged with the version alone; only a
-stable version also takes `latest`. `npm run docker:linux:push` pushes the same tags.
+workflows. Only a stable version also takes `latest`. `npm run docker:linux:push` pushes the same tags.
 
 The Dockerfiles live in [`docker/linux`](../docker/linux) and
 [`docker/windows`](../docker/windows). See [Configuration](./configuration.md) for the

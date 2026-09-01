@@ -14,7 +14,7 @@ Our versioning strategy is as follows:
 
 ## 2.0.0
 
-_Released 2026-08 — a fourth API surface, a tool surface a third smaller per operation, on the v2
+_Released 2026-09 — a fourth API surface, a tool surface a third smaller per operation, on the v2
 MCP SDK and MCP protocol revision 2026-07-28._
 
 ### 🧱 Build & Release
