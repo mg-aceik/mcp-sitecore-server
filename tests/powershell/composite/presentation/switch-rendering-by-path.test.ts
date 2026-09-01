@@ -1,39 +1,30 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterAll } from "vitest";
 import { client, transport, callTool } from "../../../client";
-import { resetLayoutByPath } from "../../tools/reset-layout";
-import { getRenderingByPath } from "../../tools/get-rendering";
+import { seedScratch, seedPresentation, applyPresentation } from "../../../fixtures";
 
 await client.connect(transport);
 
-const itemPath = "master:/sitecore/content/Home/Tests/Presentation/Switch-Rendering-By-Path";
-const oldRenderingPath = "master:/sitecore/layout/Renderings/Sample/Sample Rendering";
-const newRenderingPath = "master:/sitecore/layout/Renderings/Feature/Tests/Switch-Rendering/Expected Rendering";
-const newRenderingId = "{1C8B443B-E78A-4AE7-AB30-CB0166299877}";
+const scratch = await seedScratch("switch-rendering-by-path", ["Page"]);
+const presentation = await seedPresentation(scratch);
+await applyPresentation(scratch.item("Page"), presentation);
+afterAll(() => scratch.cleanup());
 
-const language = "ja-jp";
-const finalLayout = true;
+const addressing = { path: `master:${scratch.item("Page").path}` };
 
 describe("powershell", () => {
     it("presentation-switch-rendering", async () => {
-        // Arrange
-        // Initialize item initial state before test.
-        await resetLayoutByPath(client, itemPath, language, finalLayout);
-
-        const switchRenderingArgs: Record<string, any> = {
-            path: itemPath,
-            oldRenderingPath,
-            newRenderingPath,
-            finalLayout,
-            language,
-        };
-        
         // Act
-        await callTool(client, "presentation-switch-rendering", switchRenderingArgs);
+        await callTool(client, "presentation-switch-rendering", {
+            ...addressing,
+            oldRenderingId: presentation.rendering.id,
+            newRenderingId: presentation.otherRendering.id,
+            finalLayout: true,
+        });
 
-        // Assert
-        const renderings = await getRenderingByPath(client, itemPath, undefined, language, finalLayout);
-        
-        const rendering = renderings[2];
-        expect(rendering.ItemID.toLowerCase()).toBe(newRenderingId.toLowerCase());
+        // Assert: same slot, different rendering.
+        const result = await callTool(client, "presentation-get-rendering", { ...addressing, finalLayout: true });
+        const rendering = JSON.parse(result.content[0].text).Obj[0];
+
+        expect(rendering.ItemID.toLowerCase()).toBe(presentation.otherRendering.id.toLowerCase());
     });
 });

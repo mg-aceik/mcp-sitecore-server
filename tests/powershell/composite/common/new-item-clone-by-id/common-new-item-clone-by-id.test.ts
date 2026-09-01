@@ -1,37 +1,28 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterAll } from "vitest";
 import { client, transport, callTool } from "../../../../client";
+import { seedScratch } from "../../../../fixtures";
 
 await client.connect(transport);
+
+const scratch = await seedScratch("new-item-clone-by-id", ["Source"]);
+afterAll(() => scratch.cleanup());
 
 describe("powershell", () => {
     it("common-new-item-clone", async () => {
         // Arrange
-        // /sitecore/content/Home/Tests/Common/Get-Item-Clone-By-Id
-        const itemId = "{B1D6EFC6-8C72-4BA3-A00C-FFDF0F94AFE6}";
-        const destinationPath = "/sitecore/content/Home/Tests/Common";
-        const name = "Item Clone By Id";
-
-        const args: Record<string, any> = {
-            id: itemId,
-            destination: destinationPath,
-            name: name,
-        };
+        const name = "Clone By Id";
 
         // Act
-        const result = await callTool(client, "common-new-item-clone", args);
+        const result = await callTool(client, "common-new-item-clone", {
+            id: scratch.item("Source").id,
+            destination: scratch.root.path,
+            name,
+        });
 
         // Assert
-        const json = JSON.parse(result.content[0].text);
-        const itemClone = json.Obj[0];
-
+        const itemClone = JSON.parse(result.content[0].text).Obj[0];
         expect(itemClone.Name).toBe(name);
-        expect(itemClone.IsItemClone).toBeTruthy();
-
-        // Cleanup
-        const deleteItemArgs: Record<string, any> = {
-            id: itemClone.ID.ToString,
-        };
-
-        await callTool(client, "item-service-delete-item", deleteItemArgs);
+        expect(itemClone.ItemPath).toBe(`${scratch.root.path}/${name}`);
+        expect(itemClone.TemplateID.toLowerCase()).toBe(scratch.template.id.toLowerCase());
     });
 });

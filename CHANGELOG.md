@@ -910,6 +910,52 @@ build` did not copy the markdown at all, so the loose build only worked if some 
   `callTool` is a local helper instead of an undeclared import from
   `@modelcontextprotocol/inspector/cli/build/client/tools.js`.
 
+- `[build]` **Added ESLint.** `npm run lint` (and `npm run lint:fix`) runs the flat config in
+  `eslint.config.js` over `src/`, `tests/` and the build scripts, and CI runs it alongside the
+  type-check. The lint is syntax-only — `npm run typecheck` already does the type-aware pass.
+  The first run found dead imports (including
+  three `import e from "express"` in security tests), a handful of single-\ identities
+  such as `"sitecore\admin"` that JavaScript was silently collapsing to `sitecoreadmin`,
+  rethrows in `item-service/client.ts` that dropped the original error, and `Object` used
+  where `object` was meant; all are fixed. `no-explicit-any` is a warning rather than an
+  error: 124 remain, and four loosely-typed remote surfaces are why.
+
+- `[tests]` **The live suite seeds its own content.** It used to address a tree of fixtures
+  someone had built by hand on one demo instance — `/sitecore/content/Home/Tests/...` and a
+  hard-coded GUID per test. Of the 75 GUIDs it named, 11 resolve on a stock CM; the other 64
+  existed nowhere else, so pointing the suite at any other instance failed it in bulk with
+  `Unexpected token 'G', "Get-Item …"` and no hint that the content, not the code, was
+  missing. Every live file now creates what it needs through `tests/fixtures.ts`, asserts
+  against what it created, and deletes it again — including anything it archived on the way
+  through, so repeat runs do not fill the recycle bin. The fixtures build on templates
+  Sitecore ships (`Common/Folder` and the three behind a data template), so nothing assumes
+  XM/XP versus SitecoreAI, a Sample site, or a project's own components.
+
+  The assertions moved with the content: a test that expected the template name
+  `Sample Item` now expects `scratch.template.name`, and around forty that still described
+  the pre-2.0 unprojected object graph (`ToString`, `ID.ToString`, a `User`'s fifteen fields)
+  now describe what the projections actually return. `vitest.config.ts` gained the `@/` alias
+  so the unit files collect under it too, a four-process cap and one retry — 159 files each
+  spawning a server against a single CM is what made an unconstrained run flaky.
+
+  159 files, 542 tests, green against an XM Cloud instance with nothing seeded on it.
+
+- `[tests]` **Pointed the live suite at the merged tool names.** 41 test files still called
+  tools this release retired — `security-add-item-acl` / `security-clear-item-acl`,
+  `security-lock-item` / `-unlock-item`, `security-protect-item` / `-unprotect-item`,
+  `common-add-base-template` / `-remove-base-template`, the three index-state verbs, the
+  `-by-identity` / `-by-filter` / `-by-name` account lookups, `security-export-user` and its
+  three siblings, and `indexing-initialize-search-index[-item]` — so every one of them failed
+  at the first call with _"Tool … not found"_ rather than testing anything. Each now calls the
+  merged tool with the `action` (or `accountType`) that names the branch it was testing, and
+  `indexName` becomes `name` for the rebuild tool. `indexing-remove-search-index-item` had no
+  successor to point at — the tool was removed outright — so its two files are deleted.
+
+- `[build]` Dropped two unused devDependencies: `ts-node`, which nothing in the repo ever
+  imported or ran, and `@modelcontextprotocol/inspector`, which `npm run inspector` fetches
+  as `npx @modelcontextprotocol/inspector@latest` and so never resolved locally. Together
+  with the ESLint additions the lockfile is around 1,300 lines smaller.
+
 ## 1.4.2
 
 _Released 2026-07-30._
@@ -1001,19 +1047,23 @@ _Released 2026-07-22._
   accepting requests — the appropriate signal for a container — rather than probing the
   OAuth discovery endpoint.)
 
-- `[deps]` **Migrated to TypeScript 7.** The SDK's generic `tool()` overloads made the `tsc`
+- `[deps]` **Migrated to TypeScript 6.** The SDK's generic `tool()` overloads made the `tsc`
   5.x type-checker exhaust its heap across the ~140 registration call sites (the build did
-  not complete even with an 8 GB heap). The TypeScript 7 native compiler type-checks the
-  same code in under a second, so tool-registration functions use the SDK's `McpServer` type
-  directly with no custom indirection. `tsconfig.json` was migrated for TS7:
-  `moduleResolution` is now `"bundler"` and the removed `baseUrl` option was dropped (path
-  aliases retained as `"@/*": ["./src/*"]`).
+  not complete even with an 8 GB heap). TypeScript 6 type-checks the same code in about three
+  seconds, so tool-registration functions use the SDK's `McpServer` type directly with no
+  custom indirection. `tsconfig.json` was migrated with it: `moduleResolution` is now
+  `"bundler"` and the removed `baseUrl` option was dropped (path aliases retained as
+  `"@/*": ["./src/*"]`).
+
+  Not 7: typescript-eslint cannot load against the native compiler, whose `typescript` entry
+  point exports a version string where the JS API used to be, so `npm run lint` does not run
+  on it (typescript-eslint/typescript-eslint#10940). 6.x is the last line carrying that API.
 
 - **Migrated all tool registrations from the deprecated `server.tool()` to
   `server.registerTool()`.** The SDK deprecated `tool()` in favour of `registerTool()`;
   every registration now passes a config object (`{ description, inputSchema }`) and the
   `withInferredAnnotations` wrapper injects annotations into that config rather than as a
-  positional argument. (Feasible now that the TypeScript 7 switch removed the
+  positional argument. (Feasible now that the compiler upgrade removed the
   overload-resolution heap blow-up that affected `tool()` and `registerTool()` alike.)
 
 - `[docker]` Docker images pinned to **Node 24** (Linux previously floated on

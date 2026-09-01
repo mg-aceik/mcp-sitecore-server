@@ -56,16 +56,35 @@ afterAll(async () => {
             // best effort
         }
     }
+    // The media item is addressed by path, not by an id this file captured, so it needs its
+    // own line -- without it every run leaves an image behind in the media library.
+    try {
+        await callTool(client, "authoring-delete-item", {
+            path: `/sitecore/media library/${RUN}-media`,
+            permanently: true,
+        });
+    } catch {
+        // best effort
+    }
+
     await rm(LOCAL_FILE, { force: true });
 });
 
 describe("authoring core (live)", () => {
     it("introspects the schema despite the endpoint's depth limit", async () => {
-        const result = await callTool(client, "authoring-introspect-schema", {});
+        // With no arguments the tool returns the operation index, one line per query and
+        // mutation; the SDL itself is behind `full`.
+        const index = await callTool(client, "authoring-introspect-schema", {});
+        expect(index.isError ?? false).toBe(false);
+        expect(text(index)).toContain("createItem");
+
+        const result = await callTool(client, "authoring-introspect-schema", { full: true });
         expect(result.isError ?? false).toBe(false);
         const sdl = text(result);
         // graphql-js's own introspection query is rejected here for exceeding the maximum
         // execution depth of 13, so a non-trivial SDL is the proof the shallower one works.
+        // The floor is deliberately low: how much SDL comes back depends on the tenant's
+        // schema, and it is the shape below, not the size, that shows the query succeeded.
         expect(sdl.length).toBeGreaterThan(50_000);
         expect(sdl).toContain("type Mutation");
         expect(sdl).toContain("createItem(input: CreateItemInput!)");

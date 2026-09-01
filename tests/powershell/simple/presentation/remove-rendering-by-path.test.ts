@@ -1,39 +1,33 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterAll } from "vitest";
 import { client, transport, callTool } from "../../../client";
-import { resetLayoutByPath } from "../../tools/reset-layout";
-import { getRenderingByPath } from "../../tools/get-rendering";
+import { seedScratch, seedPresentation, applyPresentation } from "../../../fixtures";
 
 await client.connect(transport);
 
-const path = "master:/sitecore/content/Home/Tests/Presentation/Remove-Rendering-By-Path";
+const scratch = await seedScratch("remove-rendering-by-path", ["Page"]);
+const presentation = await seedPresentation(scratch);
+const applied = await applyPresentation(scratch.item("Page"), presentation);
+afterAll(() => scratch.cleanup());
 
-const sampleRenderingUniqueId = "{B343725A-3A93-446E-A9C8-3A2CBD3DB489}";
-
-const language = "ja-jp";
-const finalLayout = true;
+const addressing = { path: `master:${scratch.item("Page").path}` };
 
 describe("powershell", () => {
     it("presentation-remove-rendering", async () => {
-        // Arrange
-        // Initialize item initial state before test.        
-        await resetLayoutByPath(client, path, language, finalLayout);
-
-        const removeRenderingArgs: Record<string, any> = {
-            path,
-            uniqueId: sampleRenderingUniqueId,
-            language,
-            finalLayout,
-        };
+        // Arrange: the rendering the fixture added is there to start with.
+        const before = await callTool(client, "presentation-get-rendering", { ...addressing, finalLayout: true });
+        expect(JSON.parse(before.content[0].text).Obj).toHaveLength(1);
 
         // Act
-        await callTool(client, "presentation-remove-rendering", removeRenderingArgs);
+        await callTool(client, "presentation-remove-rendering", {
+            ...addressing,
+            uniqueId: applied.uniqueId,
+            finalLayout: true,
+        });
 
         // Assert
-        const renderings = await getRenderingByPath(client, path, undefined, language, finalLayout);
-        expect(renderings.length).toBe(2);
-        const sampleRenderingIsPresent =
-            renderings.some(x => x.UniqueId.toLowerCase() == sampleRenderingUniqueId.toLowerCase());
-
-        expect(sampleRenderingIsPresent).toBe(false);
+        const after = await callTool(client, "presentation-get-rendering", { ...addressing, finalLayout: true });
+        const remaining = JSON.parse(after.content[0].text).Obj ?? [];
+        expect(remaining.map((rendering: any) => String(rendering.UniqueId).toLowerCase()))
+            .not.toContain(applied.uniqueId.toLowerCase());
     });
 });

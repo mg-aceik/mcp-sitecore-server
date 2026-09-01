@@ -178,8 +178,7 @@ function renderIndex(
  * arguments, so closing over them is what makes one call sufficient.
  */
 function collectArgumentTypes(
-    field: GraphQLField<unknown, unknown>,
-    schema: GraphQLSchema
+    field: GraphQLField<unknown, unknown>
 ): GraphQLNamedType[] {
     const seen = new Set<string>();
     const collected: GraphQLNamedType[] = [];
@@ -283,7 +282,7 @@ function renderType(
             "```",
         ];
 
-        const referenced = collectArgumentTypes(field, schema);
+        const referenced = collectArgumentTypes(field);
         if (referenced.length > 0) {
             parts.push("", `## Types referenced (${referenced.length})`, "");
             parts.push(referenced.map((t) => printType(t)).join("\n\n"));

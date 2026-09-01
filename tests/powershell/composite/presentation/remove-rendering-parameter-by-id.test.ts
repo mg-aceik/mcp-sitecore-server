@@ -1,40 +1,42 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterAll } from "vitest";
 import { client, transport, callTool } from "../../../client";
-import { resetLayoutById } from "../../tools/reset-layout";
-import { getRenderingById } from "../../tools/get-rendering";
+import { seedScratch, seedPresentation, applyPresentation } from "../../../fixtures";
 
 await client.connect(transport);
 
-// /sitecore/content/Home/Tests/Presentation/Remove-Rendering-Parameter-By-Id
-const itemId = "{F2F97094-DEAD-4101-A888-17074C6A4B43}";
+const scratch = await seedScratch("remove-rendering-parameter-by-id", ["Page"]);
+const presentation = await seedPresentation(scratch);
+const applied = await applyPresentation(scratch.item("Page"), presentation);
+afterAll(() => scratch.cleanup());
 
-const renderingUniqueId = "{B343725A-3A93-446E-A9C8-3A2CBD3DB489}";
-const name = "sample";
-const finalLayout = true;
-const language = "ja-jp";
-const database = "master";
+const addressing = { id: scratch.item("Page").id };
 
 describe("powershell", () => {
     it("presentation-remove-rendering-parameter", async () => {
         // Arrange
-        // Initialize item initial state before test.
-        await resetLayoutById(client, itemId, database, language, finalLayout);
-
-        const removeRenderingParameterArgs: Record<string, any> = {
-            id: itemId,
-            renderingUniqueId,
-            name,
-            database,
-            language,
-            finalLayout,
-        };
+        await callTool(client, "presentation-set-rendering-parameter", {
+            ...addressing,
+            renderingUniqueId: applied.uniqueId,
+            parameter: { sample: "value" },
+            finalLayout: true,
+        });
 
         // Act
-        await callTool(client, "presentation-remove-rendering-parameter", removeRenderingParameterArgs);
+        await callTool(client, "presentation-remove-rendering-parameter", {
+            ...addressing,
+            renderingUniqueId: applied.uniqueId,
+            name: "sample",
+            finalLayout: true,
+        });
 
         // Assert
-        const renderings = await getRenderingById(client, itemId, database, renderingUniqueId, language, finalLayout);
-        const rendering = renderings[0];
-        expect(rendering.Parameters).not.toContain(name);
+        const result = await callTool(client, "presentation-get-rendering", {
+            ...addressing,
+            uniqueId: applied.uniqueId,
+            finalLayout: true,
+        });
+        const rendering = JSON.parse(result.content[0].text).Obj[0];
+
+        expect(String(rendering.Parameters ?? "")).not.toContain("sample=value");
     });
 });

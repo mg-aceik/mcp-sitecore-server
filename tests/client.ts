@@ -84,7 +84,7 @@ async function callTool(
     try {
         result = await mcpClient.callTool({ name, arguments: args }) as ToolCallResult;
     } catch (error) {
-        throw new Error(`Failed to call tool ${name}: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(`Failed to call tool ${name}: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
     }
 
     const text = result.content?.map((block) => block.text ?? "").join("\n") ?? "";

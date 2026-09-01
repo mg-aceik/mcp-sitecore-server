@@ -1,29 +1,25 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterAll } from "vitest";
 import { client, transport, callTool } from "../../../../client";
+import { seedScratch } from "../../../../fixtures";
 
 await client.connect(transport);
 
+const scratch = await seedScratch("provider-get-item-by-id", ["Target"]);
+afterAll(() => scratch.cleanup());
+
 describe("powershell", () => {
     it("provider-get-item", async () => {
-        const itemId = "{6BD1EE11-A5F6-4A15-8DBE-AE6E666F7380}";
-
-        // Get the item by ID
         const args: Record<string, any> = {
-            id: itemId
+            id: scratch.item("Target").id
         };
 
         const result = await callTool(client, "provider-get-item", args);
         const json = JSON.parse(result.content[0].text);
 
-        // Verify the response has the basic item properties
-        expect(json).toMatchObject({
-            Obj: expect.arrayContaining([
-                expect.objectContaining({
-                    ToString: "Sitecore.Data.Items.Item",
-                    ItemPath: "/sitecore/content/Home/Tests/Provider/Get-Item/Get-Item-By-Id",
-                    FullPath: "/sitecore/content/Home/Tests/Provider/Get-Item/Get-Item-By-Id",
-                })
-            ])
-        });
+        // The projection returns identity, not the whole .NET graph, so ItemPath and ID are
+        // what identify the item that came back.
+        expect(json.Obj).toHaveLength(1);
+        expect(json.Obj[0].ItemPath).toBe(scratch.item("Target").path);
+        expect(json.Obj[0].ID.toLowerCase()).toBe(scratch.item("Target").id.toLowerCase());
     });
 });

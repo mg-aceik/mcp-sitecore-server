@@ -122,7 +122,7 @@ const MERGED: Array<[string, Registrar, Record<string, unknown>?]> = [
     ["security-get-item-acl", getItemAclPowerShellTool],
     ["security-set-item-lock", setItemLockPowerShellTool, { action: "lock" }],
     ["security-set-item-protection", setItemProtectionPowerShellTool, { action: "protect" }],
-    ["security-set-item-acl", setItemAclPowerShellTool, { database: "master", action: "add", identity: "sitecore\admin", accessRight: "item:read" }],
+    ["security-set-item-acl", setItemAclPowerShellTool, { database: "master", action: "add", identity: "sitecore\\admin", accessRight: "item:read" }],
     ["security-test-item-acl", testItemAclPowerShellTool],
 ];
 
@@ -258,8 +258,8 @@ describe("the account lookups", () => {
     // pairs. They validate the same way every other merged tool does, but over
     // 'identity' / 'filter' rather than 'id' / 'path', so they need their own sweep.
     const LOOKUPS: Array<[string, Registrar, string, string]> = [
-        ["security-get-user", getUserPowerShellTool, "Get-User", "sitecore\admin"],
-        ["security-get-role", getRolePowerShellTool, "Get-Role", "sitecore\Author"],
+        ["security-get-user", getUserPowerShellTool, "Get-User", "sitecore\\admin"],
+        ["security-get-role", getRolePowerShellTool, "Get-Role", "sitecore\\Author"],
     ];
 
     for (const [name, registrar, cmdlet, identity] of LOOKUPS) {
@@ -271,7 +271,7 @@ describe("the account lookups", () => {
             expect(none.content[0].text).toContain("Supply exactly one of");
             expect(runGeneric).not.toHaveBeenCalled();
 
-            const both = await handler({ identity, filter: "sitecore\*" });
+            const both = await handler({ identity, filter: "sitecore\\*" });
             expect(both.isError, "two lookup inputs").toBe(true);
             expect(runGeneric).not.toHaveBeenCalled();
         });
@@ -284,8 +284,8 @@ describe("the account lookups", () => {
             expect(runGeneric.mock.calls[0][2]).toEqual({ Identity: identity });
 
             runGeneric.mockClear();
-            await handler({ filter: "sitecore\*" });
-            expect(runGeneric.mock.calls[0][2]).toEqual({ Filter: "sitecore\*" });
+            await handler({ filter: "sitecore\\*" });
+            expect(runGeneric.mock.calls[0][2]).toEqual({ Filter: "sitecore\\*" });
         });
     }
 });
@@ -353,7 +353,7 @@ describe("security-set-item-acl", () => {
     // Each action reaches a different cmdlet, and the rule inputs are required for two of
     // them and rejected for the third, so the dispatch and the validation are both tested.
     const mountAcl = () => mount(setItemAclPowerShellTool, "security-set-item-acl");
-    const RULE = { identity: "sitecore\Author", accessRight: "item:read" as const };
+    const RULE = { identity: "sitecore\\Author", accessRight: "item:read" as const };
 
     it("add appends one rule via Add-ItemAcl", async () => {
         const handler = mountAcl();

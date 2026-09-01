@@ -1,50 +1,35 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterAll } from "vitest";
 import { client, transport, callTool } from "../../../../client";
+import { seedScratch, linkItems } from "../../../../fixtures";
 
 await client.connect(transport);
 
+// Source points at Old through its link field. The tool repoints every referrer of Old at
+// New, so the fixture has to establish that link first -- nothing refers to a fresh item.
+const scratch = await seedScratch(
+    "update-item-referrer-by-path",
+    ["Source", "Old", "New"],
+    ["Title", "Text", { name: "Link", type: "Droptree" }],
+);
+await linkItems(scratch.item("Source"), scratch.item("Old"));
+afterAll(() => scratch.cleanup());
+
 describe("powershell", () => {
     it("common-update-item-referrer", async () => {
-        // Arrange
-        // /sitecore/content/Home/Tests/Common/Update-Item-Referrer-By-Path
-        const itemPath = "{1856552C-118B-48B6-B766-A12A0069BEED}";
-        const newTarget = "/sitecore/content/Home/Tests/Common/Update-Item-Referrer-By-Path-Target";
-        
-        const args: Record<string, any> = {
-            path: itemPath,
-            newTarget: newTarget
-        };
-
         // Act
-        await callTool(client, "common-update-item-referrer", args);
-        
-        // Assert
-        const itemReferrerArgs: Record<string, any> = {
-            path: itemPath,
-        };
+        await callTool(client, "common-update-item-referrer", {
+            path: scratch.item("Old").path,
+            newTarget: scratch.item("New").path,
+        });
 
-        const targetReferrerArgs: Record<string, any> = {
-            path: newTarget,
-        };
+        // Assert: Old has lost its referrer and New has gained it.
+        const oldReferrers = await callTool(client, "common-get-item-referrer", { path: scratch.item("Old").path });
+        const newReferrers = await callTool(client, "common-get-item-referrer", { path: scratch.item("New").path });
 
-        // Act
-        const itemReferrersResult = await callTool(client, "common-get-item-referrer", itemReferrerArgs);
-        const targetReferrersResult = await callTool(client, "common-get-item-referrer", targetReferrerArgs);
+        expect(JSON.parse(oldReferrers.content[0].text).Obj).toBeUndefined();
 
-        const itemReferrersJson = JSON.parse(itemReferrersResult.content[0].text);
-        const targetReferrersJson = JSON.parse(targetReferrersResult.content[0].text);
-
-        expect(itemReferrersJson.Obj).toBeUndefined();
-        expect(targetReferrersJson.Obj).toBeDefined();
-        expect(targetReferrersJson.Obj[0].FullPath).toBe("/sitecore/content/Home/Tests/Common/Update-Item-Referrer-By-Id");
-
-        // Cleanup
-        const updateReferrerArgs: Record<string, any> = {
-            path: newTarget,
-            newTarget: "/sitecore/content/Home/Tests/Common/Update-Item-Referrer-By-Path"
-        };
-
-        // Act
-        await callTool(client, "common-update-item-referrer", updateReferrerArgs);
+        const referrers = JSON.parse(newReferrers.content[0].text).Obj;
+        expect(referrers).toBeDefined();
+        expect(referrers.map((referrer: any) => referrer.ItemPath)).toContain(scratch.item("Source").path);
     });
 });

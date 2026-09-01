@@ -1,50 +1,37 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterAll } from "vitest";
 import { client, transport, callTool } from "../../../client";
-import { getCurrentLayoutId } from "../../tools/get-current-layout-id";
+import { seedScratch, seedPresentation, applyPresentation } from "../../../fixtures";
 
 await client.connect(transport);
 
-// /sitecore/content/Home/Tests/Presentation/Reset-Layout-By-Id
-const itemId = "{02B864D6-A80F-4AF3-9903-DFB51E4EEEA3}";
+// Resetting the final layout drops back to the shared one, so the fixture puts a different
+// layout in each: Layout One shared, Layout Two final.
+const scratch = await seedScratch("reset-layout-by-id", ["Page"]);
+const presentation = await seedPresentation(scratch);
+await applyPresentation(scratch.item("Page"), presentation, { finalLayout: false });
+afterAll(() => scratch.cleanup());
 
-// /sitecore/layout/Layouts/Sample Layout
-const sampleLayoutId = "{14030E9F-CE92-49C6-AD87-7D49B50E42EA}";
+const addressing = { id: scratch.item("Page").id };
 
-// /sitecore/layout/Layouts/Feature/Tests/Reset-Layout/InitialLayout
-const initialLayoutId = "{C088204D-9C63-4A70-8846-D7233D660B0A}";
-
-const finalLayout = true;
-const language = "ja-jp";
+const currentLayoutId = async (finalLayout: boolean) => {
+    const result = await callTool(client, "presentation-get-layout", { ...addressing, finalLayout });
+    return String(JSON.parse(result.content[0].text).Obj[0].ID).toLowerCase();
+};
 
 describe("powershell", () => {
     it("presentation-reset-layout", async () => {
-        // Arrange
-        const initialSetUpArgs: Record<string, any> = {
-            id: itemId,
-            layoutId: initialLayoutId,
-            layoutPath: "master:",
-            language,
-            finalLayout,
-        };
+        // Arrange: a final layout that differs from the shared one.
+        await callTool(client, "presentation-set-layout", {
+            ...addressing,
+            layoutId: presentation.otherLayout.id,
+            finalLayout: true,
+        });
+        expect(await currentLayoutId(true)).toBe(presentation.otherLayout.id.toLowerCase());
 
-        // Initialize item initial state before test.
-        await callTool(client, "presentation-set-layout", initialSetUpArgs);
-
-        // Assert the test item has been initialized correctly before test.
-        const currentLayoutId = await getCurrentLayoutId(client, itemId);
-        expect(currentLayoutId.toLowerCase()).toBe(initialLayoutId.toLowerCase());
-
-        const resetLayoutArgs: Record<string, any> = {
-            id: itemId,
-            finalLayout,
-            language,
-        };
-    
         // Act
-        await callTool(client, "presentation-reset-layout", resetLayoutArgs);
+        await callTool(client, "presentation-reset-layout", { ...addressing, finalLayout: true });
 
-        // Assert
-        const resultLayoutId = await getCurrentLayoutId(client, itemId);
-        expect(resultLayoutId.toLowerCase()).toBe(sampleLayoutId.toLowerCase());
-    });    
+        // Assert: back to the shared layout.
+        expect(await currentLayoutId(true)).toBe(presentation.layout.id.toLowerCase());
+    });
 });

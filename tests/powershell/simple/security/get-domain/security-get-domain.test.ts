@@ -5,33 +5,16 @@ await client.connect(transport);
 
 describe("powershell", () => {
     it("security-get-domain", async () => {
+        // Omitting the name returns every domain. `sitecore` and `extranet` ship with the
+        // product; nothing else is guaranteed, so only those two are named.
         const result = await callTool(client, "security-get-domain", {});
-        const json = JSON.parse(result.content[0].text);
+        const domains = JSON.parse(result.content[0].text).Obj;
 
-        expect(json.Obj[0]).toMatchObject(
-            {
-                ToString: "default",
-                AccountNameValidation: "^\\w[\\w\\s\\.\\@\\-]*$",
-                AccountPrefix: "default\\",
-                AnonymousUserEmailPattern: "",
-                AnonymousUserName: "default\\Anonymous",
-                EveryoneRoleName: "default\\Everyone",
-                MemberPattern: "default\\*",
-                Name: "default",
-                Appearance: {
-                    ToString: "Sitecore.Data.Appearance",
-                    DisplayName: "default",
-                    HelpLink: "",
-                    Icon: "",
-                    LongDescription: "",
-                    ShortDescription: "",
-                    Style: "",
-                },
-                EnsureAnonymousUser: true,
-                IsDefault: true,
-                LocallyManaged: false,
-                DefaultProfileItemID: "",
-            }
-        );
+        const names = domains.map((domain: any) => domain.Name);
+        expect(names).toEqual(expect.arrayContaining(["sitecore", "extranet"]));
+
+        const sitecore = domains.find((domain: any) => domain.Name === "sitecore");
+        expect(sitecore.AccountPrefix).toBe("sitecore\\");
+        expect(sitecore.MemberPattern).toBe("sitecore\\*");
     });
 });

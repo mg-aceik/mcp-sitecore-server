@@ -1,27 +1,30 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterAll } from "vitest";
 import { client, transport, callTool } from "../../../../client";
+import { seedScratch } from "../../../../fixtures";
 
 await client.connect(transport);
 
+// Every data template derives from the Standard template, so it is the one base every
+// seeded item is guaranteed to have.
+const STANDARD_TEMPLATE = "/sitecore/templates/System/Templates/Standard template";
+
+const scratch = await seedScratch("test-base-template-by-id", ["Target"]);
+afterAll(() => scratch.cleanup());
+
 describe("powershell", () => {
     it("common-test-base-template", async () => {
-        // Arrange
-        // /sitecore/content/Home/Tests/Common/Test-Base-Template
-        const itemId = "{C9E88066-3A0D-4C87-BA12-2B9C8BBCB791}";
-        const templatePath = "/sitecore/templates/Sample/Sample Item";
-        
-        const args: Record<string, any> = {
-            id: itemId,
-            template: templatePath
-        };
+        const inherited = await callTool(client, "common-test-base-template", {
+            id: scratch.item("Target").id,
+            template: STANDARD_TEMPLATE
+        });
+        expect(JSON.parse(inherited.content[0].text).Obj[0]).toBe(true);
 
-        // Act
-        const result = await callTool(client, "common-test-base-template", args);
-        
-        // Assert
-        const json = JSON.parse(result.content[0].text);
-        
-        expect(json).toBeDefined();
-        expect(json.Obj[0]).toBeTruthy();
+        // A template the item does not derive from answers the other way, which is the half
+        // of the tool a single positive case never exercises.
+        const unrelated = await callTool(client, "common-test-base-template", {
+            id: scratch.item("Target").id,
+            template: "/sitecore/templates/System/Templates/Template section"
+        });
+        expect(JSON.parse(unrelated.content[0].text).Obj[0]).toBe(false);
     });
 });

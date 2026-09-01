@@ -1,6 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import type { Config } from "@/config.js";
-import { z } from "zod";
 import { getLanguages } from "../../logic/composite/get-languages.js";
 import { safeMcpResponse } from "@/helper.js";
 

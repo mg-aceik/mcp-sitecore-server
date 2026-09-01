@@ -1,42 +1,36 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterAll } from "vitest";
 import { client, transport, callTool } from "../../../../client";
+import { seedScratch, ensureLanguage } from "../../../../fixtures";
 
 await client.connect(transport);
+
+// Only `en` is guaranteed on a CM, so the second language is part of the fixture. It is
+// removed again only if this run is what added it.
+const scratch = await seedScratch("add-item-version-by-id", ["Target"]);
+const language = await ensureLanguage("de-DE");
+afterAll(async () => {
+    await scratch.cleanup();
+    await language.remove();
+});
 
 describe("powershell", () => {
     it("common-add-item-version", async () => {
         // Arrange
-        // /sitecore/content/Home/Tests/Common/Add-Item-Version-By-Id
-        const itemId = "{57AAB557-7193-40DF-BBB4-8DF292776224}";
-        const language = "en";
-        const targetLanguage = "fr-CA";
-
-        const args: Record<string, any> = {
-            id: itemId,
-            language: language,
-            targetLanguage: targetLanguage
-        };
+        const target = scratch.item("Target").id;
+        const before = await callTool(client, "provider-get-item", { id: target, language: "de-DE" });
+        expect(JSON.parse(before.content[0].text).Obj).toBeUndefined();
 
         // Act
-        await callTool(client, "common-add-item-version", args);
+        await callTool(client, "common-add-item-version", {
+            id: target,
+            language: "en",
+            targetLanguage: "de-DE",
+        });
 
         // Assert
-        const getItemArgs: Record<string, any> = {
-            id: itemId,
-            language: targetLanguage,
-        };
-
-        const result = await callTool(client, "provider-get-item", getItemArgs);
-        const json = JSON.parse(result.content[0].text);
-        
+        const after = await callTool(client, "provider-get-item", { id: target, language: "de-DE" });
+        const json = JSON.parse(after.content[0].text);
         expect(json.Obj).toBeDefined();
-
-        // Cleanup
-        const removeVersionArgs: Record<string, any> = {
-            id: itemId,
-            language: targetLanguage,
-        };
-
-        await callTool(client, "common-remove-item-version", removeVersionArgs);
+        expect(json.Obj[0].Language).toBe("de-DE");
     });
 });

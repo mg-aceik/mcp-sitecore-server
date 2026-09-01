@@ -1,13 +1,17 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterAll } from "vitest";
 import { client, transport, callTool } from "../../../../client";
+import { seedScratch } from "../../../../fixtures";
 
 await client.connect(transport);
+
+const scratch = await seedScratch("common-get-item-field-by-id", ["Get-Item-Field"]);
+afterAll(() => scratch.cleanup());
 
 describe("powershell", () => {
     it("common-get-item-field", async () => {
         // Arrange
         // /sitecore/content/Home/Tests/Common/Get-Item-Field
-        const itemId = "{429383EA-C741-41F8-BBBC-4DC0418E7B2C}";
+        const itemId = scratch.item("Get-Item-Field").id;
 
         const args: Record<string, any> = {
             id: itemId

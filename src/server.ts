@@ -1,7 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/server";
-import { envSchema, redactConfig, type Config, type EnvConfig } from "./config.js";
-import fs from 'fs';
-import path from 'path';
+import { redactConfig, type Config } from "./config.js";
 import { registerAll } from "./register.js";
 import { withInferredAnnotations } from "./tool-annotations.js";
 import { resolveToolGating, withToolGating } from "./tool-profiles.js";
@@ -99,7 +97,7 @@ export async function getServer(config: Config): Promise<McpServer> {
                 "Prints the configuration of the Sitecore MCP server. Secrets (passwords, the "
                 + "GraphQL API key, the authorization header) are redacted.",
         },
-        async (params) => {
+        async () => {
             return {
                 content: [
                     {

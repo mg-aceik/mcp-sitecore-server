@@ -1,33 +1,31 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterAll } from "vitest";
 import { client, transport, callTool } from "../../../../client";
+import { seedScratch } from "../../../../fixtures";
 
 await client.connect(transport);
 
-describe("powershell", () => {
-    it("common-get-item-template", async () => {
-        // Use the Home item path which exists in any Sitecore instance
-        const homePath = "/sitecore/content/Home";
-        
-        const args: Record<string, any> = {
-            path: homePath
-        };
+// The sibling files cover the projected result. This one covers `full: true`, the escape
+// hatch that returns the unprojected .NET graph -- the only way to reach a template's
+// sections, fields and base templates, none of which survive the projection.
+const scratch = await seedScratch("get-item-template-full", ["Target"]);
+afterAll(() => scratch.cleanup());
 
-        const result = await callTool(client, "common-get-item-template", args);
+describe("powershell", () => {
+    it("common-get-item-template full", async () => {
+        const result = await callTool(client, "common-get-item-template", {
+            path: scratch.item("Target").path,
+            full: true,
+        });
         const json = JSON.parse(result.content[0].text);
-        
-        // Verify that the command executed successfully and returned template information
-        expect(json).toBeDefined();
-        expect(json.Obj).toBeDefined();
-        
-        // Verify that the template object has expected properties
+
         const template = json.Obj[0];
         expect(template).toBeDefined();
+        expect(template.Name).toBe(scratch.template.name);
         expect(template.ToString).toContain("Template");
-        expect(template.Name).toBeDefined();
-        expect(template.ID).toBeDefined();
-        
-        // Template should have fields and sections
         expect(template.Fields).toBeDefined();
         expect(template.BaseTemplates).toBeDefined();
+        expect(template.OwnFields.map((field: any) => field.Name)).toEqual(
+            expect.arrayContaining(["Title", "Text"])
+        );
     });
 });

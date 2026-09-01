@@ -1,46 +1,29 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterAll } from "vitest";
 import { client, transport, callTool } from "../../../../client";
+import { seedScratch, assignWorkflow, SAMPLE_WORKFLOW } from "../../../../fixtures";
 
 await client.connect(transport);
+
+// Submit is Sample Workflow's own command out of Draft, so the item has to be in Draft for
+// the tool to have anything to invoke.
+const scratch = await seedScratch("invoke-workflow-by-path", ["Target"]);
+await assignWorkflow([scratch.item("Target")]);
+afterAll(() => scratch.cleanup());
 
 describe("powershell", () => {
     it("common-invoke-workflow", async () => {
         // Arrange
-        const itemId = "{25C1BAEA-DA84-495D-9656-4CE1A5342F8C}";
-        const itemPath = "/sitecore/content/Home/Tests/Common/Invoke-Workflow-By-Path";
-        
-        const args: Record<string, any> = {
-            path: itemPath,
-            commandName: "Submit"
-        };
+        const target = scratch.item("Target").path;
 
         // Act
-        await callTool(client, "common-invoke-workflow", args);
-        
+        await callTool(client, "common-invoke-workflow", { path: target, commandName: "Submit" });
+
         // Assert
-        const getWorkflowArgs: Record<string, any> = {
-            id: itemId,
-        };
-
-        const result = await callTool(client, "common-get-item-workflow-event", getWorkflowArgs);
-
+        const result = await callTool(client, "common-get-item-workflow-event", { path: target });
         const json = JSON.parse(result.content[0].text);
         const lastEvent = json.Obj[json.Obj.length - 1];
 
-        // sitecore/system/Workflows/Sample Workflow/Draft
-        expect(lastEvent.OldState).toBe("{190B1C84-F1BE-47ED-AA41-F42193D9C8FC}");
-
-        // /sitecore/system/Workflows/Sample Workflow/Awaiting Approval
-        expect(lastEvent.NewState).toBe("{46DA5376-10DC-4B66-B464-AFDAA29DE84F}");
-
-        // Cleanup
-        const editItemArgs: Record<string, any> = {
-            id: itemId,
-            data: {
-                "__Workflow State": "{190B1C84-F1BE-47ED-AA41-F42193D9C8FC}"
-            }
-        };
-
-        await callTool(client, "item-service-edit-item", editItemArgs);
+        expect(lastEvent.OldState).toBe(SAMPLE_WORKFLOW.draft);
+        expect(lastEvent.NewState).toBe(SAMPLE_WORKFLOW.awaitingApproval);
     });
 });

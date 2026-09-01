@@ -4,6 +4,9 @@ import { z } from "zod";
 import fs from "node:fs";
 import 'dotenv/config.js';
 
+// Only ever consumed by `z.infer` below: the shape is the single definition of `Config`,
+// and nothing parses against it, so the linter cannot see it as a used value.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const ConfigSchema = z.object({
     name: z.string().default("mcp-sitecore-server"),
     version: z.string().optional(),

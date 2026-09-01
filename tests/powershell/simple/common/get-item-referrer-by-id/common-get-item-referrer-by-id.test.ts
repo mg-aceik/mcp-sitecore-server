@@ -1,21 +1,26 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterAll } from "vitest";
 import { client, transport, callTool } from "../../../../client";
+import { seedScratch, linkItems } from "../../../../fixtures";
 
 await client.connect(transport);
 
+const scratch = await seedScratch(
+    "get-item-referrer-by-id",
+    ["Target", "Source"],
+    ["Title", "Text", { name: "Link", type: "Droptree" }],
+);
+await linkItems(scratch.item("Source"), scratch.item("Target"));
+afterAll(() => scratch.cleanup());
+
 describe("powershell", () => {
     it("common-get-item-referrer", async () => {
-        // Using a known item ID for testing
-        const itemId = "{67C31D9F-4D5B-40AD-846E-A268ADC36A9F}"; 
-        
         const args: Record<string, any> = {
-            id: itemId
+            id: scratch.item("Target").id
         };
 
         const result = await callTool(client, "common-get-item-referrer", args);
         const json = JSON.parse(result.content[0].text);
-        
-        // Verify that the command executed successfully and returned referrer information
-        expect(json.Obj[0].Name).toBe("Get-Item-Referrer-By-Path");
+
+        expect(json.Obj.map((item: any) => item.Name)).toContain("Source");
     });
 });

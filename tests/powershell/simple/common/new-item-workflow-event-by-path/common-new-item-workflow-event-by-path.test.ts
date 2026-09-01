@@ -1,47 +1,33 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterAll } from "vitest";
 import { client, transport, callTool } from "../../../../client";
+import { seedScratch, assignWorkflow, SAMPLE_WORKFLOW } from "../../../../fixtures";
 
 await client.connect(transport);
+
+const scratch = await seedScratch("new-item-workflow-event-by-path", ["Target"]);
+await assignWorkflow([scratch.item("Target")]);
+afterAll(() => scratch.cleanup());
 
 describe("powershell", () => {
     it("common-new-item-workflow-event", async () => {
         // Arrange
-        const itemPath = "sitecore/content/Home/Tests/Common/New-Item-Workflow-Event-By-Path";
-
-        const args: Record<string, any> = {
-            path: itemPath,
-            newState: "{46DA5376-10DC-4B66-B464-AFDAA29DE84F}",
-            text: "Action Comment"
-        };
+        const target = scratch.item("Target").path;
 
         // Act
-        await callTool(client, "common-new-item-workflow-event", args);
-        
+        await callTool(client, "common-new-item-workflow-event", {
+            path: target,
+            oldState: SAMPLE_WORKFLOW.draft,
+            newState: SAMPLE_WORKFLOW.awaitingApproval,
+            text: "Action Comment"
+        });
+
         // Assert
-        const getWorkflowArgs: Record<string, any> = {
-            path: itemPath,
-        };
-
-        const result = await callTool(client, "common-get-item-workflow-event", getWorkflowArgs);
-
+        const result = await callTool(client, "common-get-item-workflow-event", { path: target });
         const json = JSON.parse(result.content[0].text);
         const lastEvent = json.Obj[json.Obj.length - 1];
 
-        // sitecore/system/Workflows/Sample Workflow/Draft
-        expect(lastEvent.OldState).toBe("{190B1C84-F1BE-47ED-AA41-F42193D9C8FC}");
-
-        // /sitecore/system/Workflows/Sample Workflow/Awaiting Approval
-        expect(lastEvent.NewState).toBe("{46DA5376-10DC-4B66-B464-AFDAA29DE84F}");
-
+        expect(lastEvent.OldState).toBe(SAMPLE_WORKFLOW.draft);
+        expect(lastEvent.NewState).toBe(SAMPLE_WORKFLOW.awaitingApproval);
         expect(lastEvent.CommentFields[0].Value).toBe("Action Comment");
-
-        // Cleanup
-        const revertStateArgs: Record<string, any> = {
-            path: itemPath,
-            newState: "{190B1C84-F1BE-47ED-AA41-F42193D9C8FC}",
-        };
-
-        // Act
-        await callTool(client, "common-new-item-workflow-event", revertStateArgs);
     });
 });

@@ -1,25 +1,26 @@
-// filepath: c:\source\mcp-sitecore-server\tests\powershell\simple\security\protect-item\security-protect-item.test.ts
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterAll } from "vitest";
 import { client, transport, callTool } from "../../../../client";
+import { seedScratch } from "../../../../fixtures";
 
 await client.connect(transport);
 
+const scratch = await seedScratch("protect-item-by-id", ["Target"]);
+afterAll(() => scratch.cleanup());
+
+const addressing = { id: scratch.item("Target").id };
+
 describe("powershell", () => {
-    it("security-protect-item", async () => {
-        const itemId = "{F8AE75E0-CA84-43D9-8B04-14D97BD2F601}"; 
-        
-        // Test protecting item by ID
-        const args: Record<string, any> = {
-            id: itemId,
-            passThru: true
-        };
-        
-        const result = await callTool(client, "security-protect-item", args);
-        const json = JSON.parse(result.content[0].text);
-        
-        // Verify the item is protected
-        expect(json.Obj[0]["__Read Only"]).toBe(1);
-        
-        await callTool(client, "security-unprotect-item", args);
+    it("security-set-item-protection", async () => {
+        const result = await callTool(client, "security-set-item-protection", {
+            ...addressing,
+            action: "protect",
+            passThru: true,
+            fields: ["__Read Only"],
+        });
+
+        expect(JSON.parse(result.content[0].text).Obj[0]["__Read Only"]).toBe(1);
+
+        // Unprotect again, or the scratch cleanup cannot delete it.
+        await callTool(client, "security-set-item-protection", { ...addressing, action: "unprotect" });
     });
 });

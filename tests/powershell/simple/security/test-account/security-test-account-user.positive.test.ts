@@ -1,22 +1,19 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterAll } from "vitest";
 import { client, transport, callTool } from "../../../../client";
+import { seedUser } from "../../../../fixtures";
 
 await client.connect(transport);
 
+const user = await seedUser("test-account-positive");
+afterAll(() => user.remove());
+
 describe("powershell", () => {
     it("security-test-account", async () => {
-        // Test on the admin user which should exist in most Sitecore instances
-        const args: Record<string, string> = {
-            identity: "sitecore\\admin"
-        };
-        
-        // Test if the user exists
-        const result = await callTool(client, "security-test-account", args);
-        const json = JSON.parse(result.content[0].text);
-        
-        // Test-Account should return true for an existing user
-        expect(json).toMatchObject({
-            Obj: [true]
+        const result = await callTool(client, "security-test-account", {
+            identity: user.name,
+            accountType: "User",
         });
+
+        expect(JSON.parse(result.content[0].text).Obj[0]).toBe(true);
     });
 });

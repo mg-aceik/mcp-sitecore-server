@@ -1,39 +1,41 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterAll } from "vitest";
 import { client, transport, callTool } from "../../../../client";
+import { seedScratch, seedTemplate } from "../../../../fixtures";
 
 await client.connect(transport);
 
+// Base templates hang off a template, not an item, so the target here is the fixture
+// template; the seeded item is what proves the change reached the items built from it.
+const scratch = await seedScratch("remove-base-template-by-id", ["Target"]);
+const base = await seedTemplate(scratch, "Base", ["Subtitle"]);
+afterAll(() => scratch.cleanup());
+
+const derivesFromBase = async () => {
+    const result = await callTool(client, "common-test-base-template", {
+        path: scratch.item("Target").path,
+        template: base.path,
+    });
+    return JSON.parse(result.content[0].text).Obj[0];
+};
+
 describe("powershell", () => {
-    it("common-remove-base-template", async () => {
+    it("common-set-base-template", async () => {
         // Arrange
-        // /sitecore/templates/Sample/Sample Item
-        const itemId = "{76036F5E-CBCE-46D1-AF0A-4143F9B557AA}";
-        const baseTemplate = "/sitecore/templates/Project/Verticals/Page";
-
-        const addBaseTemplateArgs: Record<string, any> = {
-            id: itemId,
-            template: baseTemplate,
-        };
-
-        await callTool(client, "common-add-base-template", addBaseTemplateArgs);
-
-        const args: Record<string, any> = {
-            id: itemId,
-            template: baseTemplate,
-        };
+        await callTool(client, "common-set-base-template", {
+            action: "add",
+            id: scratch.template.id,
+            template: base.path,
+        });
+        expect(await derivesFromBase()).toBe(true);
 
         // Act
-        await callTool(client, "common-remove-base-template", args);
+        await callTool(client, "common-set-base-template", {
+            action: "remove",
+            id: scratch.template.id,
+            template: base.path,
+        });
 
         // Assert
-        const getTemplateArgs: Record<string, any> = {
-            id: "{772CCBA4-9FF0-435B-87A2-1A3256023CE2}", // get an item based on the target template
-        };
-
-        const result = await callTool(client, "common-get-item-template", getTemplateArgs);
-        const json = JSON.parse(result.content[0].text);
-        const template = json.Obj[0];
-
-        expect(template.BaseTemplates.map(x => x.Name)).not.toContain("Page");
+        expect(await derivesFromBase()).toBe(false);
     });
 });

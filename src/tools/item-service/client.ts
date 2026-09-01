@@ -114,9 +114,9 @@ class RestfulItemServiceClient {
             }
         } catch (error) {
             if (error instanceof Error) {
-                throw new Error(`Failed to log in: ${error.message}`);
+                throw new Error(`Failed to log in: ${error.message}`, { cause: error });
             } else {
-                throw new Error('Failed to log in: An unknown error occurred');
+                throw new Error('Failed to log in: An unknown error occurred', { cause: error });
             }
         }
     }
@@ -125,7 +125,7 @@ class RestfulItemServiceClient {
      * Retrieves a Sitecore item by its ID using the ItemService RESTful API.
      * @param {string} id - The GUID of the Sitecore item to retrieve.
      * @param {Object} [options] - Optional parameters for the request.
-     * @returns {Promise<Object>} - The retrieved Sitecore item.
+     * @returns {Promise<object>} - The retrieved Sitecore item.
      */
     async getItemById(id: string, options: {
         database?: string;
@@ -134,7 +134,7 @@ class RestfulItemServiceClient {
         includeStandardTemplateFields?: boolean;
         includeMetadata?: boolean;
         fields?: string[];
-    } = {}): Promise<Object> {
+    } = {}): Promise<object> {
 
         if (!this.isInitialized) {
             await this.initialize();
@@ -157,12 +157,12 @@ class RestfulItemServiceClient {
                 throw new Error(`HTTP error! ${await describeFailedResponse(response, url)}`);
             }
 
-            return await response.json() as unknown as Object;
+            return await response.json() as unknown as object;
         } catch (error) {
             if (error instanceof Error) {
-                throw new Error(`Failed to retrieve item by ID: ${error.message}`);
+                throw new Error(`Failed to retrieve item by ID: ${error.message}`, { cause: error });
             } else {
-                throw new Error('Failed to retrieve item by ID: An unknown error occurred');
+                throw new Error('Failed to retrieve item by ID: An unknown error occurred', { cause: error });
             }
         }
     }
@@ -171,7 +171,7 @@ class RestfulItemServiceClient {
      * Retrieves the children of a Sitecore item by its ID using the ItemService RESTful API.
      * @param {string} id - The GUID of the Sitecore item whose children to retrieve.
      * @param {Object} [options] - Optional parameters for the request.
-     * @returns {Promise<Object>} - The retrieved Sitecore item children.
+     * @returns {Promise<object>} - The retrieved Sitecore item children.
      */
     async getItemChildren(id: string, options: {
         database?: string;
@@ -180,7 +180,7 @@ class RestfulItemServiceClient {
         includeStandardTemplateFields?: boolean;
         includeMetadata?: boolean;
         fields?: string[];
-    } = {}): Promise<Object> {
+    } = {}): Promise<object> {
 
         if (!this.isInitialized) {
             await this.initialize();
@@ -203,12 +203,12 @@ class RestfulItemServiceClient {
                 throw new Error(`HTTP error! ${await describeFailedResponse(response, url)}`);
             }
 
-            return await response.json() as unknown as Object;
+            return await response.json() as unknown as object;
         } catch (error) {
             if (error instanceof Error) {
-                throw new Error(`Failed to retrieve item children: ${error.message}`);
+                throw new Error(`Failed to retrieve item children: ${error.message}`, { cause: error });
             } else {
-                throw new Error('Failed to retrieve item children: An unknown error occurred');
+                throw new Error('Failed to retrieve item children: An unknown error occurred', { cause: error });
             }
         }
     }
@@ -217,7 +217,7 @@ class RestfulItemServiceClient {
      * Retrieves a Sitecore item by its path using the ItemService RESTful API.
      * @param {string} path - The content path of the Sitecore item to retrieve.
      * @param {Object} [options] - Optional parameters for the request.
-     * @returns {Promise<Object>} - The retrieved Sitecore item.
+     * @returns {Promise<object>} - The retrieved Sitecore item.
      */
     async getItemByPath(path: string, options: {
         database?: string;
@@ -226,7 +226,7 @@ class RestfulItemServiceClient {
         includeStandardTemplateFields?: boolean;
         includeMetadata?: boolean;
         fields?: string[];
-    } = {}): Promise<Object> {
+    } = {}): Promise<object> {
 
         if (!this.isInitialized) {
             await this.initialize();
@@ -251,12 +251,12 @@ class RestfulItemServiceClient {
                 throw new Error(`HTTP error! ${await describeFailedResponse(response, url)}`);
             }
 
-            return await response.json() as unknown as Object;
+            return await response.json() as unknown as object;
         } catch (error) {
             if (error instanceof Error) {
-                throw new Error(`Failed to retrieve item by path: ${error.message}`);
+                throw new Error(`Failed to retrieve item by path: ${error.message}`, { cause: error });
             } else {
-                throw new Error('Failed to retrieve item by path: An unknown error occurred');
+                throw new Error('Failed to retrieve item by path: An unknown error occurred', { cause: error });
             }
         }
     }
@@ -266,7 +266,7 @@ class RestfulItemServiceClient {
      * @param {string} parentPath - The path where the new item will be created (e.g., 'sitecore/content/Home').
      * @param {object} data - The data for the new item (ItemName, TemplateID, fields, etc).
      * @param {object} [options] - Optional parameters for the request (database, language).
-     * @returns {Promise<Object>} - The created Sitecore item response.
+     * @returns {Promise<object>} - The created Sitecore item response.
      */
     async createItem(parentPath: string, data: {
         ItemName: string;
@@ -275,7 +275,7 @@ class RestfulItemServiceClient {
     }, options: {
         database?: string;
         language?: string;
-    } = {}): Promise<Object> {
+    } = {}): Promise<object> {
         if (!this.isInitialized) {
             await this.initialize();
         }
@@ -306,9 +306,9 @@ class RestfulItemServiceClient {
             };
         } catch (error) {
             if (error instanceof Error) {
-                throw new Error(`Failed to create item: ${error.message}`);
+                throw new Error(`Failed to create item: ${error.message}`, { cause: error });
             } else {
-                throw new Error('Failed to create item: An unknown error occurred');
+                throw new Error('Failed to create item: An unknown error occurred', { cause: error });
             }
         }
     }
@@ -318,7 +318,7 @@ class RestfulItemServiceClient {
      * @param {string} id - The GUID of the Sitecore item to edit.
      * @param {object} data - The data to update (fields, etc).
      * @param {object} [options] - Optional parameters for the request (database, language, version).
-     * @returns {Promise<Object>} - The updated Sitecore item response.
+     * @returns {Promise<object>} - The updated Sitecore item response.
      */
     async editItem(id: string, data: {
         [key: string]: any;
@@ -326,7 +326,7 @@ class RestfulItemServiceClient {
         database?: string;
         language?: string;
         version?: string;
-    } = {}): Promise<Object> {
+    } = {}): Promise<object> {
         if (!this.isInitialized) {
             await this.initialize();
         }
@@ -355,9 +355,9 @@ class RestfulItemServiceClient {
             }
         } catch (error) {
             if (error instanceof Error) {
-                throw new Error(`Failed to edit item: ${error.message}`);
+                throw new Error(`Failed to edit item: ${error.message}`, { cause: error });
             } else {
-                throw new Error('Failed to edit item: An unknown error occurred');
+                throw new Error('Failed to edit item: An unknown error occurred', { cause: error });
             }
         }
     }
@@ -366,13 +366,13 @@ class RestfulItemServiceClient {
      * Deletes a Sitecore item by its ID using the ItemService RESTful API.
      * @param {string} id - The GUID of the Sitecore item to delete.
      * @param {Object} [options] - Optional parameters for the request (database, language, version).
-     * @returns {Promise<Object>} - The response from the delete operation.
+     * @returns {Promise<object>} - The response from the delete operation.
      */
     async deleteItem(id: string, options: {
         database?: string;
         language?: string;
         version?: string;
-    } = {}): Promise<Object> {
+    } = {}): Promise<object> {
         if (!this.isInitialized) {
             await this.initialize();
         }
@@ -399,9 +399,9 @@ class RestfulItemServiceClient {
             };
         } catch (error) {
             if (error instanceof Error) {
-                throw new Error(`Failed to delete item: ${error.message}`);
+                throw new Error(`Failed to delete item: ${error.message}`, { cause: error });
             } else {
-                throw new Error('Failed to delete item: An unknown error occurred');
+                throw new Error('Failed to delete item: An unknown error occurred', { cause: error });
             }
         }
     }
@@ -409,7 +409,7 @@ class RestfulItemServiceClient {
     /**
      * Searches Sitecore items using the ItemService RESTful API.
      * @param {object} options - Search options (term, fields, facets, etc).
-     * @returns {Promise<Object>} - The search results.
+     * @returns {Promise<object>} - The search results.
      */
     async searchItems(options: {
         term: string;
@@ -419,7 +419,7 @@ class RestfulItemServiceClient {
         pageSize?: number;
         database?: string;
         includeStandardTemplateFields?: boolean;
-    }): Promise<Object> {
+    }): Promise<object> {
         if (!this.isInitialized) {
             await this.initialize();
         }
@@ -442,12 +442,12 @@ class RestfulItemServiceClient {
             if (!response.ok) {
                 throw new Error(`HTTP error! ${await describeFailedResponse(response, url)}`);
             }
-            return await response.json() as unknown as Object;
+            return await response.json() as unknown as object;
         } catch (error) {
             if (error instanceof Error) {
-                throw new Error(`Failed to search items: ${error.message}`);
+                throw new Error(`Failed to search items: ${error.message}`, { cause: error });
             } else {
-                throw new Error('Failed to search items: An unknown error occurred');
+                throw new Error('Failed to search items: An unknown error occurred', { cause: error });
             }
         }
     }

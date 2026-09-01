@@ -29,6 +29,8 @@
     "start:stdio": "npm run build && cross-env TRANSPORT=stdio node dist/index.js",
     "run": "npm run build && node dist/run.js",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "test": "npm run build && npm run bundle && vitest run",
     "test:unit": "vitest run --config vitest.unit.config.ts",
     "docker:windows:build": "docker build -t antonytm/mcp-sitecore-windows:$npm_package_version -t antonytm/mcp-sitecore-windows:latest --file .\\docker\\windows\\Dockerfile .",
@@ -50,8 +52,8 @@
     "zod": "^4.2.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@modelcontextprotocol/client": "^2.0.0",
-    "@modelcontextprotocol/inspector": "^0.16.8",
     "@rollup/plugin-alias": "^5.1.1",
     "@rollup/plugin-commonjs": "^28.0.9",
     "@rollup/plugin-json": "^6.1.0",
@@ -59,11 +61,13 @@
     "@types/express": "^5.0.6",
     "@types/node": "^24.13.2",
     "cross-env": "^7.0.3",
+    "eslint": "^10.9.1",
+    "globals": "^17.11.0",
     "rollup": "^4.62.2",
     "rollup-plugin-copy": "^3.5.0",
-    "ts-node": "^10.9.2",
     "tsc-alias": "^1.8.17",
-    "typescript": "^7.0.2",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.69.0",
     "vitest": "^3.2.6"
   },
   "publishConfig": {

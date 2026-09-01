@@ -1,47 +1,44 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterAll } from "vitest";
 import { client, transport, callTool } from "../../../client";
-import { resetLayoutByPath } from "../../tools/reset-layout";
-import { getRenderingByPath } from "../../tools/get-rendering";
+import { seedScratch, seedPresentation, applyPresentation } from "../../../fixtures";
 
 await client.connect(transport);
 
-const itemPath = "master:/sitecore/content/Home/Tests/Presentation/Set-Rendering-By-Path";
-const uniqueId = "{B343725A-3A93-446E-A9C8-3A2CBD3DB489}";
-const sampleRenderingId = "{493B3A83-0FA7-4484-8FC9-4680991CF743}";
-const language = "ja-jp";
+const scratch = await seedScratch("set-rendering-by-path", ["Page"]);
+const presentation = await seedPresentation(scratch);
+const applied = await applyPresentation(scratch.item("Page"), presentation);
+afterAll(() => scratch.cleanup());
+
+const addressing = { path: `master:${scratch.item("Page").path}` };
 const placeholder = "/test/placeholder";
 const dataSource = "test_datasource";
-const finalLayout = true;
 
 describe("powershell", () => {
     it("presentation-set-rendering", async () => {
-        // Arrange
-        // Initialize item initial state before test.
-        await resetLayoutByPath(client, itemPath, language, finalLayout);
-
-        const setRenderingArgs: Record<string, any> = {
-            path: itemPath,
-            uniqueId,
+        // Act
+        await callTool(client, "presentation-set-rendering", {
+            ...addressing,
+            uniqueId: applied.uniqueId,
             placeholder,
             dataSource,
-            finalLayout,
-            language,
+            finalLayout: true,
             index: 0,
             parameter: {
-                "sample": "value",
+                sample: "value",
             },
-        };
-
-        // Act
-        await callTool(client, "presentation-set-rendering", setRenderingArgs);
+        });
 
         // Assert
-        const renderings = await getRenderingByPath(client, itemPath, undefined, language, finalLayout);
-        
-        const rendering = renderings[0];
-        expect(rendering.ItemID).toBe(sampleRenderingId);
+        const result = await callTool(client, "presentation-get-rendering", {
+            ...addressing,
+            uniqueId: applied.uniqueId,
+            finalLayout: true,
+        });
+        const rendering = JSON.parse(result.content[0].text).Obj[0];
+
+        expect(rendering.ItemID.toLowerCase()).toBe(presentation.rendering.id.toLowerCase());
         expect(rendering.Placeholder).toBe(placeholder);
-        expect(rendering.Datasource).toBe(dataSource );
+        expect(rendering.Datasource).toBe(dataSource);
         expect(rendering.Parameters).toContain("sample=value");
     });
 });

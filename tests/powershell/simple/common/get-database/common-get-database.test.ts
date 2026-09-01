@@ -5,10 +5,16 @@ await client.connect(transport);
 
 describe("powershell", () => {
     it("common-get-database", async () => {
-        // Test getting all databases
-        const allDatabasesResult = await callTool(client, "common-get-database", {});
-        const allDatabasesJson = JSON.parse(allDatabasesResult.content[0].text);
+        // Every CM has master and core; which others exist depends on the topology, so the
+        // assertion names only those two.
+        const result = await callTool(client, "common-get-database", {});
+        const json = JSON.parse(result.content[0].text);
 
-        expect(allDatabasesJson.Obj[0].ToString).toBe("master");
+        const names = json.Obj.map((database: any) => database.Name);
+        expect(names).toEqual(expect.arrayContaining(["master", "core"]));
+
+        const master = json.Obj.find((database: any) => database.Name === "master");
+        expect(master.Languages).toContain("en");
+        expect(master.ReadOnly).toBe(false);
     });
 });

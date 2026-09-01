@@ -1,34 +1,35 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterAll } from "vitest";
 import { client, transport, callTool } from "../../../client";
+import { seedScratch, seedPresentation, applyPresentation } from "../../../fixtures";
 
 await client.connect(transport);
 
-const itemPath = "master:/sitecore/content/Home/Tests/Presentation/Get-Rendering-Parameter-By-Path";
+const scratch = await seedScratch("get-rendering-parameter-by-path", ["Page"]);
+const presentation = await seedPresentation(scratch);
+const applied = await applyPresentation(scratch.item("Page"), presentation);
+afterAll(() => scratch.cleanup());
 
-const uniqueId = "{B343725A-3A93-446E-A9C8-3A2CBD3DB489}";
-const finalLayout = true;
-const language = "ja-jp";
-const name = "sample";
+const addressing = { path: `master:${scratch.item("Page").path}` };
 
 describe("powershell", () => {
     it("presentation-get-rendering-parameter", async () => {
-        // Arrange
-        const getRenderingParameterArgs: Record<string, any> =
-        {
-            path: itemPath,
-            renderingUniqueId: uniqueId,
-            name,
-            finalLayout,
-            language,
-        };
+        // Arrange: a parameter to read back.
+        await callTool(client, "presentation-set-rendering-parameter", {
+            ...addressing,
+            renderingUniqueId: applied.uniqueId,
+            parameter: { sample: "value" },
+            finalLayout: true,
+        });
 
         // Act
-        const result = await callTool(client, "presentation-get-rendering-parameter", getRenderingParameterArgs);
+        const result = await callTool(client, "presentation-get-rendering-parameter", {
+            ...addressing,
+            renderingUniqueId: applied.uniqueId,
+            finalLayout: true,
+        });
 
         // Assert
-        const json = JSON.parse(result.content[0].text);
-        const testObject = json.Obj[0];
-        expect(testObject.En.Key).toBe(name);
-        expect(testObject.En.Value).toBe("get-rendering-parameter");
+        expect(result.isError).not.toBe(true);
+        expect(result.content[0].text).toContain("value");
     });
 });

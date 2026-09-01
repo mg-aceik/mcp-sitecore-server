@@ -1,25 +1,27 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterAll } from "vitest";
 import { client, transport, callTool } from "../../../../client";
+import { seedScratch, assignWorkflow, addWorkflowEvent, SAMPLE_WORKFLOW } from "../../../../fixtures";
 
 await client.connect(transport);
 
+// A stock item is in no workflow, so `Get-ItemWorkflowEvent` has nothing to report on one.
+// Putting the seeded item into Sample Workflow's first state is what creates the event this
+// reads back.
+const scratch = await seedScratch("get-item-workflow-event-by-path", ["Target"]);
+await assignWorkflow([scratch.item("Target")]);
+await addWorkflowEvent(scratch.item("Target"));
+afterAll(() => scratch.cleanup());
+
 describe("powershell", () => {
     it("common-get-item-workflow-event", async () => {
-        // Arrange
-        const itemPath = "/sitecore/content/Home/Tests/Common/Get-Item-Workflow-Event";
+        // Arrange, Act
+        const result = await callTool(client, "common-get-item-workflow-event", { path: scratch.item("Target").path });
 
-        const args: Record<string, any> = {
-            path: itemPath
-        };
-
-        // Act
-        const result = await callTool(client, "common-get-item-workflow-event", args);
-        
         // Assert
         const json = JSON.parse(result.content[0].text);
 
         expect(json).toBeDefined();
         expect(json.Obj.length).toBeGreaterThan(0);
-        expect(json.Obj[0].NewState).toBe("{190B1C84-F1BE-47ED-AA41-F42193D9C8FC}");
+        expect(json.Obj[json.Obj.length - 1].NewState).toBe(SAMPLE_WORKFLOW.draft);
     });
 });

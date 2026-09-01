@@ -1,45 +1,47 @@
 import { describe, it, expect, afterAll } from "vitest";
 import { client, transport, callTool } from "../../../client";
+import { seedScratch, seedPresentation } from "../../../fixtures";
 
 /**
- * Live verification of the final-layout fixes and the new security serialization
- * tools, against the CM configured in .env. Unlike the other suites this one
- * provisions its own page (the shared test tree's shared layouts mask the
- * final-layout-only shape these bugs need), and removes it afterwards.
+ * Live verification of the final-layout fixes and the security serialization tools against
+ * the CM configured in .env.
+ *
+ * The page here carries renderings in its *final* layout and nothing in its shared one,
+ * which is the shape these bugs need: the tools used to default their lookups to the shared
+ * layout and so found nothing to act on.
  */
 
 await client.connect(transport);
 
-const TEMP_PATH = "master:/sitecore/content/Stride/Corporate/Home/MCP Live Test Temp";
-const PAGE_TEMPLATE = "{59BCF94A-E9AA-4B13-AAE3-A745503FA421}";
-const RICHTEXT = "{AD10DB7C-C944-42D9-9563-1F1070CC922E}";
-const HEADING = "{AAADD1BD-43D2-4F9A-9817-CAC2E7931A98}";
+const scratch = await seedScratch("live-fixes", ["Page"]);
+const presentation = await seedPresentation(scratch);
+afterAll(() => scratch.cleanup());
 
+const TEMP_PATH = `master:${scratch.item("Page").path}`;
+const PLACEHOLDER = "headless-main";
 const GUID = /\{[0-9A-F-]{36}\}/i;
-
-async function run(script: string): Promise<void> {
-    await callTool(client, "run-powershell-script", { script });
-}
 
 function text(result: { content: Array<Record<string, any>> }): string {
     return result.content.map((block) => block.text ?? "").join("\n");
 }
 
-afterAll(async () => {
-    await run(`$i = Get-Item "${TEMP_PATH}" -ErrorAction SilentlyContinue; if ($i) { $i | Remove-Item -Recurse -Force }`);
-});
-
 describe("final-layout fixes and security serialization (live)", () => {
     it("set/switch/get default to the final layout and switch reports the new uniqueId", async () => {
-        // Arrange: a page whose renderings exist ONLY in the final layout.
-        await run(`
-            $existing = Get-Item "${TEMP_PATH}" -ErrorAction SilentlyContinue
-            if ($existing) { $existing | Remove-Item -Recurse -Force }
-            New-Item -Path "${TEMP_PATH}" -ItemType "${PAGE_TEMPLATE}" | Out-Null
-        `);
-        for (const renderingId of [RICHTEXT, HEADING]) {
+        // Arrange: a final layout and nothing in the shared one, then renderings into it.
+        // A seeded item has no presentation at all until something puts it there.
+        await callTool(client, "presentation-set-layout", {
+            path: TEMP_PATH,
+            layoutId: presentation.layout.id,
+            finalLayout: true,
+        });
+
+        for (const rendering of [presentation.rendering, presentation.otherRendering]) {
             const added = await callTool(client, "presentation-add-rendering", {
-                path: TEMP_PATH, renderingId, placeHolder: "headless-main", database: "master", finalLayout: true,
+                path: TEMP_PATH,
+                renderingId: rendering.id,
+                placeHolder: PLACEHOLDER,
+                database: "master",
+                finalLayout: true,
             });
             expect(added.isError ?? false).toBe(false);
         }
@@ -71,11 +73,11 @@ describe("final-layout fixes and security serialization (live)", () => {
 
         // switch-rendering by uniqueId returns the switched row carrying the NEW uniqueId.
         const switched = await callTool(client, "presentation-switch-rendering", {
-            path: TEMP_PATH, uniqueId, newRenderingId: HEADING,
+            path: TEMP_PATH, uniqueId, newRenderingId: presentation.otherRendering.id,
         });
         expect(switched.isError ?? false).toBe(false);
         const switchedText = text(switched);
-        expect(switchedText.toUpperCase()).toContain(HEADING.toUpperCase());
+        expect(switchedText.toUpperCase()).toContain(presentation.otherRendering.id.toUpperCase());
         const newUniqueId = switchedText.match(GUID)?.[0];
         expect(newUniqueId).toBeTruthy();
         expect(newUniqueId!.toUpperCase()).not.toBe(uniqueId.toUpperCase());
@@ -84,23 +86,25 @@ describe("final-layout fixes and security serialization (live)", () => {
         // "Cannot find a rendering to remove"; the tool's empty-diff guard ("changed
         // nothing") is the backstop for SPE paths that no-op instead.
         const bogus = await callTool(client, "presentation-switch-rendering", {
-            path: TEMP_PATH, uniqueId: "{00000000-0000-0000-0000-00000000DEAD}", newRenderingId: RICHTEXT,
+            path: TEMP_PATH,
+            uniqueId: "{00000000-0000-0000-0000-00000000DEAD}",
+            newRenderingId: presentation.rendering.id,
         });
         expect(bogus.isError).toBe(true);
         expect(text(bogus)).toMatch(/changed nothing|Cannot find a rendering/);
     });
 
     it("security export/import round-trips users and roles", async () => {
-        const exportedUser = await callTool(client, "security-export-user", { identity: "sitecore\\admin" });
+        const exportedUser = await callTool(client, "security-export-account", { accountType: "user", identity: "sitecore\\admin" });
         expect(exportedUser.isError ?? false).toBe(false);
         expect(text(exportedUser)).toMatch(/admin\.user/i);
-        const importedUser = await callTool(client, "security-import-user", { identity: "sitecore\\admin" });
+        const importedUser = await callTool(client, "security-import-account", { accountType: "user", identity: "sitecore\\admin" });
         expect(importedUser.isError ?? false).toBe(false);
 
-        const exportedRole = await callTool(client, "security-export-role", { identity: "sitecore\\Author" });
+        const exportedRole = await callTool(client, "security-export-account", { accountType: "role", identity: "sitecore\\Author" });
         expect(exportedRole.isError ?? false).toBe(false);
         expect(text(exportedRole)).toMatch(/Author\.role/i);
-        const importedRole = await callTool(client, "security-import-role", { identity: "sitecore\\Author" });
+        const importedRole = await callTool(client, "security-import-account", { accountType: "role", identity: "sitecore\\Author" });
         expect(importedRole.isError ?? false).toBe(false);
     });
 });

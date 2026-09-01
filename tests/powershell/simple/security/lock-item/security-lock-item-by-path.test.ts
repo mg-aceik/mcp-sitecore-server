@@ -1,29 +1,25 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterAll } from "vitest";
 import { client, transport, callTool } from "../../../../client";
-import { time } from "console";
+import { seedScratch } from "../../../../fixtures";
 
 await client.connect(transport);
 
+const scratch = await seedScratch("lock-item-by-path", ["Target"]);
+afterAll(() => scratch.cleanup());
+
+const addressing = { path: scratch.item("Target").path };
+
 describe("powershell", () => {
-    it("security-lock-item", async () => {
-        // Using a common content path that should exist in most Sitecore instances
-        const args: Record<string, any> = {
-            path: "/sitecore/content/Home/Tests/Security/Lock-Item/Lock-Item-By-Path",
-            passThru: true
-        };
+    it("security-set-item-lock", async () => {
+        const locked = await callTool(client, "security-set-item-lock", {
+            ...addressing,
+            action: "lock",
+            passThru: true,
+            fields: ["__Lock"],
+        });
+        expect(JSON.parse(locked.content[0].text).Obj[0].__Lock).toContain("owner=");
 
-        const result = await callTool(client, "security-lock-item", args);
-        const json = JSON.parse(result.content[0].text);
-
-        expect(json.Obj[0].__Lock).contains(
-            "sitecore\\admin"
-        );
-
-        // Unlock the item after test to clean up
-        const forceArgs: Record<string, any> = {
-            path: "/sitecore/content/Home/Tests/Security/Lock-Item/Lock-Item-By-Path",
-        };
-
-        await callTool(client, "security-unlock-item", forceArgs);
+        // Leave it as it was found.
+        await callTool(client, "security-set-item-lock", { ...addressing, action: "unlock" });
     });
 });

@@ -1,6 +1,4 @@
 import type { CallToolResult } from "@modelcontextprotocol/server";
-import { buildClientSchema, getIntrospectionQuery, printSchema } from "graphql";
-import { type IntrospectionQuery } from "graphql";
 import { type Config } from "@/config.js";
 import { parse } from "graphql/language/index.js";
 import { fetchWithTimeout } from "@/utils.js";

@@ -1,41 +1,28 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterAll } from "vitest";
 import { client, transport, callTool } from "../../../../client";
+import { seedScratch, seedTemplate } from "../../../../fixtures";
 
 await client.connect(transport);
 
+// Two templates, so the test can move an item from one to the other and name both.
+const scratch = await seedScratch("set-item-template-by-id", ["Target"]);
+const replacement = await seedTemplate(scratch, "Replacement", ["Title"]);
+afterAll(() => scratch.cleanup());
+
 describe("powershell", () => {
     it("common-set-item-template", async () => {
-        // Arrange
-        // /sitecore/content/Home/Tests/Common/Set-Item-Template-By-Id
-        const itemId = "{475D6780-8180-4325-B476-FB497A8E5F5A}";
-        const oldTemplatePath = "/sitecore/templates/Sample/Sample Item";
-        const newTemplatePeth = "/sitecore/templates/Project/Verticals/Pages/Content Page";
-
-        const args: Record<string, any> = {
-            id: itemId,
-            template: newTemplatePeth,
-        };
+        const target = scratch.item("Target").id;
 
         // Act
-        await callTool(client, "common-set-item-template", args);
+        await callTool(client, "common-set-item-template", { id: target, template: replacement.path });
 
         // Assert
-        const getTemplateArgs: Record<string, any> = {
-            id: itemId,
-        };
+        const result = await callTool(client, "common-get-item-template", { id: target });
+        expect(JSON.parse(result.content[0].text).Obj[0].Name).toBe(replacement.name);
 
-        const result = await callTool(client, "common-get-item-template", getTemplateArgs);
-        const json = JSON.parse(result.content[0].text);
-        
-        expect(json).toBeDefined();
-        expect(json.Obj[0].Name).toBe("Content Page");
-
-        // Cleanup
-        const setTemplateArgs: Record<string, any> = {
-            id: itemId,
-            template: oldTemplatePath,
-        };
-
-        await callTool(client, "common-set-item-template", setTemplateArgs);
+        // And back, which is the other half of the same tool.
+        await callTool(client, "common-set-item-template", { id: target, template: scratch.template.path });
+        const reverted = await callTool(client, "common-get-item-template", { id: target });
+        expect(JSON.parse(reverted.content[0].text).Obj[0].Name).toBe(scratch.template.name);
     });
 });

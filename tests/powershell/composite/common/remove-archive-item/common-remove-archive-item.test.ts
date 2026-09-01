@@ -1,60 +1,33 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterAll } from "vitest";
 import { client, transport, callTool } from "../../../../client";
+import { seedScratch } from "../../../../fixtures";
 
 await client.connect(transport);
 
+const scratch = await seedScratch("remove-archive-item", ["Doomed"]);
+afterAll(() => scratch.cleanup());
+
 describe("powershell", () => {
     it("common-remove-archive-item", async () => {
-        // Arrange
-        const archive = "recyclebin";
-        const database = "master";
-
-        const itemPath = "/sitecore/content/Home/Tests/Common/Remove-Archive-Item";
-
-        const getItemArgs: Record<string, any> = {
-            path: itemPath,
-        };
-
-        const getItemResult = await callTool(client, "provider-get-item", getItemArgs);
-        const itemToRemove = JSON.parse(getItemResult.content[0].text).Obj[0];
-
-        const itemId = itemToRemove.Obj.ID.ToString;
-
-        const deleteItemArgs: Record<string, any> = {
-            id: itemId,
-        };
-
-        await callTool(client, "item-service-delete-item", deleteItemArgs);
-
-        const args: Record<string, any> = {
-            archive: archive,
-            database: database,
-            itemId: itemId,
-        };
+        // Arrange: an entry in the recycle bin to purge.
+        const itemId = scratch.item("Doomed").id;
+        await callTool(client, "item-service-delete-item", { id: itemId });
 
         // Act
-        await callTool(client, "common-remove-archive-item", args);
+        await callTool(client, "common-remove-archive-item", {
+            archive: "recyclebin",
+            database: "master",
+            itemId,
+        });
 
-        // Assert
-        const getArchiveItem: Record<string, any> = {
-            archive: archive,
-            database: database,
-            itemId: itemId,
-        };
+        // Assert: purged from the archive, and so not restorable.
+        const result = await callTool(client, "common-get-archive-item", {
+            archive: "recyclebin",
+            database: "master",
+            itemId,
+        });
+        const page = JSON.parse(result.content[0].text).Obj[0];
 
-        const result = await callTool(client, "common-get-archive-item", getArchiveItem);
-        const json = JSON.parse(result.content[0].text);
-        const page = json.Obj[0];
-
-        expect(page.Items.map((entry: any) => entry.ItemId)).not.toContain(itemId);
-
-        // Cleanup
-        const createItemArgs: Record<string, any> = {
-            itemName: "Remove-Archive-Item",
-            parentPath: "/sitecore/content/Home/Tests/Common",
-            templateId: "{76036F5E-CBCE-46D1-AF0A-4143F9B557AA}",
-        };
-
-        await callTool(client, "item-service-create-item", createItemArgs);
+        expect(page.Items.map((entry: any) => entry.ItemId.toLowerCase())).not.toContain(itemId.toLowerCase());
     });
 });

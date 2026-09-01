@@ -1,46 +1,40 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterAll } from "vitest";
 import { client, transport, callTool } from "../../../client";
-import { resetLayoutById } from "../../tools/reset-layout";
-import { getRenderingById } from "../../tools/get-rendering";
+import { seedScratch, seedPresentation, applyPresentation } from "../../../fixtures";
 
 await client.connect(transport);
 
-// /sitecore/content/Home/Tests/Presentation/Add-Rendering-By-Id
-const itemId = "{EA968F75-3F40-4493-A710-11902D4749B7}";
-// /sitecore/layout/Renderings/Sample/Sample Rendering
-const renderingId = "{493B3A83-0FA7-4484-8FC9-4680991CF743}";
-const language = "ja-jp";
-const placeHolder = "/test/placeholder";
+const scratch = await seedScratch("add-rendering-by-id", ["Page"]);
+const presentation = await seedPresentation(scratch);
+await applyPresentation(scratch.item("Page"), presentation);
+afterAll(() => scratch.cleanup());
+
+const addressing = { id: scratch.item("Page").id };
+const placeholder = "/test/placeholder";
 const dataSource = "test_datasource";
-const database = "master";
-const finalLayout = true;
 
 describe("powershell", () => {
     it("presentation-add-rendering", async () => {
-        // Arrange
-        // Initialize item initial state before test.
-        await resetLayoutById(client, itemId, database, language, finalLayout);
-
-        const addRenderingArgs: Record<string, any> = {
-            id: itemId,
-            database,
-            renderingId,
-            placeHolder,
-            dataSource,
-            finalLayout,
-            language,
-            index: 0,
-        };
-
         // Act
-        await callTool(client, "presentation-add-rendering", addRenderingArgs);
+        await callTool(client, "presentation-add-rendering", {
+            ...addressing,
+            renderingPath: `master:${presentation.otherRendering.path}`,
+            placeHolder: placeholder,
+            dataSource,
+            finalLayout: true,
+            index: 0,
+        });
 
         // Assert
-        const renderings = await getRenderingById(client, itemId, database, undefined, language, finalLayout);
-        expect(renderings.length).toBe(4);
-        const addedRendering = renderings[0];
-        expect(addedRendering.ItemID).toBe(renderingId);
-        expect(addedRendering.Placeholder).toBe(placeHolder);
-        expect(addedRendering.Datasource).toBe(dataSource);
+        const result = await callTool(client, "presentation-get-rendering", {
+            ...addressing,
+            placeholder,
+            finalLayout: true,
+        });
+        const added = JSON.parse(result.content[0].text).Obj[0];
+
+        expect(added.ItemID.toLowerCase()).toBe(presentation.otherRendering.id.toLowerCase());
+        expect(added.Placeholder).toBe(placeholder);
+        expect(added.Datasource).toBe(dataSource);
     });
 });
